@@ -32,7 +32,7 @@ These packages are updated together when you run `feynman update`. You do not ne
 | --- | --- |
 | AlphaXiv tools | Search papers, fetch paper reports, ask paper questions, read linked code, and manage annotations |
 | Hugging Face Hub tools | Inspect dataset metadata, features, splits, access status, and small files from model, dataset, and Space repos |
-| Feynman commands | `/help`, `/outputs`, `/init`, `/feynman-model`, `/service-tier`, `/thinking`, and discovery helpers |
+| Feynman commands | `/help`, `/outputs`, `/init`, `/feynman-model`, `/service-tier`, and discovery helpers |
 
 ## Optional packages
 

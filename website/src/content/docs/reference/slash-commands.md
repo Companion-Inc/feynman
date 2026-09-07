@@ -35,7 +35,6 @@ These are the primary commands you use during research runs. Workflow prompts ca
 | `/init` | Bootstrap `AGENTS.md` and session-log folders for a new research project |
 | `/outputs` | Browse all research artifacts (papers, outputs, experiments, notes) |
 | `/btw <question>` | Ask a side question while the main research agent is busy and hand the result back when needed |
-| `/thinking [level]` | View the current model thinking level, open a model-aware picker, or set `off`, `minimal`, `low`, `medium`, `high`, `xhigh`, or `max` directly |
 | `/search` | Search prior research-session transcripts for past research and findings |
 | `/web-results` | Browse stored web-search and fetched-content result metadata |
 
