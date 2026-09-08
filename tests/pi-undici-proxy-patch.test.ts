@@ -1,5 +1,12 @@
 import assert from "node:assert/strict";
-import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import {
+	lstatSync,
+	mkdirSync,
+	mkdtempSync,
+	readFileSync,
+	symlinkSync,
+	writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
@@ -176,6 +183,35 @@ test("Pi Undici patch replaces the nested package tree and is idempotent", () =>
 			.packages["node_modules/@earendil-works/pi-coding-agent/node_modules/undici"].version,
 		FEYNMAN_UNDICI_VERSION,
 	);
+	assert.equal(patchPiUndiciProxyTree(nodeModules), false);
+});
+
+test("Pi Undici patch materializes real files when the source tree is a link", () => {
+	const root = mkdtempSync(join(tmpdir(), "feynman-pi-undici-link-"));
+	const nodeModules = join(root, "node_modules");
+	const realPackage = join(root, "undici-real");
+	const safePackage = join(nodeModules, "undici");
+	const piRoot = join(nodeModules, "@earendil-works", "pi-coding-agent");
+	const nestedPackage = join(piRoot, "node_modules", "undici");
+	mkdirSync(realPackage, { recursive: true });
+	mkdirSync(nodeModules, { recursive: true });
+	mkdirSync(nestedPackage, { recursive: true });
+	writeFileSync(join(realPackage, "package.json"), JSON.stringify({ name: "undici", version: FEYNMAN_UNDICI_VERSION }));
+	writeFileSync(join(realPackage, "index.js"), "module.exports = { fixed: true };\n");
+	// The bundled workspace exposes packages through links, matching
+	// `linkBundledPackage` in scripts/patch-embedded-pi.mjs. Junctions need no
+	// privilege on Windows; the type argument is ignored elsewhere.
+	symlinkSync(realPackage, safePackage, process.platform === "win32" ? "junction" : "dir");
+	writeFileSync(join(nestedPackage, "package.json"), JSON.stringify({ name: "undici", version: upstreamVersion }));
+	writeFileSync(join(piRoot, "package.json"), piPackageJson());
+	writeFileSync(join(piRoot, "npm-shrinkwrap.json"), piShrinkwrap());
+
+	// Recreating the link here would need SeCreateSymbolicLinkPrivilege on
+	// Windows and fail with EPERM for a normal non-elevated user.
+	assert.equal(patchPiUndiciProxyTree(nodeModules), true);
+	assert.equal(lstatSync(nestedPackage).isSymbolicLink(), false);
+	assert.equal(JSON.parse(readFileSync(join(nestedPackage, "package.json"), "utf8")).version, FEYNMAN_UNDICI_VERSION);
+	assert.equal(readFileSync(join(nestedPackage, "index.js"), "utf8"), "module.exports = { fixed: true };\n");
 	assert.equal(patchPiUndiciProxyTree(nodeModules), false);
 });
 

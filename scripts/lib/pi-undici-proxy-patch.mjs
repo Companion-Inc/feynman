@@ -170,7 +170,13 @@ export function patchPiUndiciProxyTree(nodeModulesPath, fallbackPackagePath, req
 			const temporaryPath = `${nestedPackagePath}.feynman-proxy-${process.pid}`;
 			rmSync(temporaryPath, { recursive: true, force: true });
 			mkdirSync(dirname(temporaryPath), { recursive: true });
-			cpSync(safePackagePath, temporaryPath, { recursive: true });
+			// `safePackagePath` is often a link: the bundled workspace exposes
+			// packages through junctions, so copy the real files instead of
+			// recreating a link. Without `dereference`, `cpSync` reproduces the
+			// symlink, and creating one on Windows needs
+			// SeCreateSymbolicLinkPrivilege, which fails with EPERM in a normal
+			// non-elevated shell unless Developer Mode is on.
+			cpSync(safePackagePath, temporaryPath, { dereference: true, recursive: true });
 			rmSync(nestedPackagePath, { recursive: true, force: true });
 			renameSync(temporaryPath, nestedPackagePath);
 			changed = true;
