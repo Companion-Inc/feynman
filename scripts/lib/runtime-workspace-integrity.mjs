@@ -568,7 +568,16 @@ export function packagedWorkspaceExtractionSucceeded(
 }
 
 function isAllowedMissingWindowsRuntimeSymlink(label) {
-	return /(?:^|\/)node_modules\/\.bin\/[^/]+$/.test(label);
+	// npm .bin command shims and the legacy @mariozechner/* package aliases
+	// are symlinks that Windows tar cannot create without privilege. Accept a
+	// missing link only when the caller has verified the target exists in the
+	// extracted tree (see runtimeArchiveExtractionMatches).
+	return (
+		/(?:^|\/)node_modules\/\.bin\/[^/]+$/.test(label) ||
+		/(?:^|\/)node_modules\/@mariozechner\/(?:pi-agent-core|pi-ai|pi-coding-agent|pi-tui)$/.test(
+			label,
+		)
+	);
 }
 
 function archiveSymlinkTargetPath(workspacePath, entry) {
