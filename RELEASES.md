@@ -6,6 +6,8 @@ GitHub release notes are generated from the matching `## vX.Y.Z` section in this
 
 ## Unreleased
 
+## v0.5.0 - 2026-09-23
+
 ### Stock Pi runtime
 
 - **Pi 0.87.1, unmodified.** Feynman now runs Pi's own CLI and no longer patches Pi or its packages on disk, renames Pi, or wraps its CLI. It also drops the sealed runtime workspace (the `.feynman/runtime-workspace.tgz` archive, its hashes, and its lock), which was re-verified on every launch. `feynman --help` and `feynman doctor` start in about a second instead of several.
