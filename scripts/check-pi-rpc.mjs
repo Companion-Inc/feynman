@@ -3,12 +3,12 @@
 // Usage: node scripts/check-pi-rpc.mjs [path/to/bin/feynman.js]
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
-import { mkdtempSync, readdirSync, rmSync } from "node:fs";
+import { mkdtempSync, readdirSync, realpathSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve, sep } from "node:path";
 
 const feynmanBin = resolve(process.argv[2] ?? join(import.meta.dirname, "..", "bin", "feynman.js"));
-const appRoot = resolve(feynmanBin, "..", "..");
+const appRoot = realpathSync(resolve(feynmanBin, "..", ".."));
 const home = mkdtempSync(join(tmpdir(), "feynman-rpc-"));
 const env = { ...process.env, FEYNMAN_HOME: home, HOME: home, USERPROFILE: home, FEYNMAN_TELEMETRY: "0", PI_OFFLINE: "1" };
 
@@ -39,7 +39,14 @@ rmSync(home, { recursive: true, force: true, maxRetries: 5 });
 assert.equal(response.success, true, JSON.stringify(response));
 const commands = response.data.commands;
 const names = new Set(commands.map((command) => command.name));
-const fromPath = (root) => commands.filter((command) => command.sourceInfo?.path?.startsWith(root + sep));
+const realPath = (path) => {
+	try {
+		return realpathSync(path);
+	} catch {
+		return path; // Pi's built-in commands report synthetic paths.
+	}
+};
+const fromPath = (root) => commands.filter((command) => realPath(command.sourceInfo?.path ?? "").startsWith(root + sep));
 
 for (const file of readdirSync(join(appRoot, "prompts")).filter((name) => name.endsWith(".md"))) {
 	assert.ok(names.has(file.slice(0, -".md".length)), `missing Feynman prompt /${file.slice(0, -".md".length)}`);

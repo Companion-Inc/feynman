@@ -483,8 +483,8 @@ exit 0
     [System.IO.Compression.ZipArchiveMode]::Update
   )
   try {
-    $reportedAwsEntryName = "feynman-$Version-win32-x64/app/.feynman/npm/node_modules/@aws-sdk/core/dist-es/submodules/client/middleware-recursion-detection/getRecursionDetectionPlugin.browser.js"
-    $longEntryPrefix = "feynman-$Version-win32-x64/app/.feynman/npm/node_modules/path-budget/"
+    $reportedAwsEntryName = "feynman-$Version-win32-x64/app/node_modules/@earendil-works/pi-coding-agent/node_modules/@aws-sdk/core/dist-es/submodules/client/middleware-recursion-detection/getRecursionDetectionPlugin.browser.js"
+    $longEntryPrefix = "feynman-$Version-win32-x64/app/node_modules/@earendil-works/pi-coding-agent/node_modules/path-budget/"
     $longEntrySuffix = ".js"
     $maximumExtractedPathLength = 259
     $maximumArchiveEntryLength = `
