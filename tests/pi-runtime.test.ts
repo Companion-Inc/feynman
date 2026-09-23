@@ -223,7 +223,7 @@ test("buildPiEnv wires Feynman paths into the Pi environment", () => {
 		assert.equal(env.FEYNMAN_WEB_SEARCH_CONFIG, "/tmp/custom-web/research-web.json");
 		assert.equal(env.FEYNMAN_POSTHOG_HOST, "https://us.i.posthog.com");
 		assert.match(env.FEYNMAN_POSTHOG_KEY ?? "", /^phc_/);
-		assert.equal(env.FEYNMAN_POSTHOG_PROJECT_ID, "479027");
+		assert.equal(env.FEYNMAN_POSTHOG_PROJECT_ID, "623906");
 		assert.equal(env.OTEL_EXPORTER_OTLP_ENDPOINT, undefined);
 		assert.equal(env.OTEL_EXPORTER_OTLP_HEADERS, undefined);
 		assert.equal(env.OTEL_EXPORTER_OTLP_PROTOCOL, undefined);

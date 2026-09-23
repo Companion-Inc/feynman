@@ -32,8 +32,8 @@ import { PostHog, type PostHogOptions } from "posthog-node";
 import { getFeynmanHome, getFeynmanStateDir } from "../config/paths.js";
 
 export const DEFAULT_POSTHOG_HOST = "https://us.i.posthog.com";
-export const DEFAULT_POSTHOG_PROJECT_ID = "479027";
-export const DEFAULT_POSTHOG_PROJECT_TOKEN = "phc_ApbFL3s7uL2wonxA3Cs2H2vt7BQLahzhSP7NPjJrsJSv";
+export const DEFAULT_POSTHOG_PROJECT_ID = "623906";
+export const DEFAULT_POSTHOG_PROJECT_TOKEN = "phc_owCZbr7c4mchCuVN5JXA6uBByjbT2kFVXSbmpUyAgEva";
 const TELEMETRY_STATE_FILE = "telemetry.json";
 const TELEMETRY_DISABLED_VALUES = new Set(["0", "false", "no", "off", "disabled"]);
 const TELEMETRY_KEY_PATTERN = /^[A-Za-z0-9_$./-]+$/;
