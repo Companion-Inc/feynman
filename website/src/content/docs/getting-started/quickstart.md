@@ -61,7 +61,7 @@ You can also ask Feynman to draft documents, audit code, or compare multiple sou
 
 ## Explore slash commands
 
-Type `/help` inside the REPL to see Feynman's public research commands. Each command maps to a workflow or utility, such as `/deepresearch`, `/recipe`, `/review`, `/draft`, or `/watch`. You can also run any workflow directly from the CLI:
+Type `/help` inside the REPL to see Feynman's public research commands. Each command maps to a workflow or utility, such as `/deepresearch`, `/recipe`, `/review`, or `/draft`. You can also run any workflow directly from the CLI:
 
 ```bash
 feynman deepresearch "transformer architectures for protein folding"

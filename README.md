@@ -185,7 +185,6 @@ Ask naturally or use slash commands as shortcuts.
 | `/compare <topic>` | Source comparison matrix |
 | `/draft <topic>` | Paper-style draft from research findings |
 | `/autoresearch <idea>` | Bounded experiment loop with benchmark evidence |
-| `/watch <topic>` | Research watch baseline with optional scheduled follow-up |
 | `/btw <question>` | Side conversation while the main research agent is busy, with optional handoff back into the main thread |
 | `/outputs` | Browse all research artifacts |
 

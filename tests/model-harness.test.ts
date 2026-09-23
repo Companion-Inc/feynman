@@ -515,8 +515,6 @@ test("chooseRecommendedModel prefers kimi-for-coding when Kimi Coding is the aut
 test("resolveInitialPrompt maps top-level research commands to Pi slash workflows", () => {
 	const workflows = new Set([
 		"lit",
-		"watch",
-		"jobs",
 		"deepresearch",
 		"review",
 		"audit",
@@ -529,8 +527,6 @@ test("resolveInitialPrompt maps top-level research commands to Pi slash workflow
 		"log",
 	]);
 	assert.equal(resolveInitialPrompt("lit", ["tool-using", "agents"], undefined, workflows), "/lit tool-using agents");
-	assert.equal(resolveInitialPrompt("watch", ["openai"], undefined, workflows), "/watch openai");
-	assert.equal(resolveInitialPrompt("jobs", [], undefined, workflows), "/jobs");
 	assert.equal(resolveInitialPrompt("deepresearch", ["scaling", "laws"], undefined, workflows), "/deepresearch scaling laws");
 	assert.equal(resolveInitialPrompt("review", ["paper.md"], undefined, workflows), "/review paper.md");
 	assert.equal(resolveInitialPrompt("audit", ["2401.12345"], undefined, workflows), "/audit 2401.12345");

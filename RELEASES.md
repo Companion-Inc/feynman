@@ -15,6 +15,7 @@ Feynman now ships only what serves finding papers, reading them, synthesizing wi
 - **Model endpoints:** the NVIDIA BioNeMo `feynman_model_endpoint_call` tool.
 - **Skills:** protein and bio model templates (AlphaFold2, OpenFold3, Boltz, Chai-1, ESMFold, ESM2, Evo 2, Borzoi, DiffDock, ProteinMPNN, LigandMPNN, SolubleMPNN, scGPT, scvi-tools, indication dossier), Modal/RunPod/SSH/model-endpoint compute templates, and the `customize`, `self-awareness`, `product-self-knowledge`, `contributing`, `skill-creator`, `figure-composer`, `figure-style`, and `paper-narrative` skills. `/replicate` and `/autoresearch` still offer Docker, Modal, and RunPod as execution choices.
 - **Commands:** `/commands` and `/capabilities`. Use `/help` for the grouped command list and `/tools` for the tool list.
+- **Workflows:** `/watch` and `/jobs` (and `feynman watch` / `feynman jobs`). Both depended on a `schedule_prompt` scheduler tool that Feynman does not ship, so they could only report scheduling as blocked.
 - **Local state:** Feynman no longer creates `~/.feynman/active-org.json` or `~/.feynman/orgs/`. Existing workbench data in those folders is left in place; delete it if you no longer need it.
 
 Everything removed is preserved in the repository at the `archive/pre-deslop-0.3.49` git tag. To recover a piece, check it out from that tag, for example `git checkout archive/pre-deslop-0.3.49 -- src/workbench workbench-web`, or install `@companion-ai/feynman@0.3.49` to keep using the workbench.

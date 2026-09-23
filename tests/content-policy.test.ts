@@ -241,25 +241,13 @@ test("autoresearch copy stays bounded to shipped experiment-loop behavior", () =
 	assert.match(docs, /autoresearch\.jsonl/i);
 });
 
-test("watch and jobs copy does not promise unshipped scheduler or process packages", () => {
+test("command copy does not promise unshipped scheduler or process packages", () => {
 	const systemPrompt = readFileSync(join(repoRoot, ".feynman", "SYSTEM.md"), "utf8");
-	const watchPrompt = readFileSync(join(repoRoot, "prompts", "watch.md"), "utf8");
-	const jobsPrompt = readFileSync(join(repoRoot, "prompts", "jobs.md"), "utf8");
-	const watchSkill = readFileSync(join(repoRoot, "skills", "watch", "SKILL.md"), "utf8");
-	const jobsSkill = readFileSync(join(repoRoot, "skills", "jobs", "SKILL.md"), "utf8");
-	const watchDocs = readFileSync(join(repoRoot, "website", "src", "content", "docs", "workflows", "watch.md"), "utf8");
 	const slashDocs = readFileSync(join(repoRoot, "website", "src", "content", "docs", "reference", "slash-commands.md"), "utf8");
 	const commandMetadata = readFileSync(join(repoRoot, "metadata", "commands.mjs"), "utf8");
-	const combined = `${systemPrompt}\n${watchPrompt}\n${jobsPrompt}\n${watchSkill}\n${jobsSkill}\n${watchDocs}\n${slashDocs}`;
+	const combined = `${systemPrompt}\n${slashDocs}`;
 
-	assert.doesNotMatch(combined, /pi-schedule-prompt|pi-processes/i);
-	assert.match(systemPrompt, /only when scheduling tools are visible/i);
-	assert.match(watchPrompt, /schedule_prompt` is not visible/i);
-	assert.match(jobsPrompt, /process tool not available/i);
-	assert.match(watchSkill, /scheduled follow-up only when `schedule_prompt` is visible/i);
-	assert.match(jobsSkill, /reports that capability as blocked/i);
-	assert.match(watchDocs, /when scheduling tools are visible/i);
-	assert.match(slashDocs, /durable watch or experiment artifacts/i);
+	assert.doesNotMatch(combined, /pi-schedule-prompt|pi-processes|schedule_prompt|\/watch|\/jobs/i);
 	assert.match(slashDocs, /curated live command list/i);
 	assert.match(commandMetadata, /Live Package Commands/i);
 	assert.match(commandMetadata, /public research tools/i);
@@ -650,7 +638,6 @@ test("workflow prompts except explicit gated workflows do not introduce implicit
 		"review.md",
 		"recipe.md",
 		"summarize.md",
-		"watch.md",
 	];
 	const bannedConfirmationGates = [
 		/Do you want to proceed/i,
