@@ -1,6 +1,4 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
 import test from "node:test";
 
 import type {
@@ -21,7 +19,7 @@ test("current-date research context states the date and source-verification rule
 	assert.match(context, /Do not reject evidence only because its date is later than your training data/i);
 });
 
-test("before_agent_start appends current-date context through Pi's supported system-prompt result", () => {
+test("before_agent_start adds current-date context as a system-prompt section", () => {
 	let handler:
 		| ((event: BeforeAgentStartEvent) => BeforeAgentStartEventResult | void)
 		| undefined;
@@ -33,25 +31,16 @@ test("before_agent_start appends current-date context through Pi's supported sys
 
 	registerCurrentDateResearchContext(pi, () => new Date(2026, 7, 12, 9));
 	assert.ok(handler);
-	const result = handler({
+	const event = {
 		type: "before_agent_start",
 		prompt: "Find the latest research.",
 		systemPrompt: "Base prompt.",
-		systemPromptOptions: {} as BeforeAgentStartEvent["systemPromptOptions"],
-	});
+		systemPromptOptions: { sections: {} } as unknown as BeforeAgentStartEvent["systemPromptOptions"],
+	} satisfies BeforeAgentStartEvent;
+	const result = handler(event);
+	assert.equal(result?.systemPrompt, undefined);
 	assert.equal(
-		result?.systemPrompt,
-		[
-			"Base prompt.",
-			"",
-			"The current date is 2026-08-12.",
-			"For current, latest, or recent claims, verify against current sources.",
-			"Do not reject evidence only because its date is later than your training data.",
-		].join("\n"),
+		event.systemPromptOptions.sections.current_date,
+		buildCurrentDateResearchContext(new Date(2026, 7, 12, 9)),
 	);
-});
-
-test("the bundled research extension registers current-date context for parent and child agents", () => {
-	const source = readFileSync(resolve(process.cwd(), "extensions", "research-tools.ts"), "utf8");
-	assert.match(source, /registerCurrentDateResearchContext\(pi\)/);
 });

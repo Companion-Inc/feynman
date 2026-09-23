@@ -15,7 +15,7 @@ export function registerCurrentDateResearchContext(
 	pi: ExtensionAPI,
 	now: () => Date = () => new Date(),
 ): void {
-	pi.on("before_agent_start", (event) => ({
-		systemPrompt: `${event.systemPrompt}\n\n${buildCurrentDateResearchContext(now())}`,
-	}));
+	pi.on("before_agent_start", (event) => {
+		event.systemPromptOptions.sections.current_date = buildCurrentDateResearchContext(now());
+	});
 }
