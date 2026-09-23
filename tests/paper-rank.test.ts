@@ -108,19 +108,32 @@ test("fetchOpenAlexWorks bounds provider calls with an abort signal", async () =
 
 test("fetchOpenAlexWorks retries a rate-limited provider once with bounded backoff", async () => {
 	let calls = 0;
-	const fetchImpl = async () => {
+	let busyBodyCancelled = false;
+	const urls: string[] = [];
+	const fetchImpl = async (input: string | URL) => {
 		calls += 1;
-		if (calls === 1) return new Response("busy", { status: 429, headers: { "retry-after": "0" } });
+		urls.push(String(input));
+		if (calls === 1) {
+			const body = new ReadableStream({ cancel: () => { busyBodyCancelled = true; } });
+			return new Response(body, { status: 429, headers: { "retry-after": "0" } });
+		}
 		return new Response(JSON.stringify({ results: [], meta: { count: 0 } }), {
 			status: 200,
 			headers: { "content-type": "application/json" },
 		});
 	};
 
-	const result = await fetchOpenAlexWorks("rate limited topic", 1, fetchImpl as typeof fetch);
+	process.env.FEYNMAN_OPENALEX_MAILTO = "polite@example.org";
+	try {
+		const result = await fetchOpenAlexWorks("rate limited topic", 1, fetchImpl as typeof fetch);
+		assert.equal(result.works.length, 0);
+	} finally {
+		delete process.env.FEYNMAN_OPENALEX_MAILTO;
+	}
 
-	assert.equal(result.works.length, 0);
 	assert.equal(calls, 2);
+	assert.equal(busyBodyCancelled, true);
+	assert.ok(urls.every((url) => new URL(url).searchParams.get("mailto") === "polite@example.org"));
 });
 
 test("PaperRank slug and limit parsing are stable", () => {
@@ -215,6 +228,22 @@ test("fetchArxivPaperContent converts official HTML into bounded text", async ()
 	assert.doesNotMatch(extractPaperContentText(result?.content) ?? "", /secret/);
 });
 
+test("fetchArxivPaperContent stops reading HTML past the byte cap", async () => {
+	let pulls = 0;
+	const chunk = new TextEncoder().encode(`<p>${"x".repeat(1_000_000)}</p>`);
+	const body = new ReadableStream<Uint8Array>({
+		pull(controller) {
+			pulls += 1;
+			controller.enqueue(chunk);
+		},
+	});
+	const fetchImpl = (async () => new Response(body, { status: 200 })) as typeof fetch;
+	const result = await fetchArxivPaperContent({ arxivId: "2609.04506" } as PaperRecord, fetchImpl);
+
+	assert.ok(pulls < 10);
+	assert.ok((extractPaperContentText(result?.content)?.length ?? 0) <= 5_000_000);
+});
+
 test("extractFullTextSections preserves canonical section offsets", () => {
 	const text = [
 		"# Methods",
@@ -289,7 +318,8 @@ test("buildFullTextAccessPlan records legal source-specific candidates", () => {
 
 	assert.equal(access.status, "candidates_found");
 	assert.ok(access.candidates.some((candidate) => candidate.source === "alphaXiv" && candidate.canFetch));
-	assert.ok(access.candidates.some((candidate) => candidate.label === "arXiv HTML" && candidate.canFetch));
+	assert.ok(access.candidates.some((candidate) => candidate.label === "arXiv HTML" && candidate.kind === "html_full_text" && !candidate.canFetch));
+	assert.equal(access.bestCandidate?.source, "alphaXiv");
 	assert.equal(buildFullTextAccessPlan(paper, undefined, "arXiv HTML").bestCandidate?.label, "arXiv HTML");
 	assert.ok(access.candidates.some((candidate) => candidate.source === "Europe PMC" && candidate.kind === "full_text_xml" && candidate.canFetch));
 	assert.ok(access.candidates.some((candidate) => candidate.source === "DOI"));

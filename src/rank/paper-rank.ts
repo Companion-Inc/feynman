@@ -40,6 +40,7 @@ const EXTERNAL_FETCH_TIMEOUT_MS = 15_000;
 const OPENALEX_MAX_RETRIES = 2;
 const OPENALEX_RETRY_BASE_MS = 250;
 const OPENALEX_RETRY_MAX_MS = 2_000;
+const ARXIV_HTML_MAX_BYTES = 5_000_000;
 const OPENALEX_SELECT_FIELDS = [
 	"id",
 	"doi",
@@ -394,7 +395,7 @@ export type PaperRecord = {
 
 export type FullTextAccessCandidate = {
 	source: "alphaXiv" | "arXiv" | "OpenAlex" | "Europe PMC" | "DOI";
-	kind: "api_full_text" | "full_text_xml" | "pdf" | "landing_page" | "metadata";
+	kind: "api_full_text" | "html_full_text" | "full_text_xml" | "pdf" | "landing_page" | "metadata";
 	label: string;
 	url?: string;
 	identifier?: string;
@@ -1208,10 +1209,15 @@ async function fetchOpenAlexWithRetry(
 	init: RequestInit,
 	label: string,
 ): Promise<Response> {
+	// OpenAlex polite pool: opt-in contact address cuts 429s at the source.
+	const mailto = process.env.FEYNMAN_OPENALEX_MAILTO?.trim();
+	const url = new URL(input);
+	if (mailto) url.searchParams.set("mailto", mailto);
 	for (let attempt = 0; attempt <= OPENALEX_MAX_RETRIES; attempt += 1) {
-		const response = await fetchWithTimeout(fetchImpl, input, init, label);
+		const response = await fetchWithTimeout(fetchImpl, url, init, label);
 		const retryable = response.status === 429 || response.status >= 500;
 		if (!retryable || attempt === OPENALEX_MAX_RETRIES) return response;
+		await response.body?.cancel().catch(() => undefined);
 		await new Promise((resolve) => setTimeout(resolve, retryDelayMilliseconds(response, attempt)));
 	}
 	throw new Error(`${label} exhausted bounded retries`);
@@ -1653,13 +1659,13 @@ export function buildFullTextAccessPlan(
 		});
 		add({
 			source: "arXiv",
-			kind: "api_full_text",
+			kind: "html_full_text",
 			label: "arXiv HTML",
 			identifier: paper.arxivId,
 			url: `https://arxiv.org/html/${paper.arxivId}`,
 			isOpenAccess: true,
-			canFetch: true,
-			note: "Official arXiv HTML is used as a bounded full-text fallback when the primary reader is unavailable.",
+			canFetch: false,
+			note: "Best-effort fallback: arXiv only renders HTML for some papers (mostly late 2023 onward); tried only when the primary reader is unavailable.",
 		});
 		add({
 			source: "arXiv",
@@ -1766,7 +1772,8 @@ export function buildFullTextAccessPlan(
 					: "no_candidate";
 	const bestCandidate =
 		(preferredCandidate
-			? candidates.find((candidate) => candidate.canFetch && (candidate.label === preferredCandidate || candidate.source === preferredCandidate))
+			? candidates.find((candidate) => candidate.label === preferredCandidate) ??
+				candidates.find((candidate) => candidate.canFetch && candidate.source === preferredCandidate)
 			: undefined) ??
 		candidates.find((candidate) => candidate.canFetch) ??
 		candidates.find((candidate) => candidate.isOpenAccess) ??
@@ -4068,15 +4075,42 @@ export async function fetchArxivPaperContent(
 ): Promise<PaperContentFetchResult | undefined> {
 	if (!paper.arxivId) return undefined;
 	const url = `https://arxiv.org/html/${paper.arxivId}`;
-	const response = await fetchWithTimeout(fetchImpl, url, {
-		headers: {
-			Accept: "text/html",
-			"User-Agent": "Feynman arXiv HTML resolver",
-		},
-	}, "arXiv HTML full-text request");
-	if (!response.ok) return undefined;
-	const content = htmlToText(await response.text());
-	return content ? { content, source: "arXiv HTML" } : undefined;
+	// Own controller: the timeout must also cover the body read, not just the headers.
+	const controller = new AbortController();
+	const timer = setTimeout(() => controller.abort(), EXTERNAL_FETCH_TIMEOUT_MS);
+	try {
+		const response = await fetchImpl(url, {
+			headers: {
+				Accept: "text/html",
+				"User-Agent": "Feynman arXiv HTML resolver",
+			},
+			signal: controller.signal,
+		});
+		if (!response.ok || !response.body) {
+			await response.body?.cancel().catch(() => undefined);
+			return undefined;
+		}
+		const reader = response.body.getReader();
+		const chunks: Uint8Array[] = [];
+		let bytes = 0;
+		while (bytes < ARXIV_HTML_MAX_BYTES) {
+			const { done, value } = await reader.read();
+			if (done) break;
+			chunks.push(value);
+			bytes += value.byteLength;
+		}
+		if (bytes >= ARXIV_HTML_MAX_BYTES) await reader.cancel().catch(() => undefined);
+		const html = new TextDecoder().decode(Buffer.concat(chunks).subarray(0, ARXIV_HTML_MAX_BYTES));
+		const content = htmlToText(html);
+		return content ? { content, source: "arXiv HTML" } : undefined;
+	} catch (error) {
+		if (controller.signal.aborted) {
+			throw new Error(`arXiv HTML full-text request timed out after ${EXTERNAL_FETCH_TIMEOUT_MS}ms`);
+		}
+		throw error;
+	} finally {
+		clearTimeout(timer);
+	}
 }
 
 export async function fetchEuropePmcPaperContent(
