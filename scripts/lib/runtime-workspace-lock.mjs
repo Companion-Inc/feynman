@@ -14,8 +14,14 @@ import {
 import { hostname } from "node:os";
 import { basename, dirname, resolve } from "node:path";
 
+import { RUNTIME_WORKSPACE_PACKAGE_INSTALL_TIMEOUT_MS } from "./runtime-workspace-install.mjs";
+
 export const RUNTIME_WORKSPACE_RESTORE_MAX_CLEANUPS = 16;
 export const RUNTIME_WORKSPACE_SETUP_LOCK_STALE_MS = 300000;
+// A live-looking owner whose heartbeat is older than two full package installs
+// is treated as a reused PID or a hung process.
+const SETUP_LOCK_PID_REUSE_CEILING_MS = 2 * RUNTIME_WORKSPACE_PACKAGE_INSTALL_TIMEOUT_MS;
+const SETUP_LOCK_BREAK_STALE_MS = 30_000;
 
 const heldRuntimeWorkspaceSetupLocks = new Map();
 
@@ -146,11 +152,82 @@ function runtimeWorkspaceLockOwnerIsAlive(
 		if (error?.code !== "EPERM") return false;
 	}
 	const liveProcessStartedAt = readOwnerProcessStartedAt(owner.pid);
-	return (
-		liveProcessStartedAt === undefined
-			? undefined
-			: Math.abs(liveProcessStartedAt - owner.processStartedAt) < 3_000
+	// The PID exists but its start time is unreadable (no `ps`, slow PowerShell):
+	// assume the owner is alive rather than stealing a lock from working setup.
+	if (liveProcessStartedAt === undefined) return true;
+	return Math.abs(liveProcessStartedAt - owner.processStartedAt) < 3_000;
+}
+
+function readSetupLockOwner(ownerPath) {
+	try {
+		return JSON.parse(readFileSync(ownerPath, "utf8"));
+	} catch {
+		return undefined;
+	}
+}
+
+// Returns the lock directory identity when its owner may be displaced, so the
+// caller can verify it is still breaking that same directory.
+function breakableSetupLockIdentity(lockDir, { staleMs, readOwnerProcessStartedAt }) {
+	const stat = statSync(lockDir);
+	const identity = directoryIdentity(lockDir);
+	const owner = readSetupLockOwner(resolve(lockDir, "owner.json"));
+	const ownerAlive = runtimeWorkspaceLockOwnerIsAlive(
+		owner,
+		readOwnerProcessStartedAt,
 	);
+	const heartbeatAt = Number.isFinite(owner?.heartbeatAt)
+		? owner.heartbeatAt
+		: Number.isFinite(owner?.createdAt)
+			? owner.createdAt
+			: stat.mtimeMs;
+	const heartbeatAge = Date.now() - heartbeatAt;
+	const breakable =
+		(ownerAlive !== true && heartbeatAge > staleMs) ||
+		heartbeatAge > SETUP_LOCK_PID_REUSE_CEILING_MS;
+	return breakable && directoryIdentityMatches(lockDir, identity)
+		? identity
+		: undefined;
+}
+
+// Only one waiter may displace a stale owner at a time; otherwise a second
+// waiter can rename away the lock the first one just acquired. Returns true when
+// the stale directory was moved aside and acquisition should retry at once.
+function breakStaleSetupLock(lockDir, expectedIdentity, options) {
+	const breakDir = `${lockDir}.break`;
+	try {
+		mkdirSync(breakDir);
+	} catch (error) {
+		if (error?.code !== "EEXIST") throw error;
+		try {
+			if (Date.now() - statSync(breakDir).mtimeMs > SETUP_LOCK_BREAK_STALE_MS) {
+				rmSync(breakDir, { recursive: true, force: true });
+			}
+		} catch {}
+		return false;
+	}
+	try {
+		const identity = breakableSetupLockIdentity(lockDir, options);
+		if (
+			identity?.dev !== expectedIdentity.dev ||
+			identity?.ino !== expectedIdentity.ino
+		) {
+			return false;
+		}
+		const staleLockPath =
+			`${lockDir}.stale-${process.pid}-${Date.now()}-${randomUUID()}`;
+		renameSync(lockDir, staleLockPath);
+		if (!directoryIdentityMatches(staleLockPath, identity)) {
+			if (!existsSync(lockDir)) {
+				renameSync(staleLockPath, lockDir);
+			}
+		} else {
+			rmSync(staleLockPath, { recursive: true, force: true });
+		}
+		return true;
+	} finally {
+		rmSync(breakDir, { recursive: true, force: true });
+	}
 }
 
 export function acquireRuntimeWorkspaceSetupLock(
@@ -167,7 +244,6 @@ export function acquireRuntimeWorkspaceSetupLock(
 	const ownerId = randomUUID();
 	const processStartedAt = currentProcessStartedAt();
 	const ownerHostname = hostname();
-	const ownerPath = resolve(lockDir, "owner.json");
 	while (true) {
 		try {
 			mkdirSync(lockDir);
@@ -200,38 +276,17 @@ export function acquireRuntimeWorkspaceSetupLock(
 		} catch (error) {
 			if (error?.code !== "EEXIST") throw error;
 			try {
-				const initialStat = statSync(lockDir);
-				const initialIdentity = directoryIdentity(lockDir);
-				let owner;
-				try {
-					owner = JSON.parse(readFileSync(ownerPath, "utf8"));
-				} catch {
-					owner = undefined;
-				}
-				const ownerAlive = runtimeWorkspaceLockOwnerIsAlive(
-					owner,
+				const identity = breakableSetupLockIdentity(lockDir, {
+					staleMs,
 					readOwnerProcessStartedAt,
-				);
-				const heartbeatAt = Number.isFinite(owner?.heartbeatAt)
-					? owner.heartbeatAt
-					: Number.isFinite(owner?.createdAt)
-						? owner.createdAt
-						: initialStat.mtimeMs;
+				});
 				if (
-					ownerAlive !== true &&
-					Date.now() - heartbeatAt > staleMs &&
-					directoryIdentityMatches(lockDir, initialIdentity)
+					identity &&
+					breakStaleSetupLock(lockDir, identity, {
+						staleMs,
+						readOwnerProcessStartedAt,
+					})
 				) {
-					const staleLockPath =
-						`${lockDir}.stale-${process.pid}-${Date.now()}-${randomUUID()}`;
-					renameSync(lockDir, staleLockPath);
-					if (!directoryIdentityMatches(staleLockPath, initialIdentity)) {
-						if (!existsSync(lockDir)) {
-							renameSync(staleLockPath, lockDir);
-						}
-					} else {
-						rmSync(staleLockPath, { recursive: true, force: true });
-					}
 					continue;
 				}
 			} catch {}
