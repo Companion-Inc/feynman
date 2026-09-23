@@ -1,18 +1,8 @@
-import { chmodSync, cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { chmodSync, cpSync, existsSync, globSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { tmpdir } from "node:os";
 import { basename, dirname, join, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
-import { patchPiEsbuildPackageTree } from "./lib/pi-esbuild-package-patch.mjs";
-import {
-	computeRuntimeArchiveTreeHash,
-	computeRuntimeTreeHash,
-	verifyFileSha256,
-} from "./lib/runtime-workspace-integrity.mjs";
-import {
-	getRuntimeWorkspaceCompletionPath,
-	runtimeWorkspaceCompletionMatches,
-} from "./lib/runtime-workspace-restore.mjs";
 import {
 	createDeterministicTarGz,
 	createDeterministicZip,
@@ -184,11 +174,6 @@ function nodeArchiveName(target) {
 	return `node-v${bundledNodeVersion}-${target.nodePlatform}-${target.nodeArch}.tar.xz`;
 }
 
-function ensureBundledWorkspace() {
-	logStep("preparing bundled runtime workspace...");
-	run(process.execPath, [resolve(appRoot, "scripts", "prepare-runtime-workspace.mjs")], { cwd: appRoot });
-}
-
 function copyPackageFiles(appDir) {
 	logStep("copying package files...");
 	const releaseDir = resolve(appRoot, "dist", "release");
@@ -208,7 +193,17 @@ function copyPackageFiles(appDir) {
 	cpSync(packageLockPath, resolve(appDir, "package-lock.json"));
 }
 
-function installAppDependencies(appDir, stagingRoot) {
+// Pi's npm-shrinkwrap makes npm install esbuild binaries for every platform
+// (~280 MB); a single-platform bundle keeps only its own.
+function pruneForeignEsbuildBinaries(depsDir, target) {
+	for (const scopeDir of globSync("**/node_modules/@esbuild", { cwd: depsDir })) {
+		for (const name of readdirSync(resolve(depsDir, scopeDir))) {
+			if (name !== target.id) rmSync(resolve(depsDir, scopeDir, name), { recursive: true, force: true });
+		}
+	}
+}
+
+function installAppDependencies(appDir, stagingRoot, target) {
 	logStep("installing production dependencies...");
 	const depsDir = resolve(stagingRoot, "prod-deps");
 	rmSync(depsDir, { recursive: true, force: true });
@@ -220,10 +215,7 @@ function installAppDependencies(appDir, stagingRoot) {
 	run("npm", ["ci", "--omit=dev", "--ignore-scripts", "--no-audit", "--no-fund", "--loglevel", "error"], {
 		cwd: depsDir,
 	});
-	patchPiEsbuildPackageTree(resolve(depsDir, "node_modules"));
-	run(process.execPath, [resolve(appRoot, "scripts", "prune-runtime-deps.mjs"), depsDir, "--platform-native"], {
-		cwd: appRoot,
-	});
+	pruneForeignEsbuildBinaries(depsDir, target);
 
 	// Keep npm's relative .bin links; cpSync otherwise rewrites them to absolute
 	// staging paths that dangle once the bundle is unpacked elsewhere.
@@ -308,6 +300,8 @@ function writeLauncher(bundleRoot, target) {
 				"#!/bin/sh",
 				"set -eu",
 				'ROOT="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"',
+				'PATH="$ROOT/node/bin:$PATH"',
+				"export PATH",
 				'exec "$ROOT/node/bin/node" "$ROOT/app/bin/feynman.js" "$@"',
 				"",
 			].join("\n"),
@@ -324,6 +318,7 @@ function writeLauncher(bundleRoot, target) {
 			"setlocal",
 			'set "ROOT=%~dp0"',
 			'if "%ROOT:~-1%"=="\\" set "ROOT=%ROOT:~0,-1%"',
+			'set "PATH=%ROOT%\\node;%PATH%"',
 			'"%ROOT%\\node\\node.exe" "%ROOT%\\app\\bin\\feynman.js" %*',
 			"",
 		].join("\r\n"),
@@ -343,15 +338,6 @@ function writeLauncher(bundleRoot, target) {
 function validateBundle(bundleRoot, target) {
 	logStep("validating bundled native dependencies...");
 	const nodeExecutable = resolveBundledNodeExecutable(bundleRoot, target);
-
-	const betterSqlitePackageJson = resolve(bundleRoot, "app", ".feynman", "npm", "node_modules", "better-sqlite3", "package.json");
-	if (!existsSync(betterSqlitePackageJson)) {
-		logStep("skipping better-sqlite3 validation; sqlite-backed packages are not bundled for this Node runtime");
-	} else {
-		run(nodeExecutable, ["-e", "require('./app/.feynman/npm/node_modules/better-sqlite3'); console.log('better-sqlite3 ok')"], {
-			cwd: bundleRoot,
-		});
-	}
 
 	const launchers = target.launcher === "windows"
 		? [
@@ -387,6 +373,9 @@ function validateBundle(bundleRoot, target) {
 			fail(`native launcher returned empty help: ${launcher.command}`);
 		}
 	}
+	run(nodeExecutable, [resolve(appRoot, "scripts", "check-pi-rpc.mjs"), resolve(bundleRoot, "app", "bin", "feynman.js")], {
+		cwd: bundleRoot,
+	});
 }
 
 async function packBundle(bundleRoot, target, outDir) {
@@ -405,56 +394,6 @@ async function packBundle(bundleRoot, target, outDir) {
 	return await createDeterministicTarGz(bundleRoot, archivePath);
 }
 
-export function finalizeNativeRuntimeWorkspace(appDir) {
-	const appFeynmanDir = resolve(appDir, ".feynman");
-	const workspaceDir = resolve(appFeynmanDir, "npm");
-	const archivePath = resolve(appFeynmanDir, "runtime-workspace.tgz");
-	const digestPath = resolve(appFeynmanDir, "runtime-workspace.sha256");
-	const completionPath = getRuntimeWorkspaceCompletionPath(workspaceDir);
-
-	if (!verifyFileSha256(archivePath, digestPath)) {
-		throw new Error(
-			"Native runtime finalization requires an authenticated runtime archive",
-		);
-	}
-	const archiveCompletion = JSON.parse(readFileSync(completionPath, "utf8"));
-	if (archiveCompletion.source !== "archive") {
-		throw new Error(
-			`Native runtime finalization will not bless ${archiveCompletion.source ?? "unknown"} completion state`,
-		);
-	}
-	if (
-		!runtimeWorkspaceCompletionMatches(workspaceDir, {
-			archivePath,
-			digestPath,
-		})
-	) {
-		throw new Error(
-			"Native runtime finalization requires a valid archive-backed completion",
-		);
-	}
-
-	if (
-		archiveCompletion.archiveTreeHash !==
-		computeRuntimeArchiveTreeHash(archivePath)
-	) {
-		throw new Error(
-			"Native runtime finalization detected an unverified archive tree",
-		);
-	}
-	const runtimeTreeHash = computeRuntimeTreeHash(workspaceDir);
-	if (archiveCompletion.runtimeTreeHash !== runtimeTreeHash) {
-		throw new Error(
-			"Native runtime finalization detected changes after archive verification",
-		);
-	}
-
-	// Retain the authenticated archive and digest beside the extracted runtime.
-	// Native launches normally accept the completed live workspace, while a
-	// damaged manifest, lock, or payload can still be repaired offline from the
-	// immutable release seed instead of trusting the damaged live tree.
-}
-
 async function main() {
 	const target = detectTarget();
 	const stagingRoot = mkdtempSync(join(tmpdir(), "feynman-native-"));
@@ -466,33 +405,10 @@ async function main() {
 		mkdirSync(outDir, { recursive: true });
 		mkdirSync(appDir, { recursive: true });
 
-		ensureBundledWorkspace();
 		copyPackageFiles(appDir);
-		installAppDependencies(appDir, stagingRoot);
-
-		const appFeynmanDir = resolve(appDir, ".feynman");
-		logStep("extracting runtime workspace...");
-		const runtimeArchivePath = resolve(appFeynmanDir, "runtime-workspace.tgz");
-		const runtimeArchiveDigestPath = resolve(appFeynmanDir, "runtime-workspace.sha256");
-		if (!verifyFileSha256(runtimeArchivePath, runtimeArchiveDigestPath)) {
-			fail("runtime workspace archive failed its SHA-256 integrity check");
-		}
-		extractTarball(runtimeArchivePath, appFeynmanDir, "-xzf");
-		logStep("patching embedded Pi runtime...");
-		run(process.execPath, [resolve(appDir, "scripts", "patch-embedded-pi.mjs")], { cwd: appDir });
+		installAppDependencies(appDir, stagingRoot, target);
 		installBundledNode(bundleRoot, target, stagingRoot);
-		const nativeNodeExecutable = resolveBundledNodeExecutable(bundleRoot, target);
-		run(
-			nativeNodeExecutable,
-			[
-				resolve(appDir, "scripts", "verify-package-artifact.mjs"),
-				appDir,
-				"--pruned-native",
-			],
-			{ cwd: appDir },
-		);
 		run("npm", ["audit", "--omit=dev", "--no-fund"], { cwd: appDir });
-		finalizeNativeRuntimeWorkspace(appDir);
 
 		writeLauncher(bundleRoot, target);
 		validateBundle(bundleRoot, target);

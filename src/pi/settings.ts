@@ -3,23 +3,15 @@ import { dirname, join } from "node:path";
 
 import type { ModelRegistry, ModelRuntime, PackageSource } from "@earendil-works/pi-coding-agent";
 
-import {
-	CORE_PACKAGE_SOURCES,
-	filterPackageSourcesForCurrentNode,
-	reconcileManagedCorePackageSources,
-	shouldPruneLegacyDefaultPackages,
-} from "./package-presets.js";
-import { choosePreferredModelRecord, getAvailableModelRecords, isProClassModelSpec } from "../model/catalog.js";
+import { BUNDLED_PI_PACKAGES, getFeynmanPackageSources } from "./runtime.js";
+import { choosePreferredModelRecord, getAvailableModelRecords } from "../model/catalog.js";
 
 export type ThinkingLevel = "off" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max";
 
 type ModelLookup = Pick<ModelRegistry, "find"> | Pick<ModelRuntime, "getModel">;
 
-export type FeynmanSettingsRuntime = {
-	researchToolsExtensionPath?: string;
-};
-
-const RESEARCHER_EXTENSION_MARKER = "_feynmanResearchToolsExtension";
+// Written by Feynman <= 0.4.0 next to a subagent extension path it managed.
+const LEGACY_RESEARCHER_EXTENSION_MARKER = "_feynmanResearchToolsExtension";
 
 function findModel(modelLookup: ModelLookup, provider: string, id: string) {
 	return "find" in modelLookup
@@ -70,23 +62,6 @@ export function normalizeThinkingLevel(value: string | undefined): ThinkingLevel
 	}
 
 	return undefined;
-}
-
-function filterConfiguredPackagesForCurrentNode(packages: PackageSource[] | undefined): PackageSource[] {
-	if (!Array.isArray(packages)) {
-		return [];
-	}
-
-	const filteredStringSources = new Set(filterPackageSourcesForCurrentNode(
-		packages
-			.map((entry) => (typeof entry === "string" ? entry : entry.source))
-			.filter((entry): entry is string => typeof entry === "string"),
-	));
-
-	return packages.filter((entry) => {
-		const source = typeof entry === "string" ? entry : entry.source;
-		return filteredStringSources.has(source);
-	});
 }
 
 export function readJson(path: string): Record<string, unknown> {
@@ -155,102 +130,78 @@ function prepareSubagentDefaults(settingsPath: string) {
 	return { path, original: existing?.source, content: `${JSON.stringify(next, null, 2)}\n` };
 }
 
-function ensureResearcherExtension(
-	settings: Record<string, unknown>,
-	researchToolsExtensionPath: string | undefined,
-): void {
-	if (!researchToolsExtensionPath) return;
-
-	if (settings.subagents !== undefined && !isRecord(settings.subagents)) return;
-	const subagents = settings.subagents ?? {};
-	settings.subagents = subagents;
-
-	if (subagents.agentOverrides !== undefined && !isRecord(subagents.agentOverrides)) return;
-	const agentOverrides = subagents.agentOverrides ?? {};
-	subagents.agentOverrides = agentOverrides;
-
-	if (agentOverrides.researcher !== undefined && !isRecord(agentOverrides.researcher)) return;
-	const researcher = agentOverrides.researcher ?? {};
-	agentOverrides.researcher = researcher;
-
-	const configuredExtensions = researcher.subagentOnlyExtensions;
-	if (
-		configuredExtensions !== undefined
-		&& (!Array.isArray(configuredExtensions) || configuredExtensions.some((entry) => typeof entry !== "string"))
-	) return;
-
-	const previousManagedPath = researcher[RESEARCHER_EXTENSION_MARKER];
-	const preservedExtensions = (configuredExtensions ?? []).filter(
-		(entry) => entry !== previousManagedPath && entry !== researchToolsExtensionPath,
-	);
-	researcher.subagentOnlyExtensions = [...preservedExtensions, researchToolsExtensionPath];
-	researcher[RESEARCHER_EXTENSION_MARKER] = researchToolsExtensionPath;
+function packageSourceName(source: string): string | undefined {
+	if (source.startsWith("npm:")) {
+		return source.slice("npm:".length).match(/^(@?[^@]+)/)?.[1];
+	}
+	const manifestPath = join(source, "package.json");
+	if (!existsSync(manifestPath)) return undefined;
+	try {
+		return (JSON.parse(readFileSync(manifestPath, "utf8")) as { name?: string }).name;
+	} catch {
+		return undefined;
+	}
 }
 
-export async function normalizeFeynmanSettings(
+// Feynman and its bundled Pi packages load as local-path packages, so child
+// sessions (pi-subagents) see the same resources as the main session. Entries
+// for those packages from any other install or version are replaced; npm
+// entries for them are the pinned core list written by Feynman <= 0.4.0.
+export function reconcileFeynmanPackages(packages: unknown, appRoot: string): PackageSource[] {
+	const feynmanName = (JSON.parse(readFileSync(join(appRoot, "package.json"), "utf8")) as { name: string }).name;
+	const managedNames = new Set<string>([feynmanName, "@companion-ai/alpha-hub", "pi-otel", ...BUNDLED_PI_PACKAGES]);
+	const configured = Array.isArray(packages) ? (packages as PackageSource[]) : [];
+	const userPackages = configured.filter((entry) => {
+		const source = typeof entry === "string" ? entry : entry.source;
+		const name = typeof source === "string" ? packageSourceName(source) : undefined;
+		return !name || !managedNames.has(name);
+	});
+	return [...getFeynmanPackageSources(appRoot), ...userPackages];
+}
+
+function removeLegacyResearcherExtension(settings: Record<string, unknown>): void {
+	const subagents = settings.subagents;
+	const researcher = isRecord(subagents) && isRecord(subagents.agentOverrides) ? subagents.agentOverrides.researcher : undefined;
+	if (!isRecord(researcher) || typeof researcher[LEGACY_RESEARCHER_EXTENSION_MARKER] !== "string") return;
+	const managedPath = researcher[LEGACY_RESEARCHER_EXTENSION_MARKER];
+	delete researcher[LEGACY_RESEARCHER_EXTENSION_MARKER];
+	if (!Array.isArray(researcher.subagentOnlyExtensions)) return;
+	const extensions = researcher.subagentOnlyExtensions.filter((entry) => entry !== managedPath);
+	if (extensions.length > 0) researcher.subagentOnlyExtensions = extensions;
+	else delete researcher.subagentOnlyExtensions;
+}
+
+export async function ensureFeynmanSettings(
 	settingsPath: string,
 	bundledSettingsPath: string,
+	appRoot: string,
 	defaultThinkingLevel: ThinkingLevel,
 	authPath: string,
-	runtime: FeynmanSettingsRuntime = {},
 ): Promise<void> {
 	// Validate before model discovery or either settings write. Invalid custom
 	// configuration must not silently turn into an empty/default configuration.
 	const subagentDefaults = prepareSubagentDefaults(settingsPath);
-	let settings: Record<string, unknown> = {};
+	const existing = existsSync(settingsPath) ? readConfigObject(settingsPath, "Feynman settings") : undefined;
+	const settings: Record<string, unknown> = existing ? { ...existing.value } : {};
+	const defaults = readConfigObject(bundledSettingsPath, "bundled Feynman settings").value;
 
-	if (existsSync(settingsPath)) {
-		settings = readConfigObject(settingsPath, "Feynman settings").value;
-	} else if (existsSync(bundledSettingsPath)) {
-		settings = readConfigObject(bundledSettingsPath, "bundled Feynman settings").value;
+	for (const [key, value] of Object.entries({ ...defaults, defaultThinkingLevel })) {
+		if (settings[key] === undefined) settings[key] = value;
+	}
+	settings.packages = reconcileFeynmanPackages(settings.packages, appRoot);
+	removeLegacyResearcherExtension(settings);
+	// A ~/.agents/<name>.md would otherwise silently replace Feynman's agents.
+	if (settings.subagents === undefined) settings.subagents = {};
+	if (isRecord(settings.subagents) && settings.subagents.agentExcludeDirs === undefined) {
+		settings.subagents.agentExcludeDirs = ["~/.agents"];
 	}
 
-	if (!settings.defaultThinkingLevel) {
-		settings.defaultThinkingLevel = defaultThinkingLevel;
-	}
-	if (settings.editorPaddingX === undefined) {
-		settings.editorPaddingX = 1;
-	}
-	if (settings.retry === undefined) {
-		// Research runs send large contexts and hit per-minute token limits;
-		// Pi's default 2s/4s/8s backoff gives up before the window resets.
-		settings.retry = { maxRetries: 6, baseDelayMs: 5000 };
-	}
-	settings.theme = "feynman";
-	settings.quietStartup = true;
-	settings.collapseChangelog = true;
-	const supportedCorePackages = filterPackageSourcesForCurrentNode(CORE_PACKAGE_SOURCES);
-	if (!Array.isArray(settings.packages) || settings.packages.length === 0) {
-		settings.packages = supportedCorePackages;
-	} else if (shouldPruneLegacyDefaultPackages(settings.packages as PackageSource[])) {
-		settings.packages = supportedCorePackages;
-	} else {
-		settings.packages = filterConfiguredPackagesForCurrentNode(
-			reconcileManagedCorePackageSources(settings.packages as PackageSource[]),
-		);
-	}
-	ensureResearcherExtension(settings, runtime.researchToolsExtensionPath);
-
-	const availableModels = (await getAvailableModelRecords(authPath)).map((model) => ({
-		provider: model.provider,
-		id: model.id,
-	}));
-	const availableModelSpecs = new Set(availableModels.map((model) => `${model.provider}/${model.id}`));
-
-	const defaultModelSpec = typeof settings.defaultProvider === "string" && typeof settings.defaultModel === "string"
-		? `${settings.defaultProvider}/${settings.defaultModel}`
-		: undefined;
-	const defaultIsProClass = isProClassModelSpec(defaultModelSpec);
-	const defaultUnavailable = Boolean(defaultModelSpec && !availableModelSpecs.has(defaultModelSpec));
-	if ((!settings.defaultProvider || !settings.defaultModel || defaultIsProClass || defaultUnavailable) && availableModels.length > 0) {
-		const preferredModel = choosePreferredModelRecord(availableModels);
+	if (!settings.defaultProvider || !settings.defaultModel) {
+		const preferredModel = choosePreferredModelRecord(await getAvailableModelRecords(authPath));
 		if (preferredModel) {
 			settings.defaultProvider = preferredModel.provider;
 			settings.defaultModel = preferredModel.id;
 		}
-	} else if (defaultIsProClass) {
-		delete settings.defaultProvider;
-		delete settings.defaultModel;
 	}
 
 	if (subagentDefaults) {
@@ -263,6 +214,8 @@ export async function normalizeFeynmanSettings(
 			encoding: "utf8", mode: 0o600, flag: subagentDefaults.original === undefined ? "wx" : "w",
 		});
 	}
+	const content = JSON.stringify(settings, null, 2) + "\n";
+	if (content === existing?.source) return;
 	mkdirSync(dirname(settingsPath), { recursive: true });
-	writeFileSync(settingsPath, JSON.stringify(settings, null, 2) + "\n", "utf8");
+	writeFileSync(settingsPath, content, "utf8");
 }

@@ -52,7 +52,7 @@ The command remains `feynman`. Native install commands are unchanged; standalone
 
 To update the standalone Feynman app on macOS, Linux, or Windows, rerun the installer you originally used. That replaces the downloaded runtime bundle with the latest tagged release.
 
-`feynman update` is different: it updates installed Pi packages inside Feynman's environment, not the standalone app bundle itself.
+`feynman update` is different: it updates optional Pi packages you installed with `feynman packages install`, not the standalone app bundle or its core packages.
 
 If you installed Feynman with npm, upgrade it with:
 

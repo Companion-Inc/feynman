@@ -155,8 +155,14 @@ function modelSpec(model: ModelRecord): string {
 	return `${model.provider}/${model.id}`;
 }
 
+// Premium tiers stay selectable with --model or /model but are never picked
+// automatically: Pro-class models and Claude Fable (priced above Opus).
+function isPremiumModel(model: ModelRecord): boolean {
+	return isProClassModel(model) || /^claude-fable-/i.test(model.id);
+}
+
 export function choosePreferredModelRecord<T extends ModelRecord>(available: T[]): T | undefined {
-	return available.filter((model) => !isProClassModel(model)).slice().sort(compareByResearchPreference)[0];
+	return available.filter((model) => !isPremiumModel(model)).slice().sort(compareByResearchPreference)[0];
 }
 
 function compareByResearchPreference(left: ModelRecord, right: ModelRecord): number {
@@ -308,7 +314,11 @@ function parseClaudeVersion(rawVersion: string): { version: number[]; qualityRan
 }
 
 function openAiGptQualityRank(suffix: string | undefined): number {
-	if (!suffix) return 0;
+	// Terra is OpenAI's standard tier (pi-web-access auto-selects the newest
+	// terra model too); Sol/Astra cost more and Luna is the small tier.
+	if (suffix === "terra") return 0;
+	if (!suffix) return 1;
+	if (suffix === "luna") return 9;
 	if (suffix === "chat-latest") return 2;
 	if (suffix === "codex-max") return 3;
 	if (suffix === "codex") return 4;

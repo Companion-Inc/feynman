@@ -48,7 +48,7 @@ export function setSearchProvider(provider: PiWebSearchProvider, apiKey?: string
 		provider,
 		searchProvider: provider,
 		workflow: "none",
-		geminiBrowser: false,
+		allowBrowserCookies: false,
 		route: undefined,
 	};
 	const apiKeyField = PROVIDER_API_KEY_FIELDS[provider];
@@ -68,7 +68,7 @@ export function clearSearchConfig(): void {
 		searchProvider: undefined,
 		route: undefined,
 		workflow: "none",
-		geminiBrowser: false,
+		allowBrowserCookies: false,
 	});
 
 	const status = getPiWebAccessStatus();

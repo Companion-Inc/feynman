@@ -4,9 +4,7 @@ import test from "node:test";
 
 const e2eWorkflow = readFileSync(".github/workflows/e2e.yml", "utf8");
 const publishWorkflow = readFileSync(".github/workflows/publish.yml", "utf8");
-const packageArtifactVerifier = readFileSync("scripts/verify-package-artifact.mjs", "utf8");
 const packageManifest = JSON.parse(readFileSync("package.json", "utf8")) as {
-	bundleDependencies?: string[];
 	files?: string[];
 };
 
@@ -24,7 +22,6 @@ test("pull-request release gates validate the merge candidate", () => {
 	assert.match(e2eWorkflow, /shell: pwsh/);
 	assert.match(e2eWorkflow, /tarball_for_tar=\$\(cygpath -u "\$tarball"\)/);
 	assert.match(e2eWorkflow, /consumer=\$\(cygpath -u "\$consumer"\)/);
-	assert.match(e2eWorkflow, /runtime_archive=\$\(cygpath -u "\$runtime_archive"\)/);
 	assert.equal(
 		(e2eWorkflow.match(/scripts\/verify-windows-installer\.ps1/g) ?? []).length,
 		2,
@@ -41,7 +38,7 @@ test("manual post-release gates exercise the live native installers", () => {
 	assert.match(installerJob[0], /https:\/\/feynman\.is\/install\.ps1/);
 	assert.match(installerJob[0], /FEYNMAN_INSTALL_BIN_DIR/);
 	assert.match(installerJob[0], /shell: powershell/);
-	assert.match(installerJob[0], /verify-installed-runtime\.mjs/);
+	assert.match(installerJob[0], /check-pi-rpc\.mjs/);
 	for (const os of ["ubuntu-latest", "macos-14", "windows-latest"]) {
 		assert.match(installerJob[0], new RegExp(`- ${os}`));
 	}
@@ -49,96 +46,28 @@ test("manual post-release gates exercise the live native installers", () => {
 
 test("PR and publish workflows require clean package and consumer audits", () => {
 	for (const workflow of [e2eWorkflow, publishWorkflow]) {
-		assert.match(workflow, /npm audit --omit=dev --prefix \.feynman\/npm/);
 		assert.match(workflow, /npm audit --omit=dev --prefix "\$consumer"/);
-		assert.match(workflow, /\.feynman\/runtime-workspace\.tgz/);
-		assert.match(workflow, /npm audit --omit=dev --prefix "\$runtime_audit\/npm"/);
-		assert.doesNotMatch(
-			workflow,
-			/npm audit --omit=dev --prefix\s+\\?\s*"\$consumer\/node_modules\/@companion-ai\/feynman\/\.feynman\/npm"/,
-		);
 		assert.match(workflow, /npm pack --dry-run --json/);
-		assert.match(workflow, /verify-package-artifact\.mjs/);
 		assert.match(workflow, /verify-package-budget\.mjs/);
 		assert.match(workflow, /git status --porcelain --untracked-files=all/);
 	}
 });
 
-test("package verification checks the current nested Pi TUI render module", () => {
-	assert.match(
-		packageArtifactVerifier,
-		/"pi-coding-agent",\s*"node_modules",\s*"@earendil-works",\s*"pi-tui",\s*"dist",\s*"tui-main-screen\.js"/,
-	);
-	assert.doesNotMatch(
-		packageArtifactVerifier,
-		/"pi-coding-agent",\s*"node_modules",\s*"@earendil-works",\s*"pi-tui",\s*"dist",\s*"tui\.js"/,
-	);
-});
-
-test("package and native release gates exercise persisted Pi user-package upgrades", () => {
-	const staleUpgradeVerifier = /node scripts\/verify-stale-pi-upgrade\.mjs/g;
-	assert.equal((e2eWorkflow.match(staleUpgradeVerifier) ?? []).length, 1);
-	assert.equal((publishWorkflow.match(staleUpgradeVerifier) ?? []).length, 3);
-});
-
-test("installed package gates verify Feynman commands, tools, and TypeBox schemas across launchers", () => {
-	const installedRuntimeVerifier = /scripts\/verify-installed-runtime\.mjs/g;
-	assert.equal((e2eWorkflow.match(installedRuntimeVerifier) ?? []).length, 5);
-	assert.equal((publishWorkflow.match(installedRuntimeVerifier) ?? []).length, 8);
+test("installed package and native gates boot the shipped CLI in Pi RPC mode", () => {
+	assert.ok(packageManifest.files?.includes("scripts/check-pi-rpc.mjs"), "package files must include the RPC compatibility check");
+	const rpcCheck = /scripts[\\/]check-pi-rpc\.mjs/g;
+	assert.equal((e2eWorkflow.match(rpcCheck) ?? []).length, 7);
+	assert.equal((publishWorkflow.match(rpcCheck) ?? []).length, 8);
 	for (const workflow of [e2eWorkflow, publishWorkflow]) {
 		assert.match(workflow, /bin="\$consumer\/node_modules\/\.bin\/feynman\.cmd"/);
-		assert.match(
-			workflow,
-			/global_node_modules\/@companion-ai\/feynman\/scripts\/verify-installed-runtime\.mjs" "\$global_bin"/,
-		);
+		assert.match(workflow, /node "\$global_node_modules\/@companion-ai\/feynman\/scripts\/check-pi-rpc\.mjs"/);
 		assert.match(workflow, /global_node_modules=\$\(npm root --global --prefix "\$global_prefix"\)/);
 	}
-	assert.match(e2eWorkflow, /& \$nativeNode \$nativeVerifier \$native/);
-	assert.match(publishWorkflow, /"\$bundle\/node\/bin\/node" "\$bundle\/app\/scripts\/verify-installed-runtime\.mjs"/);
-	assert.match(
-		publishWorkflow,
-		/"\$native_bundle_root\/node\/bin\/node"\s+\\\n\s+"\$native_bundle_root\/app\/scripts\/verify-installed-runtime\.mjs"/,
-	);
-});
-
-test("installed package and native gates execute pi-docparser tools through the shipped verifier", () => {
-	assert.ok(
-		packageManifest.files?.includes("scripts/verify-installed-docparser.mjs"),
-		"package files must include the installed pi-docparser verifier",
-	);
-	assert.match(
-		packageArtifactVerifier,
-		/resolve\(packageRoot, "scripts", "verify-installed-docparser\.mjs"\)/,
-	);
-	for (const [label, workflow, expectedCount] of [
-		["PR", e2eWorkflow, 6],
-		["publish", publishWorkflow, 8],
-	] as const) {
-		const runtimeCalls = [...workflow.matchAll(/verify-installed-runtime\.mjs/g)];
-		const docparserCalls = [...workflow.matchAll(/verify-installed-docparser\.mjs/g)];
-		assert.equal(runtimeCalls.length, expectedCount, `${label} installed-runtime verifier count`);
-		assert.equal(docparserCalls.length, expectedCount, `${label} pi-docparser verifier count`);
-		for (let index = 0; index < runtimeCalls.length; index += 1) {
-			const runtimeOffset = runtimeCalls[index]?.index ?? -1;
-			const docparserOffset = docparserCalls[index]?.index ?? -1;
-			assert.ok(
-				docparserOffset > runtimeOffset && docparserOffset - runtimeOffset < 600,
-				`${label} pi-docparser verifier ${index + 1} must follow its installed-runtime verifier`,
-			);
-		}
-	}
-	assert.match(e2eWorkflow, /& \$nativeNode \$nativeDocparserVerifier/);
-	assert.match(
-		publishWorkflow,
-		/"\$native_bundle_root\/node\/bin\/node"\s+\\\n\s+"\$native_bundle_root\/app\/scripts\/verify-installed-docparser\.mjs"/,
-	);
+	assert.match(publishWorkflow, /"\$bundle\/node\/bin\/node" "\$bundle\/app\/scripts\/check-pi-rpc\.mjs"/);
+	assert.match(publishWorkflow, /"\$native_bundle_root\/node\/bin\/node" "\$native_bundle_root\/app\/scripts\/check-pi-rpc\.mjs"/);
 });
 
 test("package gates exercise the global npm install path", () => {
-	assert.ok(
-		packageManifest.bundleDependencies?.includes("@opentelemetry/api"),
-		"the direct telemetry API must be bundled so npm global installs cannot leave an empty hoist target",
-	);
 	assert.equal(
 		(e2eWorkflow.match(/npm install --global --prefix "\$global_prefix"/g) ?? []).length,
 		1,
@@ -222,12 +151,7 @@ test("publish uses the exact verified tarball after native bundles pass", () => 
 		/\n  verify-package-consumers:[\s\S]*?(?=\n  publish-npm:)/,
 	);
 	assert.ok(consumerJob, "publish workflow must define the package consumer job");
-	assert.match(
-		consumerJob[0],
-		/runtime_archive="\$consumer\/node_modules\/@companion-ai\/feynman\/\.feynman\/runtime-workspace\.tgz"/,
-	);
-	assert.match(consumerJob[0], /runtime_archive=\$\(cygpath -u "\$runtime_archive"\)/);
-	assert.match(consumerJob[0], /runtime_audit=\$\(cygpath -u "\$runtime_audit"\)/);
+	assert.match(consumerJob[0], /consumer=\$\(cygpath -u "\$consumer"\)/);
 	assert.match(publishWorkflow, /needs\.build-native-bundles\.result == 'success'/);
 	assert.match(publishWorkflow, /needs\.verify-package-consumers\.result == 'success'/);
 	assert.match(publishWorkflow, /dist\.integrity/);

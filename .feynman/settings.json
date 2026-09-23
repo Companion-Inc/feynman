@@ -1,15 +1,10 @@
 {
-  "themes": [
-    "-themes/feynman.json"
-  ],
-  "packages": [
-    "npm:@companion-ai/alpha-hub@0.1.6",
-    "npm:pi-subagents@0.65.1",
-    "npm:pi-btw@0.4.1",
-    "npm:pi-docparser@4.0.0",
-    "npm:pi-web-access@0.28.0",
-    "npm:pi-otel@0.1.0"
-  ],
+  "theme": "feynman",
   "quietStartup": true,
-  "collapseChangelog": true
+  "collapseChangelog": true,
+  "editorPaddingX": 1,
+  "retry": {
+    "maxRetries": 6,
+    "baseDelayMs": 5000
+  }
 }

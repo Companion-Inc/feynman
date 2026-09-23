@@ -9,6 +9,24 @@ This page summarizes what changed in recent Feynman releases. GitHub releases us
 
 ## Unreleased
 
+## v0.5.0 - 2026-09-23
+
+### Stock Pi runtime
+
+- **Pi 0.87.1, unmodified.** Feynman now runs Pi's own CLI and no longer patches Pi or its packages on disk, renames Pi, or wraps its CLI. It also drops the sealed runtime workspace (the `.feynman/runtime-workspace.tgz` archive, its hashes, and its lock), which was re-verified on every launch. `feynman --help` and `feynman doctor` start in about a second instead of several.
+- **Newer Pi packages.** pi-subagents 0.71, pi-web-access 0.31, pi-btw 0.6, and pi-docparser 4.0 are now ordinary npm dependencies of Feynman, with their own dependency pins. They load as Pi packages from Feynman's install directory, so subagents see the same tools as the main session. pi-docparser's LiteParse pin (2.10.1) is used as shipped.
+- **Newest standard models recommended.** With Pi 0.87.1's catalog, setup and `feynman model` recommend Claude Opus 5.5 and, for OpenAI-only setups, GPT-5.6 Terra (OpenAI's standard tier, the same one pi-web-access picks). Premium tiers such as Claude Fable and Pro models are never picked automatically but stay available through `--model` and `/model`.
+- **Pi session flags pass through.** `--continue`/`-c`, `--resume`/`-r`, `--session <path|id>`, `--fork <path|id>`, `--no-session`, and `--export <session.jsonl> [out.html]` now reach Pi instead of being rejected.
+- **Settings are written once.** Feynman writes its defaults on first run and afterwards only adds missing keys. Package entries from older releases are replaced with the bundled packages, and other packages you added are kept.
+- **`feynman update` and `feynman packages install`** now go through Pi's own `pi update --extensions` and `pi install`. Optional packages install into `~/.feynman/agent/npm`. Pi and the core packages update when you upgrade Feynman.
+- **One-shot runs exit when they finish.** The alphaXiv connection now closes when the session ends, so `feynman --prompt` and JSON runs no longer stay open after answering.
+- **Explicit prompts never wait on stdin.** `feynman --prompt` and workflow commands started from a non-interactive parent no longer hang on an idle stdin pipe. Pipe text without `--prompt` to use it as the prompt.
+- **`/feynman-model` is gone.** Use Pi's `/model` for the main model and pi-subagents' `/subagents` or `subagents.agentOverrides.<name>.model` for one subagent. Feynman now sets `subagents.agentExcludeDirs` to `["~/.agents"]`, so agent files there no longer silently replace Feynman's bundled agents.
+- **Gemini Web cookie access** uses pi-web-access's own `allowBrowserCookies` and `browserCookies.profile` keys in `web-search.json`. The Feynman-only `geminiBrowser`, `allowBrowserAuth`, `browserAuth`, and `chromeProfile` keys are no longer read. Set `allowBrowserCookies` if you had enabled one of them.
+- **Web search config moved** to `~/.feynman/agent/web-search.json`, where pi-web-access reads it. An existing `~/.feynman/web-search.json` is moved there on first launch.
+- **Bundled agents, skills, and the theme** now load from the Feynman package instead of being copied into `~/.feynman/agent`. Copies left by older releases are deleted on first launch unless you edited them; edited copies keep overriding the bundled ones.
+- **Telemetry:** pi-otel is no longer bundled, so the Pi runtime is not traced. Feynman still sends its own opt-out CLI command events, logs, and spans to PostHog.
+
 ## v0.4.0 - 2026-09-23
 
 ### Focused on the research loop
@@ -199,7 +217,6 @@ Everything removed is preserved in the repository at the `archive/pre-deslop-0.3
 
 ### Runtime reliability
 
-- An opt-in `FEYNMAN_PI_STREAM_EVENT_IDLE_TIMEOUT_MS` watchdog can terminate a provider stream that stops producing Pi events, even when the provider's iterator cleanup never settles. It remains disabled by default for local and private models that legitimately spend time in silent prefills.
 
 ### Validation
 

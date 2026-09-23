@@ -1,6 +1,6 @@
 import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
-import { getFeynmanHome } from "../config/paths.js";
+import { getFeynmanAgentDir, getFeynmanHome } from "../config/paths.js";
 
 export type PiWebSearchProvider = "auto" | "perplexity" | "exa" | "gemini";
 export type PiWebSearchWorkflow = "none" | "summary-review";
@@ -13,10 +13,8 @@ export type PiWebAccessConfig = Record<string, unknown> & {
 	perplexityApiKey?: string;
 	exaApiKey?: string;
 	geminiApiKey?: string;
-	chromeProfile?: string;
-	geminiBrowser?: boolean;
-	allowBrowserAuth?: boolean;
-	browserAuth?: boolean;
+	allowBrowserCookies?: boolean;
+	browserCookies?: { profile?: string };
 };
 
 export type PiWebAccessStatus = {
@@ -34,13 +32,10 @@ export type PiWebAccessStatus = {
 	note: string;
 };
 
+// pi-web-access reads web-search.json from PI_CODING_AGENT_DIR.
 export function getPiWebSearchConfigPath(home?: string): string {
-	if (!home) {
-		const configuredPath = process.env.FEYNMAN_WEB_SEARCH_CONFIG?.trim();
-		if (configuredPath) return resolve(configuredPath);
-	}
 	const feynmanHome = home ? resolve(home, ".feynman") : getFeynmanHome();
-	return resolve(feynmanHome, "web-search.json");
+	return resolve(getFeynmanAgentDir(feynmanHome), "web-search.json");
 }
 
 function normalizeProvider(value: unknown): PiWebSearchProvider | undefined {
@@ -53,13 +48,6 @@ function normalizeWorkflow(value: unknown): PiWebSearchWorkflow | undefined {
 
 function normalizeNonEmptyString(value: unknown): string | undefined {
 	return typeof value === "string" && value.trim().length > 0 ? value.trim() : undefined;
-}
-
-function normalizeBooleanFlag(value: unknown): boolean {
-	if (value === true) return true;
-	if (typeof value !== "string") return false;
-	const normalized = value.trim().toLowerCase();
-	return normalized === "1" || normalized === "true" || normalized === "yes" || normalized === "on";
 }
 
 export function loadPiWebAccessConfig(configPath = getPiWebSearchConfigPath()): PiWebAccessConfig {
@@ -135,8 +123,8 @@ export function getPiWebAccessStatus(
 	const perplexityConfigured = Boolean(normalizeNonEmptyString(config.perplexityApiKey));
 	const exaConfigured = Boolean(normalizeNonEmptyString(config.exaApiKey));
 	const geminiApiConfigured = Boolean(normalizeNonEmptyString(config.geminiApiKey));
-	const chromeProfile = normalizeNonEmptyString(config.chromeProfile);
-	const geminiBrowserEnabled = normalizeBooleanFlag(config.geminiBrowser ?? config.allowBrowserAuth ?? config.browserAuth);
+	const chromeProfile = normalizeNonEmptyString(config.browserCookies?.profile);
+	const geminiBrowserEnabled = config.allowBrowserCookies === true;
 	const effectiveProvider = searchProvider;
 
 	return {

@@ -29,7 +29,7 @@ The one-line installer fetches the latest tagged release. To pin a version, pass
 
 The installer downloads a standalone native bundle with its own pinned Node.js runtime and verifies the release SHA-256 before replacing an existing installation.
 
-To upgrade the standalone app later, rerun the installer. `feynman update` only refreshes installed Pi packages inside Feynman's environment; it does not replace the standalone runtime bundle itself.
+To upgrade the standalone app later, rerun the installer. `feynman update` only refreshes optional Pi packages you installed; Pi and the core packages update with Feynman itself.
 
 To uninstall the standalone app, remove the launcher and runtime bundle, then optionally remove `~/.feynman` if you also want to delete settings, sessions, and installed package state. If you also want to delete alphaXiv login state, remove `~/.ahub`. See the installation guide for platform-specific paths.
 
@@ -188,7 +188,7 @@ Four bundled research agents, invoked by workflow prompts when decomposition hel
 - **[Hugging Face Hub](https://huggingface.co/docs/hub/api)** — dataset metadata, split/schema inspection, and small file reads from model, dataset, and Space repos
 - **Web research** — multi-provider search, explicit proxy routing, bounded GitHub issue/PR documents, raw or question-grounded page retrieval, direct images, external fetched-content caching, stored-page passage lookup, and auditable source text; tools, commands, images, PDFs, and browser cookies remain independently gated
 - **Session search** — indexed recall across prior research sessions
-- **Observability** — PostHog analytics, logs, distributed traces, and Pi AI runtime traces through OpenTelemetry metadata, with signal-specific HTTP OTLP routing for external collectors
+- **Observability** — opt-out PostHog analytics, logs, and traces for Feynman's own CLI commands
 - **Research execution options** — Docker, plus Modal or RunPod when their CLIs are installed, for explicitly chosen replication, benchmark, or dataset-heavy experiment runs; not service deployment or generic cloud administration
 
 ---
