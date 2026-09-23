@@ -10,6 +10,7 @@ import {
 	resolvePiCliPath,
 } from "./runtime.js";
 import { resolveAllExecutables } from "../system/executables.js";
+import { telemetryFirstRunNotice } from "../telemetry/posthog.js";
 
 export function exitCodeFromSignal(signal: NodeJS.Signals): number {
 	const signalNumber = constants.signals[signal];
@@ -48,6 +49,9 @@ export async function runPi(
 export async function launchPiChat(options: PiRuntimeOptions): Promise<void> {
 	if (process.stdout.isTTY && options.mode !== "rpc") {
 		process.stdout.write("\x1b[2J\x1b[3J\x1b[H");
+		// Clearing the screen erased the first-run notice printed at startup.
+		const telemetryNotice = telemetryFirstRunNotice();
+		if (telemetryNotice) process.stderr.write(`${telemetryNotice}\n`);
 	}
 
 	if (options.preLaunchNotice) {

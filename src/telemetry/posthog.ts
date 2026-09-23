@@ -37,6 +37,11 @@ export const DEFAULT_POSTHOG_PROJECT_TOKEN = "phc_owCZbr7c4mchCuVN5JXA6uBByjbT2k
 const TELEMETRY_STATE_FILE = "telemetry.json";
 const TELEMETRY_DISABLED_VALUES = new Set(["0", "false", "no", "off", "disabled"]);
 const TELEMETRY_KEY_PATTERN = /^[A-Za-z0-9_$./-]+$/;
+export const TELEMETRY_NOTICE = [
+	"Attention: Feynman collects anonymous usage telemetry: commands, workflows, tool names, models, token counts, and errors.",
+	"It never sends prompts, paper content, file paths, or tool arguments.",
+	"To opt out, set FEYNMAN_TELEMETRY=off. Learn more: https://www.feynman.is/docs/getting-started/configuration#telemetry",
+].join("\n");
 
 export type TelemetryPrimitive = string | number | boolean | null | undefined;
 export type TelemetryProperties = Record<string, TelemetryPrimitive>;
@@ -53,6 +58,7 @@ export type PostHogTelemetryConfig = {
 
 type TelemetryState = {
 	anonymousId?: string;
+	noticeShown?: boolean;
 };
 
 let posthogClient: PostHog | undefined;
@@ -62,6 +68,7 @@ let activeConfig: PostHogTelemetryConfig | undefined;
 let telemetryInitialized = false;
 let telemetryStartWarningPrinted = false;
 let telemetryTransportFailed = false;
+let telemetryNoticeThisProcess: string | undefined;
 
 type PostHogFetch = NonNullable<PostHogOptions["fetch"]>;
 type TelemetryFetch = (
@@ -216,7 +223,7 @@ function disableTelemetryAfterTransportFailure(error: unknown): void {
 	}
 }
 
-function isTelemetryDisabled(env: NodeJS.ProcessEnv = process.env): boolean {
+export function isTelemetryDisabled(env: NodeJS.ProcessEnv = process.env): boolean {
 	const setting = env.FEYNMAN_TELEMETRY ?? env.FEYNMAN_POSTHOG_TELEMETRY;
 	return (setting !== undefined && TELEMETRY_DISABLED_VALUES.has(setting.trim().toLowerCase())) || env.DO_NOT_TRACK === "1";
 }
@@ -248,6 +255,42 @@ function getAnonymousDistinctId(home = getFeynmanHome()): string {
 	mkdirSync(dirname(statePath), { recursive: true });
 	writeFileSync(statePath, JSON.stringify({ ...state, anonymousId }, null, 2) + "\n", "utf8");
 	return anonymousId;
+}
+
+/**
+ * Returns the first-run telemetry notice once per Feynman home, and again for
+ * the rest of this process so a launch that clears the screen can reprint it.
+ * Only interactive terminals get it: scripts and CI (where Windows PowerShell
+ * treats any stderr as an error) never see it, and it stays pending for the
+ * first interactive run.
+ */
+export function telemetryFirstRunNotice(
+	home = getFeynmanHome(),
+	interactive = process.stderr.isTTY === true,
+): string | undefined {
+	if (telemetryNoticeThisProcess || !activeConfig) return telemetryNoticeThisProcess;
+	if (!interactive) return undefined;
+	const statePath = resolve(getFeynmanStateDir(home), TELEMETRY_STATE_FILE);
+	const state = readTelemetryState(statePath);
+	if (state.noticeShown) return undefined;
+	try {
+		mkdirSync(dirname(statePath), { recursive: true });
+		writeFileSync(statePath, JSON.stringify({ ...state, noticeShown: true }, null, 2) + "\n", "utf8");
+	} catch {
+		return undefined;
+	}
+	telemetryNoticeThisProcess = TELEMETRY_NOTICE;
+	return telemetryNoticeThisProcess;
+}
+
+/** Env the Pi child needs for the research extension to send under the same install id. */
+export function getPostHogChildEnv(): Record<string, string> {
+	if (!activeConfig) return {};
+	return {
+		FEYNMAN_POSTHOG_KEY: activeConfig.projectToken,
+		FEYNMAN_POSTHOG_HOST: activeConfig.host,
+		FEYNMAN_TELEMETRY_DISTINCT_ID: activeConfig.distinctId,
+	};
 }
 
 export function resolvePostHogTelemetryConfig(options: {
@@ -569,6 +612,7 @@ export async function shutdownPostHogTelemetry(): Promise<void> {
 	activeConfig = undefined;
 	telemetryInitialized = false;
 	telemetryTransportFailed = false;
+	telemetryNoticeThisProcess = undefined;
 
 	await Promise.allSettled([
 		client?.shutdown(3000),

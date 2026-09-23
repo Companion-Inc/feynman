@@ -151,14 +151,40 @@ Feynman respects the following environment variables, which take precedence over
 | `SEMANTIC_SCHOLAR_API_KEY` | Optional free Semantic Scholar key ([request one](https://www.semanticscholar.org/product/api#api-key-form)); sent as `x-api-key` so literature searches use your own rate limit instead of the shared anonymous pool |
 | `NCBI_API_KEY` | Optional NCBI E-utilities key; raises the paced request budget from 3 to 10 requests per second |
 | `NCBI_MIN_REQUEST_GAP_MS` | Override the minimum delay between NCBI request starts; defaults to 500 ms anonymously and 125 ms with a key |
-| `FEYNMAN_TELEMETRY` | Set to `off` to disable Feynman analytics, logs, and traces |
+| `FEYNMAN_TELEMETRY` | Set to `off` to disable all Feynman telemetry (`DO_NOT_TRACK=1` also works) |
 | `FEYNMAN_POSTHOG_HOST` | Override the PostHog ingest host |
 | `FEYNMAN_POSTHOG_PROJECT_ID` | Override the PostHog project ID used in telemetry metadata |
 | `FEYNMAN_POSTHOG_KEY` | Override the PostHog project token |
 
-## Observability
+## Telemetry
 
-Feynman sends bounded telemetry about its own CLI to the configured PostHog project when telemetry is enabled: product analytics events through the PostHog SDK, CLI logs through PostHog Logs at `/i/v1/logs`, and CLI command spans through PostHog distributed tracing at `/i/v1/traces` (query them in HogQL from `posthog.trace_spans`). Nothing inside the Pi runtime is traced. The CLI makes one attempt for each send; the first network or ingest failure disables further PostHog sends for that process without printing into command output. Set `FEYNMAN_DEBUG=1` to show the single diagnostic notice, and `FEYNMAN_TELEMETRY=off` to disable telemetry.
+Feynman collects anonymous usage telemetry by default and prints a one-time notice the first time it runs. Telemetry goes to Feynman's PostHog project under a random install ID stored in `~/.feynman/.state/telemetry.json`. Person profiles and GeoIP lookup are off.
+
+Feynman never sends prompts, model output, paper or document content, file paths, tool arguments, or tool results. Error messages are sent only as a short hash.
+
+To opt out, set either variable in your shell profile:
+
+```bash
+export FEYNMAN_TELEMETRY=off
+export DO_NOT_TRACK=1
+```
+
+`feynman status` shows whether telemetry is on.
+
+What is sent:
+
+| Event | Properties |
+|-------|------------|
+| `feynman_command_started`, `feynman_command_completed`, `feynman_command_failed` | Command and allow-listed subcommand, output mode, whether a prompt, model, or service tier flag was given, duration, exit code, error name and message hash |
+| `feynman_session_started` | Why the session started (startup, resume, new, fork, reload), mode, model and provider name |
+| `feynman_workflow_started` | Workflow name (`deepresearch`, `lit`, `review`, and so on; `chat` for anything else) |
+| `feynman_workflow_completed` | Workflow name, status (`completed`, `error`, `aborted`), tool and subagent call counts, whether any file under `outputs/` or `papers/` was written (yes or no), duration |
+| `feynman_tool_used` | Tool name, whether it failed, whether a subagent called it |
+| `$ai_generation` | [PostHog LLM analytics](https://posthog.com/docs/llm-analytics/generations) metadata for each model response: model, provider, input, output, and cache token counts, latency, HTTP status, stop reason, error flag, and the Pi session ID as the trace ID. No `$ai_input` or `$ai_output_choices`. |
+
+Every event also carries the Feynman version, Node.js version, platform, and CPU architecture. The CLI also sends its command spans to PostHog distributed tracing at `/i/v1/traces` and command logs to PostHog Logs at `/i/v1/logs`, with the same properties.
+
+Each send is tried once. The first network or ingest failure turns telemetry off for the rest of that process without printing anything; set `FEYNMAN_DEBUG=1` to see the single CLI diagnostic.
 
 ## Session storage
 

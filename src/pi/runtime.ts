@@ -9,6 +9,7 @@ import {
 	resolveExecutable,
 	type ResolvedExecutables,
 } from "../system/executables.js";
+import { getPostHogChildEnv } from "../telemetry/posthog.js";
 
 // Pi packages shipped as Feynman dependencies and loaded from their install
 // paths through settings.json `packages` (Pi's documented local-path source).
@@ -166,5 +167,6 @@ export function buildPiEnv(options: PiRuntimeOptions, executables?: ResolvedExec
 		PI_SKIP_VERSION_CHECK: process.env.PI_SKIP_VERSION_CHECK ?? "1",
 		MERMAID_CLI_PATH: mermaidPath,
 		PUPPETEER_EXECUTABLE_PATH: browserPath,
+		...getPostHogChildEnv(),
 	};
 }

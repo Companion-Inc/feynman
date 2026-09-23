@@ -9,17 +9,20 @@ import {
 	DEFAULT_POSTHOG_HOST,
 	DEFAULT_POSTHOG_PROJECT_ID,
 	DEFAULT_POSTHOG_PROJECT_TOKEN,
+	TELEMETRY_NOTICE,
 	captureTelemetryEventImmediate,
 	createTelemetryCircuitBreakerFetch,
 	createOneShotOtlpTransport,
 	createTelemetryTransportCircuitBreaker,
 	getCliTelemetryMetadata,
+	getPostHogChildEnv,
 	initializePostHogTelemetry,
 	normalizeTelemetryProperties,
 	resolvePostHogTelemetryConfig,
 	sanitizeTelemetryException,
 	shutdownPostHogTelemetry,
 	telemetryErrorProperties,
+	telemetryFirstRunNotice,
 } from "../src/telemetry/posthog.js";
 
 test("resolvePostHogTelemetryConfig defaults to the Feynman PostHog project", () => {
@@ -47,6 +50,69 @@ test("resolvePostHogTelemetryConfig defaults to the Feynman PostHog project", ()
 test("resolvePostHogTelemetryConfig respects telemetry opt out", () => {
 	assert.equal(resolvePostHogTelemetryConfig({ env: { FEYNMAN_TELEMETRY: "off" } }), undefined);
 	assert.equal(resolvePostHogTelemetryConfig({ env: { DO_NOT_TRACK: "1" } }), undefined);
+});
+
+test("first-run notice says what is sent and how to opt out, once per Feynman home", async () => {
+	const home = mkdtempSync(join(tmpdir(), "feynman-telemetry-notice-home-"));
+	const previous = { FEYNMAN_TELEMETRY: process.env.FEYNMAN_TELEMETRY, DO_NOT_TRACK: process.env.DO_NOT_TRACK };
+	delete process.env.FEYNMAN_TELEMETRY;
+	delete process.env.DO_NOT_TRACK;
+	try {
+		assert.match(TELEMETRY_NOTICE, /anonymous usage telemetry/);
+		assert.match(TELEMETRY_NOTICE, /never sends prompts, paper content, file paths, or tool arguments/);
+		assert.match(TELEMETRY_NOTICE, /FEYNMAN_TELEMETRY=off/);
+
+		initializePostHogTelemetry({ home, posthogFetch: async () => new Response(null, { status: 204 }), otlpFetch: async () => new Response(null, { status: 204 }) });
+		// Scripts and CI never see it, and it stays pending for the first interactive run.
+		assert.equal(telemetryFirstRunNotice(home, false), undefined);
+		assert.equal(telemetryFirstRunNotice(home, true), TELEMETRY_NOTICE);
+		// Repeats within the process so a launch that clears the screen can reprint it.
+		assert.equal(telemetryFirstRunNotice(home, true), TELEMETRY_NOTICE);
+		const state = JSON.parse(readFileSync(join(home, ".state", "telemetry.json"), "utf8")) as { noticeShown?: boolean; anonymousId?: string };
+		assert.equal(state.noticeShown, true);
+		assert.match(state.anonymousId ?? "", /^feynman_/);
+		await shutdownPostHogTelemetry();
+
+		initializePostHogTelemetry({ home, posthogFetch: async () => new Response(null, { status: 204 }), otlpFetch: async () => new Response(null, { status: 204 }) });
+		assert.equal(telemetryFirstRunNotice(home, true), undefined);
+		await shutdownPostHogTelemetry();
+
+		const optedOutHome = mkdtempSync(join(tmpdir(), "feynman-telemetry-notice-off-"));
+		process.env.FEYNMAN_TELEMETRY = "off";
+		initializePostHogTelemetry({ home: optedOutHome });
+		assert.equal(telemetryFirstRunNotice(optedOutHome, true), undefined);
+		assert.deepEqual(getPostHogChildEnv(), {});
+		rmSync(optedOutHome, { recursive: true, force: true });
+	} finally {
+		await shutdownPostHogTelemetry();
+		for (const [key, value] of Object.entries(previous)) {
+			if (value === undefined) delete process.env[key];
+			else process.env[key] = value;
+		}
+		rmSync(home, { recursive: true, force: true });
+	}
+});
+
+test("Pi child env carries the CLI's PostHog project and install id only while telemetry is active", async () => {
+	const home = mkdtempSync(join(tmpdir(), "feynman-telemetry-child-env-"));
+	const previous = process.env.FEYNMAN_TELEMETRY;
+	delete process.env.FEYNMAN_TELEMETRY;
+	try {
+		assert.deepEqual(getPostHogChildEnv(), {});
+		const config = initializePostHogTelemetry({ home, posthogFetch: async () => new Response(null, { status: 204 }), otlpFetch: async () => new Response(null, { status: 204 }) });
+		assert.deepEqual(getPostHogChildEnv(), {
+			FEYNMAN_POSTHOG_KEY: DEFAULT_POSTHOG_PROJECT_TOKEN,
+			FEYNMAN_POSTHOG_HOST: DEFAULT_POSTHOG_HOST,
+			FEYNMAN_TELEMETRY_DISTINCT_ID: config?.distinctId,
+		});
+		await shutdownPostHogTelemetry();
+		assert.deepEqual(getPostHogChildEnv(), {});
+	} finally {
+		await shutdownPostHogTelemetry();
+		if (previous === undefined) delete process.env.FEYNMAN_TELEMETRY;
+		else process.env.FEYNMAN_TELEMETRY = previous;
+		rmSync(home, { recursive: true, force: true });
+	}
 });
 
 test("PostHog transport failures open a silent session circuit breaker", async () => {
