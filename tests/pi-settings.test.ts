@@ -92,6 +92,23 @@ test("normalizeFeynmanSettings seeds the fast core package set", async () => {
 	assert.deepEqual(settings.packages, [...CORE_PACKAGE_SOURCES]);
 });
 
+test("normalizeFeynmanSettings seeds research retry backoff and keeps user retry settings", async () => {
+	const root = mkdtempSync(join(tmpdir(), "feynman-settings-"));
+	const settingsPath = join(root, "settings.json");
+	const bundledSettingsPath = join(root, "bundled-settings.json");
+	const authPath = join(root, "auth.json");
+
+	writeFileSync(bundledSettingsPath, "{}\n", "utf8");
+	writeFileSync(authPath, "{}\n", "utf8");
+
+	await normalizeFeynmanSettings(settingsPath, bundledSettingsPath, "medium", authPath);
+	assert.deepEqual(JSON.parse(readFileSync(settingsPath, "utf8")).retry, { maxRetries: 6, baseDelayMs: 5000 });
+
+	writeFileSync(settingsPath, JSON.stringify({ retry: { enabled: false } }) + "\n", "utf8");
+	await normalizeFeynmanSettings(settingsPath, bundledSettingsPath, "medium", authPath);
+	assert.deepEqual(JSON.parse(readFileSync(settingsPath, "utf8")).retry, { enabled: false });
+});
+
 test("normalizeFeynmanSettings migrates the complete pre-refresh old-scope package set", async (t) => {
 	const root = mkdtempSync(join(tmpdir(), "feynman-settings-old-scope-"));
 	t.after(() => rmSync(root, { recursive: true, force: true }));
