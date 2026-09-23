@@ -70,10 +70,14 @@ test("buildPostHogOtelEnv points traces and logs at PostHog with the project tok
 	assert.equal(env.PI_OTEL_LOGS, "0");
 	assert.equal(env.PI_OTEL_METRICS, "0");
 	assert.equal(env.OTEL_SERVICE_NAME, "feynman-pi");
-	assert.equal(env.OTEL_EXPORTER_OTLP_ENDPOINT, undefined);
-	assert.equal(env.OTEL_EXPORTER_OTLP_HEADERS, undefined);
-	assert.equal(env.OTEL_EXPORTER_OTLP_PROTOCOL, undefined);
+	assert.equal(env.OTEL_EXPORTER_OTLP_ENDPOINT, "https://us.i.posthog.com/i");
+	assert.equal(env.OTEL_EXPORTER_OTLP_HEADERS, "Authorization=Bearer phc_test");
+	assert.equal(env.OTEL_EXPORTER_OTLP_PROTOCOL, "http/protobuf");
 	for (const key of [
+		"OTEL_EXPORTER_OTLP_TRACES_ENDPOINT",
+		"OTEL_EXPORTER_OTLP_TRACES_HEADERS",
+		"OTEL_EXPORTER_OTLP_LOGS_ENDPOINT",
+		"OTEL_EXPORTER_OTLP_LOGS_HEADERS",
 		"OTEL_EXPORTER_OTLP_LOGS_PROTOCOL",
 		"OTEL_EXPORTER_OTLP_METRICS_ENDPOINT",
 		"OTEL_EXPORTER_OTLP_METRICS_HEADERS",
@@ -90,22 +94,18 @@ test("buildPostHogOtelEnv points traces and logs at PostHog with the project tok
 	]) {
 		assert.equal(env[key], undefined, key);
 	}
-	assert.equal(env.OTEL_EXPORTER_OTLP_TRACES_ENDPOINT, "https://us.i.posthog.com/i/v0/ai/otel");
-	assert.equal(env.OTEL_EXPORTER_OTLP_TRACES_HEADERS, "Authorization=Bearer phc_test");
-	assert.equal(env.OTEL_EXPORTER_OTLP_TRACES_PROTOCOL, "http/protobuf");
-	assert.equal(env.OTEL_EXPORTER_OTLP_LOGS_ENDPOINT, "https://us.i.posthog.com/i/v1/logs");
-	assert.equal(env.OTEL_EXPORTER_OTLP_LOGS_HEADERS, "Authorization=Bearer phc_test");
 });
 
-test("getPostHogOtelEnv clears inherited telemetry env when telemetry is disabled", () => {
+test("getPostHogOtelEnv clears inherited telemetry env and disables pi-otel when telemetry is disabled", () => {
 	const previousTelemetrySetting = process.env.FEYNMAN_TELEMETRY;
 	process.env.FEYNMAN_TELEMETRY = "off";
 	try {
 		const env = getPostHogOtelEnv("feynman-pi", "0.3.4");
 		const cleared = clearPostHogOtelEnv();
-		for (const key of Object.keys(cleared)) {
+		for (const key of Object.keys(cleared).filter((key) => key !== "PI_OTEL_DISABLED")) {
 			assert.equal(env[key], undefined, key);
 		}
+		assert.equal(env.PI_OTEL_DISABLED, "1");
 	} finally {
 		if (previousTelemetrySetting === undefined) {
 			delete process.env.FEYNMAN_TELEMETRY;
@@ -286,15 +286,15 @@ test("getPostHogOtelEnv clears inherited collectors before setting PostHog route
 		assert.equal(env.PI_OTEL_LOGS, "0");
 		assert.equal(env.PI_OTEL_METRICS, "0");
 		assert.equal(env.OTEL_SERVICE_NAME, "feynman-pi");
-		assert.equal(env.OTEL_EXPORTER_OTLP_TRACES_ENDPOINT, `${DEFAULT_POSTHOG_HOST}/i/v0/ai/otel`);
-		assert.match(env.OTEL_EXPORTER_OTLP_TRACES_HEADERS ?? "", /^Authorization=Bearer phc_/);
-		assert.equal(env.OTEL_EXPORTER_OTLP_TRACES_PROTOCOL, "http/protobuf");
-		assert.equal(env.OTEL_EXPORTER_OTLP_LOGS_ENDPOINT, `${DEFAULT_POSTHOG_HOST}/i/v1/logs`);
-		assert.match(env.OTEL_EXPORTER_OTLP_LOGS_HEADERS ?? "", /^Authorization=Bearer phc_/);
+		assert.equal(env.OTEL_EXPORTER_OTLP_ENDPOINT, `${DEFAULT_POSTHOG_HOST}/i`);
+		assert.match(env.OTEL_EXPORTER_OTLP_HEADERS ?? "", /^Authorization=Bearer phc_/);
+		assert.equal(env.OTEL_EXPORTER_OTLP_PROTOCOL, "http/protobuf");
 		for (const key of [
-			"OTEL_EXPORTER_OTLP_ENDPOINT",
-			"OTEL_EXPORTER_OTLP_HEADERS",
-			"OTEL_EXPORTER_OTLP_PROTOCOL",
+			"OTEL_EXPORTER_OTLP_TRACES_ENDPOINT",
+			"OTEL_EXPORTER_OTLP_TRACES_HEADERS",
+			"OTEL_EXPORTER_OTLP_TRACES_PROTOCOL",
+			"OTEL_EXPORTER_OTLP_LOGS_ENDPOINT",
+			"OTEL_EXPORTER_OTLP_LOGS_HEADERS",
 			"OTEL_EXPORTER_OTLP_LOGS_PROTOCOL",
 			"OTEL_EXPORTER_OTLP_METRICS_ENDPOINT",
 			"OTEL_EXPORTER_OTLP_METRICS_HEADERS",

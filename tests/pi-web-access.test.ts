@@ -19,27 +19,8 @@ test("loadPiWebAccessConfig returns empty config when Pi web config is missing",
 	assert.deepEqual(loadPiWebAccessConfig(configPath), {});
 });
 
-test("getPiWebSearchConfigPath respects FEYNMAN_HOME semantics", () => {
-	assert.equal(getPiWebSearchConfigPath("/tmp/custom-home"), "/tmp/custom-home/.feynman/web-search.json");
-});
-
-test("getPiWebSearchConfigPath honors an exact custom Feynman config path", () => {
-	const previousConfigPath = process.env.FEYNMAN_WEB_SEARCH_CONFIG;
-	process.env.FEYNMAN_WEB_SEARCH_CONFIG = "/tmp/custom-web/research-web.json";
-
-	try {
-		assert.equal(getPiWebSearchConfigPath(), "/tmp/custom-web/research-web.json");
-		assert.equal(
-			getPiWebSearchConfigPath("/tmp/explicit-home"),
-			"/tmp/explicit-home/.feynman/web-search.json",
-		);
-	} finally {
-		if (previousConfigPath === undefined) {
-			delete process.env.FEYNMAN_WEB_SEARCH_CONFIG;
-		} else {
-			process.env.FEYNMAN_WEB_SEARCH_CONFIG = previousConfigPath;
-		}
-	}
+test("getPiWebSearchConfigPath uses the agent dir that pi-web-access reads", () => {
+	assert.equal(getPiWebSearchConfigPath("/tmp/custom-home"), "/tmp/custom-home/.feynman/agent/web-search.json");
 });
 
 test("savePiWebAccessConfig merges updates and deletes undefined values", () => {
@@ -77,7 +58,7 @@ test("savePiWebAccessConfig restricts web-search.json permissions", { skip: proc
 test("getPiWebAccessStatus reads Pi web-access config directly", () => {
 	const root = mkdtempSync(join(tmpdir(), "feynman-pi-web-"));
 	const configPath = getPiWebSearchConfigPath(root);
-	mkdirSync(join(root, ".feynman"), { recursive: true });
+	mkdirSync(join(root, ".feynman", "agent"), { recursive: true });
 	writeFileSync(
 		configPath,
 		JSON.stringify({
@@ -104,7 +85,7 @@ test("getPiWebAccessStatus reads Pi web-access config directly", () => {
 test("getPiWebAccessStatus reads Gemini routes directly", () => {
 	const root = mkdtempSync(join(tmpdir(), "feynman-pi-web-"));
 	const configPath = getPiWebSearchConfigPath(root);
-	mkdirSync(join(root, ".feynman"), { recursive: true });
+	mkdirSync(join(root, ".feynman", "agent"), { recursive: true });
 	writeFileSync(
 		configPath,
 		JSON.stringify({

@@ -311,32 +311,28 @@ export function buildPostHogOtelEnv(config: Pick<PostHogTelemetryConfig, "host" 
 		FEYNMAN_POSTHOG_HOST: config.host,
 		FEYNMAN_POSTHOG_KEY: config.projectToken,
 		FEYNMAN_POSTHOG_PROJECT_ID: config.projectId,
-		// Used by the bundled pi-otel extension. Pi emits gen_ai.* metadata
-		// on its runtime spans, so route those spans to PostHog AI
-		// Observability and keep the generic OTLP endpoint unset.
-		OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: `${config.host}/i/v0/ai/otel`,
-		OTEL_EXPORTER_OTLP_TRACES_HEADERS: `Authorization=Bearer ${config.projectToken}`,
-		OTEL_EXPORTER_OTLP_TRACES_PROTOCOL: "http/protobuf",
+		// Used by the bundled pi-otel extension, which reads only the base OTLP
+		// endpoint and appends /v1/traces.
+		OTEL_EXPORTER_OTLP_ENDPOINT: `${config.host}/i`,
+		OTEL_EXPORTER_OTLP_HEADERS: `Authorization=Bearer ${config.projectToken}`,
+		OTEL_EXPORTER_OTLP_PROTOCOL: "http/protobuf",
 		PI_OTEL_CAPTURE_CONTENT: "metadata_only",
 		// The default process/host detectors export the command line (which
-		// carries the system prompt and user prompt), host name, and user name.
+		// carries the user prompt), host name, and user name.
 		OTEL_NODE_RESOURCE_DETECTORS: "none",
 		PI_OTEL_LOGS: "0",
 		PI_OTEL_METRICS: "0",
 		OTEL_SERVICE_NAME: serviceName,
-		OTEL_EXPORTER_OTLP_LOGS_ENDPOINT: `${config.host}/i/v1/logs`,
-		OTEL_EXPORTER_OTLP_LOGS_HEADERS: `Authorization=Bearer ${config.projectToken}`,
 	};
 }
-
 export function clearPostHogOtelEnv(): NodeJS.ProcessEnv {
 	return Object.fromEntries(CHILD_TELEMETRY_ENV_KEYS.map((key) => [key, undefined]));
 }
 
 export function getPostHogOtelEnv(serviceName: string, appVersion?: string): NodeJS.ProcessEnv {
 	const config = resolvePostHogTelemetryConfig({ serviceName, appVersion });
-	const cleared = clearPostHogOtelEnv();
-	return config ? { ...cleared, ...buildPostHogOtelEnv(config, serviceName) } : cleared;
+	// Without Feynman telemetry, pi-otel would otherwise probe a local collector.
+	return config ? buildPostHogOtelEnv(config, serviceName) : { ...clearPostHogOtelEnv(), PI_OTEL_DISABLED: "1" };
 }
 
 function normalizeTelemetryKey(key: string): string | undefined {

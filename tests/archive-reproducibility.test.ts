@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { randomBytes } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 import {
 	appendFileSync,
 	existsSync,
@@ -21,7 +21,10 @@ import {
 	createDeterministicZip,
 	deterministicTarMetadataArgs,
 } from "../scripts/lib/deterministic-archive.mjs";
-import { computeFileSha256 } from "../scripts/lib/runtime-workspace-integrity.mjs";
+
+function computeFileSha256(path: string): string {
+	return createHash("sha256").update(readFileSync(path)).digest("hex");
+}
 
 function fixture() {
 	const root = mkdtempSync(join(tmpdir(), "feynman-archive-repro-"));

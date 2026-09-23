@@ -17,7 +17,7 @@ import {
 import { buildModelStatusSnapshotFromRecords, chooseRecommendedModel, getAvailableModelRecords, isProClassModelSpec } from "../src/model/catalog.js";
 import { isLocalModelProvider, resolveModelProviderForCommand, setDefaultModelSpec } from "../src/model/commands.js";
 import { createModelRegistry } from "../src/model/registry.js";
-import { supportsNativePackageSources } from "../src/pi/package-presets.js";
+import { supportsNativePackageSources } from "../src/pi/packages.js";
 import { canonicalizeModelSpec, parseModelSpec } from "../src/pi/settings.js";
 
 function createAuthPath(contents: Record<string, unknown>): string {
@@ -79,7 +79,7 @@ test("chooseRecommendedModel prefers the strongest authenticated research model"
 
 	const recommendation = await chooseRecommendedModel(authPath);
 
-	assert.equal(recommendation?.spec, "anthropic/claude-opus-5");
+	assert.equal(recommendation?.spec, "anthropic/claude-opus-5-5");
 });
 
 test("chooseRecommendedModel prefers the newest OpenAI GPT exposed by Pi", async () => {
@@ -234,7 +234,7 @@ test("chooseRecommendedModel prefers OpenCode Zen Claude when OpenCode is the au
 
 		const recommendation = await chooseRecommendedModel(authPath);
 
-		assert.equal(recommendation?.spec, "opencode/claude-opus-5");
+		assert.equal(recommendation?.spec, "opencode/claude-opus-5-5");
 	});
 });
 

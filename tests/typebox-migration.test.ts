@@ -4,7 +4,7 @@ import test from "node:test";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import type { Tool, ToolCall } from "@earendil-works/pi-ai";
+import type { JsonObject, Tool, ToolCall } from "@earendil-works/pi-ai";
 import { validateToolArguments } from "@earendil-works/pi-ai";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 
@@ -37,7 +37,6 @@ test("research extension source and direct locks use Pi's coordinated TypeBox pa
 
 	const manifest = readJson(join(repoRoot, "package.json"));
 	const rootLock = readJson(join(repoRoot, "package-lock.json"));
-	const runtimeLock = readJson(join(repoRoot, ".feynman", "runtime-package-lock.json"));
 
 	assert.equal(manifest.dependencies.typebox, coordinatedTypeboxVersion);
 	assert.equal(manifest.dependencies["@sinclair/typebox"], undefined);
@@ -45,8 +44,6 @@ test("research extension source and direct locks use Pi's coordinated TypeBox pa
 	assert.equal(rootLock.packages[""].dependencies["@sinclair/typebox"], undefined);
 	assert.equal(rootLock.packages["node_modules/typebox"].version, coordinatedTypeboxVersion);
 	assert.equal(rootLock.packages["node_modules/@sinclair/typebox"], undefined);
-	assert.equal(runtimeLock.packages[""].dependencies.typebox, coordinatedTypeboxVersion);
-	assert.equal(runtimeLock.packages["node_modules/typebox"].version, coordinatedTypeboxVersion);
 });
 
 test("Pi runtime validation omits null alpha_get_paper sections without losing optional arrays", () => {
@@ -67,7 +64,7 @@ test("Pi runtime validation omits null alpha_get_paper sections without losing o
 	assert.equal(providerSchema.properties?.sections?.type, "array");
 	assert.equal(providerSchema.properties?.sections?.uniqueItems, undefined);
 
-	const validate = (arguments_: Record<string, unknown>) =>
+	const validate = (arguments_: JsonObject) =>
 		validateToolArguments(tool, {
 			type: "toolCall",
 			id: "typebox-regression",

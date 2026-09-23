@@ -1,44 +1,23 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, realpathSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join, resolve } from "node:path";
+import { dirname, join } from "node:path";
 import test from "node:test";
-import { pathToFileURL } from "node:url";
 
 import {
-	applyFeynmanPackageManagerEnv,
+	BUNDLED_PI_PACKAGES,
 	buildPiArgs,
 	buildPiEnv,
 	ensureFeynmanCommandShim,
 	ensureFeynmanWorkspaceScaffold,
 	getFeynmanCommandShimDir,
-	getFeynmanNpmGlobalNodeModulesPath,
-	resolvePiPaths,
-	toNodeImportSpecifier,
+	getFeynmanPackageSources,
+	resolvePackageRoot,
+	resolvePiCliPath,
 	validatePiInstallation,
 } from "../src/pi/runtime.js";
 import { resolveBundledAlphaCliPath } from "../src/cli.js";
-import {
-	assertPiCliArgsPatchSource,
-	patchPiCliArgsSource,
-} from "../scripts/lib/pi-cli-args-patch.mjs";
-
-test("getFeynmanNpmGlobalNodeModulesPath follows npm prefix layout on each platform", () => {
-	const agentDir = join("home", ".feynman", "agent");
-	assert.equal(
-		getFeynmanNpmGlobalNodeModulesPath(agentDir, "linux"),
-		resolve("home", ".feynman", "npm-global", "lib", "node_modules"),
-	);
-	assert.equal(
-		getFeynmanNpmGlobalNodeModulesPath(agentDir, "darwin"),
-		resolve("home", ".feynman", "npm-global", "lib", "node_modules"),
-	);
-	assert.equal(
-		getFeynmanNpmGlobalNodeModulesPath(agentDir, "win32"),
-		resolve("home", ".feynman", "npm-global", "node_modules"),
-	);
-});
 
 test("buildPiArgs includes configured runtime paths and prompt", () => {
 	const args = buildPiArgs({
@@ -55,10 +34,6 @@ test("buildPiArgs includes configured runtime paths and prompt", () => {
 	assert.deepEqual(args, [
 		"--session-dir",
 		"/sessions",
-		"--extension",
-		"/repo/feynman/extensions/research-tools.ts",
-		"--prompt-template",
-		"/repo/feynman/prompts",
 		"--mode",
 		"rpc",
 		"--model",
@@ -101,28 +76,6 @@ test("buildPiArgs places the delimiter after all options for dash-leading prompt
 	assert.ok(initialArgs.indexOf("--mode") < initialArgs.indexOf("--"));
 });
 
-test("Pi CLI end-of-options patch matches 0.84.2 and is idempotent", () => {
-	const source = readFileSync(
-		join(
-			process.cwd(),
-			"node_modules",
-			"@earendil-works",
-			"pi-coding-agent",
-			"dist",
-			"cli",
-			"args.js",
-		),
-		"utf8",
-	);
-	const patched = patchPiCliArgsSource(source);
-	assertPiCliArgsPatchSource(patched);
-	assert.equal(patchPiCliArgsSource(patched), patched);
-	assert.ok(
-		patched.indexOf('if (arg === "--") {') <
-			patched.indexOf('else if (arg === "--help" || arg === "-h") {'),
-	);
-});
-
 test("buildPiArgs omits thinking arg when launch thinking is not explicit", () => {
 	const args = buildPiArgs({
 		appRoot: "/repo/feynman",
@@ -151,20 +104,25 @@ test("buildPiArgs passes --continue when resuming the recent persisted session",
 	assert.equal(args.includes("--"), false);
 });
 
-test("buildPiArgs passes stable session ids through to Pi", () => {
+test("buildPiArgs forwards Pi session flags and loads SYSTEM.md by path", () => {
 	const args = buildPiArgs({
-		appRoot: "/repo/feynman",
+		appRoot: process.cwd(),
 		workingDir: "/workspace",
 		sessionDir: "/sessions",
 		feynmanAgentDir: "/home/.feynman/agent",
-		mode: "json",
-		sessionId: "feynman-workbench-scaling-laws",
-		oneShotPrompt: "hello",
+		piArgs: ["--fork", "abc123"],
+		initialPrompt: "hello",
 	});
 
-	assert.deepEqual(args.slice(args.indexOf("--session-id"), args.indexOf("--session-id") + 2), [
-		"--session-id",
-		"feynman-workbench-scaling-laws",
+	assert.deepEqual(args, [
+		"--session-dir",
+		"/sessions",
+		"--system-prompt",
+		join(process.cwd(), ".feynman", "SYSTEM.md"),
+		"--fork",
+		"abc123",
+		"--",
+		"hello",
 	]);
 });
 
@@ -184,7 +142,6 @@ test("buildPiEnv wires Feynman paths into the Pi environment", () => {
 	const previousPostHogHost = process.env.FEYNMAN_POSTHOG_HOST;
 	const previousPostHogProjectId = process.env.FEYNMAN_POSTHOG_PROJECT_ID;
 	const previousDoNotTrack = process.env.DO_NOT_TRACK;
-	const previousWebSearchConfig = process.env.FEYNMAN_WEB_SEARCH_CONFIG;
 	process.env.NPM_CONFIG_PREFIX = "/tmp/global-prefix";
 	process.env.npm_config_prefix = "/tmp/global-prefix-lower";
 	delete process.env.OTEL_SERVICE_NAME;
@@ -200,7 +157,6 @@ test("buildPiEnv wires Feynman paths into the Pi environment", () => {
 	delete process.env.FEYNMAN_POSTHOG_HOST;
 	delete process.env.FEYNMAN_POSTHOG_PROJECT_ID;
 	delete process.env.DO_NOT_TRACK;
-	process.env.FEYNMAN_WEB_SEARCH_CONFIG = "/tmp/custom-web/research-web.json";
 
 	const env = buildPiEnv({
 		appRoot: "/repo/feynman",
@@ -211,37 +167,27 @@ test("buildPiEnv wires Feynman paths into the Pi environment", () => {
 	});
 
 	try {
-		assert.equal(env.FEYNMAN_SESSION_DIR, "/sessions");
 		assert.equal(env.FEYNMAN_BIN_PATH, "/repo/feynman/bin/feynman.js");
-		assert.equal(env.FEYNMAN_PI_CLI_PATH, "/repo/feynman/node_modules/@earendil-works/pi-coding-agent/dist/cli.js");
-		assert.equal(env.FEYNMAN_MEMORY_DIR, "/home/.feynman/memory");
-		assert.equal(env.FEYNMAN_NPM_PREFIX, "/home/.feynman/npm-global");
-		assert.equal(env.NPM_CONFIG_PREFIX, "/home/.feynman/npm-global");
-		assert.equal(env.npm_config_prefix, "/home/.feynman/npm-global");
-		assert.equal(env.FEYNMAN_CODING_AGENT_DIR, "/home/.feynman/agent");
 		assert.equal(env.PI_CODING_AGENT_DIR, "/home/.feynman/agent");
-		assert.equal(env.FEYNMAN_WEB_SEARCH_CONFIG, "/tmp/custom-web/research-web.json");
+		assert.equal(env.NPM_CONFIG_PREFIX, "/tmp/global-prefix");
+		assert.equal(env.npm_config_prefix, "/tmp/global-prefix-lower");
+		for (const key of ["FEYNMAN_CODING_AGENT_DIR", "FEYNMAN_PI_CLI_PATH", "FEYNMAN_NPM_PREFIX", "FEYNMAN_SESSION_DIR", "FEYNMAN_MEMORY_DIR"]) {
+			assert.equal(env[key], undefined, key);
+		}
 		assert.equal(env.FEYNMAN_POSTHOG_HOST, "https://us.i.posthog.com");
 		assert.match(env.FEYNMAN_POSTHOG_KEY ?? "", /^phc_/);
 		assert.equal(env.FEYNMAN_POSTHOG_PROJECT_ID, "623906");
-		assert.equal(env.OTEL_EXPORTER_OTLP_ENDPOINT, undefined);
-		assert.equal(env.OTEL_EXPORTER_OTLP_HEADERS, undefined);
-		assert.equal(env.OTEL_EXPORTER_OTLP_PROTOCOL, undefined);
+		assert.equal(env.OTEL_EXPORTER_OTLP_ENDPOINT, "https://us.i.posthog.com/i");
+		assert.match(env.OTEL_EXPORTER_OTLP_HEADERS ?? "", /^Authorization=Bearer phc_/);
+		assert.equal(env.OTEL_EXPORTER_OTLP_PROTOCOL, "http/protobuf");
+		assert.equal(env.OTEL_NODE_RESOURCE_DETECTORS, "none");
 		assert.equal(env.PI_OTEL_CAPTURE_CONTENT, "metadata_only");
 		assert.equal(env.PI_OTEL_LOGS, "0");
 		assert.equal(env.PI_OTEL_METRICS, "0");
 		assert.equal(env.OTEL_SERVICE_NAME, "feynman-pi");
 		assert.equal(env.OTEL_SERVICE_VERSION, undefined);
-		assert.equal(env.OTEL_EXPORTER_OTLP_TRACES_ENDPOINT, "https://us.i.posthog.com/i/v0/ai/otel");
-		assert.match(env.OTEL_EXPORTER_OTLP_TRACES_HEADERS ?? "", /^Authorization=Bearer phc_/);
-		assert.equal(env.OTEL_EXPORTER_OTLP_TRACES_PROTOCOL, "http/protobuf");
-		assert.equal(env.OTEL_EXPORTER_OTLP_LOGS_ENDPOINT, "https://us.i.posthog.com/i/v1/logs");
-		assert.match(env.OTEL_EXPORTER_OTLP_LOGS_HEADERS ?? "", /^Authorization=Bearer phc_/);
-		assert.ok(
-			env.PATH?.startsWith(
-				"/home/.feynman/bin:/repo/feynman/node_modules/.bin:/repo/feynman/.feynman/npm/node_modules/.bin:/home/.feynman/npm-global/bin:",
-			),
-		);
+		assert.equal(env.OTEL_EXPORTER_OTLP_TRACES_ENDPOINT, undefined);
+		assert.ok(env.PATH?.startsWith("/home/.feynman/bin:/repo/feynman/node_modules/.bin:"));
 	} finally {
 		if (previousUppercasePrefix === undefined) {
 			delete process.env.NPM_CONFIG_PREFIX;
@@ -317,11 +263,6 @@ test("buildPiEnv wires Feynman paths into the Pi environment", () => {
 			delete process.env.DO_NOT_TRACK;
 		} else {
 			process.env.DO_NOT_TRACK = previousDoNotTrack;
-		}
-		if (previousWebSearchConfig === undefined) {
-			delete process.env.FEYNMAN_WEB_SEARCH_CONFIG;
-		} else {
-			process.env.FEYNMAN_WEB_SEARCH_CONFIG = previousWebSearchConfig;
 		}
 	}
 });
@@ -418,7 +359,6 @@ test("buildPiEnv clears inherited telemetry collectors when Feynman telemetry is
 				"OTEL_LOGS_EXPORTER",
 				"OTEL_METRICS_EXPORTER",
 				"OTEL_LOG_LEVEL",
-				"PI_OTEL_DISABLED",
 				"PI_OTEL_CAPTURE_CONTENT",
 				"PI_OTEL_LOGS",
 				"PI_OTEL_METRICS",
@@ -430,6 +370,7 @@ test("buildPiEnv clears inherited telemetry collectors when Feynman telemetry is
 			assert.equal(env[key], undefined, key);
 		}
 		assert.equal(env.FEYNMAN_TELEMETRY, "off");
+		assert.equal(env.PI_OTEL_DISABLED, "1");
 	} finally {
 		for (const [key, value] of Object.entries(savedEnv)) {
 			if (value === undefined) {
@@ -489,7 +430,6 @@ test("ensureFeynmanWorkspaceScaffold does not block read-only research sessions"
 });
 
 test("buildPiEnv uses pre-resolved executable paths when provided", () => {
-	const paths = resolvePiPaths("/repo/feynman");
 	const env = buildPiEnv(
 		{
 			appRoot: "/repo/feynman",
@@ -497,7 +437,6 @@ test("buildPiEnv uses pre-resolved executable paths when provided", () => {
 			sessionDir: "/sessions",
 			feynmanAgentDir: "/home/.feynman/agent",
 		},
-		paths,
 		{
 			pandoc: "/opt/test/bin/pandoc",
 			mermaid: "/opt/test/bin/mmdc",
@@ -510,62 +449,28 @@ test("buildPiEnv uses pre-resolved executable paths when provided", () => {
 	assert.equal(env.PUPPETEER_EXECUTABLE_PATH, "/opt/test/bin/chrome");
 });
 
-test("applyFeynmanPackageManagerEnv pins npm globals to the Feynman prefix", () => {
-	const previousFeynmanPrefix = process.env.FEYNMAN_NPM_PREFIX;
-	const previousUppercasePrefix = process.env.NPM_CONFIG_PREFIX;
-	const previousLowercasePrefix = process.env.npm_config_prefix;
-
-	try {
-		const prefix = applyFeynmanPackageManagerEnv("/home/.feynman/agent");
-
-		assert.equal(prefix, "/home/.feynman/npm-global");
-		assert.equal(process.env.FEYNMAN_NPM_PREFIX, "/home/.feynman/npm-global");
-		assert.equal(process.env.NPM_CONFIG_PREFIX, "/home/.feynman/npm-global");
-		assert.equal(process.env.npm_config_prefix, "/home/.feynman/npm-global");
-	} finally {
-		if (previousFeynmanPrefix === undefined) {
-			delete process.env.FEYNMAN_NPM_PREFIX;
-		} else {
-			process.env.FEYNMAN_NPM_PREFIX = previousFeynmanPrefix;
-		}
-		if (previousUppercasePrefix === undefined) {
-			delete process.env.NPM_CONFIG_PREFIX;
-		} else {
-			process.env.NPM_CONFIG_PREFIX = previousUppercasePrefix;
-		}
-		if (previousLowercasePrefix === undefined) {
-			delete process.env.npm_config_prefix;
-		} else {
-			process.env.npm_config_prefix = previousLowercasePrefix;
-		}
-	}
+test("stock Pi and every bundled Pi package resolve from the installed dependency tree", () => {
+	const cliPath = resolvePiCliPath(process.cwd());
+	assert.ok(cliPath && existsSync(cliPath));
+	assert.deepEqual(validatePiInstallation(process.cwd()), []);
+	assert.deepEqual(getFeynmanPackageSources(process.cwd()), [
+		process.cwd(),
+		...BUNDLED_PI_PACKAGES.map((name) => join(process.cwd(), "node_modules", name)),
+	]);
 });
 
-test("resolvePiPaths includes the Promise.withResolvers polyfill path", () => {
-	const paths = resolvePiPaths("/repo/feynman");
+test("resolvePackageRoot follows Node lookup for hoisted installs", () => {
+	const root = mkdtempSync(join(tmpdir(), "feynman-hoisted-"));
+	const appRoot = join(root, "node_modules", "@companion-ai", "feynman");
+	const hoisted = join(root, "node_modules", "pi-web-access");
+	mkdirSync(appRoot, { recursive: true });
+	mkdirSync(hoisted, { recursive: true });
+	writeFileSync(join(appRoot, "package.json"), JSON.stringify({ name: "@companion-ai/feynman" }));
+	writeFileSync(join(hoisted, "package.json"), JSON.stringify({ name: "pi-web-access" }));
 
-	assert.equal(paths.promisePolyfillPath, "/repo/feynman/dist/system/promise-polyfill.js");
-});
-
-test("resolvePiPaths falls back to the vendored runtime workspace in packed installs", () => {
-	const appRoot = mkdtempSync(join(tmpdir(), "feynman-packed-runtime-"));
-	const piDist = join(appRoot, ".feynman", "npm", "node_modules", "@earendil-works", "pi-coding-agent", "dist");
-	mkdirSync(piDist, { recursive: true });
-	writeFileSync(join(piDist, "cli.js"), "", "utf8");
-	writeFileSync(join(piDist, "main.js"), "", "utf8");
-	mkdirSync(join(appRoot, "dist", "pi"), { recursive: true });
-	mkdirSync(join(appRoot, "dist", "system"), { recursive: true });
-	mkdirSync(join(appRoot, "extensions"), { recursive: true });
-	mkdirSync(join(appRoot, "prompts"), { recursive: true });
-	writeFileSync(join(appRoot, "dist", "pi", "pi-cli-wrapper.js"), "", "utf8");
-	writeFileSync(join(appRoot, "dist", "system", "promise-polyfill.js"), "", "utf8");
-	writeFileSync(join(appRoot, "extensions", "research-tools.ts"), "", "utf8");
-
-	const paths = resolvePiPaths(appRoot);
-
-	assert.equal(paths.piPackageRoot, join(appRoot, ".feynman", "npm", "node_modules", "@earendil-works", "pi-coding-agent"));
-	assert.equal(paths.piCliPath, join(piDist, "cli.js"));
-	assert.deepEqual(validatePiInstallation(appRoot), []);
+	assert.equal(resolvePackageRoot(appRoot, "pi-web-access"), hoisted);
+	assert.equal(resolvePackageRoot(appRoot, "pi-subagents"), undefined);
+	assert.ok(validatePiInstallation(appRoot).includes("pi-subagents"));
 });
 
 test("resolveBundledAlphaCliPath resolves hoisted package installs before bundled fallbacks", () => {
@@ -587,31 +492,12 @@ test("resolveBundledAlphaCliPath resolves hoisted package installs before bundle
 	assert.equal(resolveBundledAlphaCliPath(appRoot), realpathSync(hoistedAlpha));
 });
 
-test("resolveBundledAlphaCliPath prefers package-local alpha and falls back to the bundled workspace", () => {
+test("resolveBundledAlphaCliPath prefers package-local alpha", () => {
 	const appRoot = mkdtempSync(join(tmpdir(), "feynman-alpha-cli-"));
 	const packageLocalAlpha = join(appRoot, "node_modules", "@companion-ai", "alpha-hub", "bin", "alpha");
-	const bundledAlpha = join(appRoot, ".feynman", "npm", "node_modules", "@companion-ai", "alpha-hub", "bin", "alpha");
 
-	mkdirSync(join(appRoot, ".feynman", "npm", "node_modules", "@companion-ai", "alpha-hub", "bin"), { recursive: true });
-	writeFileSync(bundledAlpha, "", "utf8");
-	assert.equal(resolveBundledAlphaCliPath(appRoot), bundledAlpha);
-
+	assert.throws(() => resolveBundledAlphaCliPath(appRoot), /Bundled alphaXiv CLI not found/);
 	mkdirSync(join(appRoot, "node_modules", "@companion-ai", "alpha-hub", "bin"), { recursive: true });
 	writeFileSync(packageLocalAlpha, "", "utf8");
 	assert.equal(resolveBundledAlphaCliPath(appRoot), packageLocalAlpha);
-});
-
-test("pi-cli wrapper derives FEYNMAN_PI_CLI_PATH from the Pi main module", () => {
-	const source = readFileSync(join(process.cwd(), "src", "pi", "pi-cli-wrapper.ts"), "utf8");
-
-	assert.match(source, /join\(dirname\(piMainPath\), "cli\.js"\)/);
-	assert.match(source, /process\.env\.FEYNMAN_PI_CLI_PATH = piCliPath/);
-});
-
-test("toNodeImportSpecifier converts absolute preload paths to file URLs", () => {
-	assert.equal(
-		toNodeImportSpecifier("/repo/feynman/dist/system/promise-polyfill.js"),
-		pathToFileURL("/repo/feynman/dist/system/promise-polyfill.js").href,
-	);
-	assert.equal(toNodeImportSpecifier("tsx"), "tsx");
 });

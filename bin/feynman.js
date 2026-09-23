@@ -35,15 +35,4 @@ if (compareNodeVersions(parsedNodeVersion, parseNodeVersion(MIN_NODE_VERSION)) <
     : "curl -fsSL https://feynman.is/install | bash");
   process.exit(1);
 }
-const here = import.meta.dirname;
-
-// `--version` needs only package.json; answer it before the runtime check,
-// which hashes the bundled runtime tree and can take minutes on slow disks.
-if (process.argv.length === 3 && process.argv[2] === "--version") {
-  const { readFileSync } = await import("node:fs");
-  console.log(JSON.parse(readFileSync(resolve(here, "..", "package.json"), "utf8")).version);
-  process.exit(0);
-}
-
-await import(pathToFileURL(resolve(here, "..", "scripts", "patch-embedded-pi.mjs")).href);
-await import(pathToFileURL(resolve(here, "..", "dist", "index.js")).href);
+await import(pathToFileURL(resolve(import.meta.dirname, "..", "dist", "index.js")).href);

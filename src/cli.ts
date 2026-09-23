@@ -20,35 +20,28 @@ import {
 	logout as logoutAlpha,
 } from "@companion-ai/alpha-hub/lib";
 import { getValidToken as getValidAlphaToken } from "@companion-ai/alpha-hub/lib/auth";
-import { SettingsManager } from "@earendil-works/pi-coding-agent";
 
 import { verifyAlphaAuthStatus } from "./alpha-auth-status.js";
-import { syncBundledAssets } from "./bootstrap/sync.js";
+import { ensureFeynmanAgentDir } from "./bootstrap/home.js";
 import { ensureFeynmanHome, getDefaultSessionDir, getFeynmanAgentDir, getFeynmanHome } from "./config/paths.js";
-import { launchPiChat } from "./pi/launch.js";
+import { launchPiChat, runPi } from "./pi/launch.js";
 import {
-	installPackageSources,
-	reconcileManagedCorePackageInstalls,
-	updateConfiguredPackages,
-} from "./pi/package-ops.js";
-import { MAX_NATIVE_PACKAGE_NODE_MAJOR } from "./pi/package-presets.js";
-import {
-	CORE_PACKAGE_SOURCES,
-	getOptionalPackagePresetSources,
+	installPiPackage,
 	isOptionalPackagePresetSupported,
-	listOptionalPackagePresetInstallTargets,
 	listOptionalPackagePresets,
+	MAX_NATIVE_PACKAGE_NODE_MAJOR,
 	normalizeOptionalPackagePresetName,
-	resolvePackageUpdateSources,
-} from "./pi/package-presets.js";
+	resolvePackageSource,
+	updatePiPackages,
+} from "./pi/packages.js";
 import {
 	canonicalizeModelSpec,
-	normalizeFeynmanSettings,
+	ensureFeynmanSettings,
 	normalizeThinkingLevel,
-	parseModelSpec,
+	readJson,
 	type ThinkingLevel,
 } from "./pi/settings.js";
-import { applyFeynmanPackageManagerEnv } from "./pi/runtime.js";
+import { BUNDLED_PI_PACKAGES, buildPiEnv, type PiRuntimeOptions } from "./pi/runtime.js";
 import { getConfiguredServiceTier, normalizeServiceTier, setConfiguredServiceTier } from "./model/service-tier.js";
 import {
 	authenticateModelProvider,
@@ -151,7 +144,6 @@ export function resolveBundledAlphaCliPath(appRoot: string): string {
 	const candidates = [
 		resolvedPackageAlpha,
 		resolve(appRoot, "node_modules", ...ALPHA_HUB_PACKAGE_PATH, "bin", "alpha"),
-		resolve(appRoot, ".feynman", "npm", "node_modules", ...ALPHA_HUB_PACKAGE_PATH, "bin", "alpha"),
 	].filter((candidate): candidate is string => Boolean(candidate));
 	const found = candidates.find((candidate) => existsSync(candidate));
 	if (!found) {
@@ -305,56 +297,19 @@ async function handleModelCommand(subcommand: string | undefined, args: string[]
 	throw new Error(`Unknown model command: ${subcommand}`);
 }
 
-async function handleUpdateCommand(
-	workingDir: string,
-	feynmanAgentDir: string,
-	appRoot: string,
-	feynmanVersion: string | undefined,
-	source?: string,
-): Promise<void> {
+async function handleUpdateCommand(piOptions: PiRuntimeOptions, feynmanVersion: string | undefined, source?: string): Promise<void> {
 	const latestFeynmanVersionPromise = fetchLatestFeynmanVersion();
 	try {
-		const updateSources = source ? resolvePackageUpdateSources(source) : [undefined];
-		const results = [];
-		for (const updateSource of updateSources) {
-			results.push(await updateConfiguredPackages(workingDir, feynmanAgentDir, updateSource));
-		}
-
-		const updated = results.flatMap((result) => result.updated);
-		const skipped = results.flatMap((result) => result.skipped);
-
-		if (updated.length === 0 && skipped.length === 0) {
-			console.log("All packages up to date.");
-			return;
-		}
-
-		for (const updatedSource of updated) {
-			console.log(`Updated ${updatedSource}`);
-		}
-		for (const skippedSource of skipped) {
-			console.log(`Skipped ${skippedSource} on Node ${process.versions.node} (native packages are only supported through Node ${MAX_NATIVE_PACKAGE_NODE_MAJOR}.x).`);
-		}
-		if (updated.length === 0) {
-			return;
-		}
-		console.log("All packages up to date.");
-	} catch (error) {
-		const message = error instanceof Error ? error.message : String(error);
-		if (message.includes("No supported package manager found")) {
-			console.log("No package manager is available for live package updates.");
-			console.log("If you installed the standalone app, rerun the installer to get newer bundled packages.");
-			return;
-		}
-
-		throw error;
+		// Bundled packages are local-path sources, which `pi update` leaves alone;
+		// they move with Feynman itself.
+		process.exitCode = await updatePiPackages(piOptions, source ? resolvePackageSource(source) : undefined);
 	} finally {
 		// `feynman update` covers Pi packages only; tell the user when the CLI
 		// itself is behind so they are not left assuming everything is current
 		// (issue #177).
 		const latestVersion = await latestFeynmanVersionPromise;
 		if (feynmanVersion && latestVersion && isNewerVersion(latestVersion, feynmanVersion)) {
-			const standaloneBundle =
-				!existsSync(resolve(appRoot, ".feynman", "runtime-workspace.tgz")) && existsSync(resolve(appRoot, ".feynman", "npm"));
+			const standaloneBundle = existsSync(resolve(piOptions.appRoot, "..", "node"));
 			for (const line of getFeynmanUpgradeLines(latestVersion, feynmanVersion, { standaloneBundle })) {
 				console.log(line);
 			}
@@ -362,35 +317,26 @@ async function handleUpdateCommand(
 	}
 }
 
-async function handlePackagesCommand(subcommand: string | undefined, args: string[], workingDir: string, feynmanAgentDir: string): Promise<void> {
-	applyFeynmanPackageManagerEnv(feynmanAgentDir);
-	const settingsManager = SettingsManager.create(workingDir, feynmanAgentDir);
+async function handlePackagesCommand(subcommand: string | undefined, args: string[], piOptions: PiRuntimeOptions): Promise<void> {
 	const configuredSources = new Set(
-		settingsManager
-			.getPackages()
-			.map((entry) => (typeof entry === "string" ? entry : entry.source))
-			.filter((entry): entry is string => typeof entry === "string"),
+		((readJson(resolve(piOptions.feynmanAgentDir, "settings.json")).packages ?? []) as Array<string | { source?: string }>)
+			.map((entry) => (typeof entry === "string" ? entry : entry.source)),
 	);
 
 	if (!subcommand || subcommand === "list") {
 		printPanel("Feynman Packages", [
-			"Core packages are installed by default to keep first-run setup fast.",
+			"Core packages ship with Feynman and update with it.",
 		]);
 		printSection("Core");
-		for (const source of CORE_PACKAGE_SOURCES) {
-			printInfo(source);
+		for (const name of BUNDLED_PI_PACKAGES) {
+			printInfo(name);
 		}
 		printSection("Optional");
 		const optionalPresets = listOptionalPackagePresets();
-		if (optionalPresets.length === 0) {
-			printInfo(`No optional package presets are available on ${process.platform}.`);
-			return;
-		}
 		for (const preset of optionalPresets) {
-			const installed = preset.sources.every((source) => configuredSources.has(source));
-			printInfo(`${preset.name}${installed ? " (installed)" : ""}  ${preset.description}`);
+			printInfo(`${preset.name}${configuredSources.has(preset.source) ? " (installed)" : ""}  ${preset.description}`);
 		}
-		printInfo(`Install with: feynman packages install <${listOptionalPackagePresetInstallTargets().join("|")}>`);
+		printInfo(`Install with: feynman packages install <${optionalPresets.map((preset) => preset.name).join("|")}>`);
 		return;
 	}
 
@@ -400,54 +346,24 @@ async function handlePackagesCommand(subcommand: string | undefined, args: strin
 
 	const target = args[0];
 	if (!target) {
-		const installTargets = listOptionalPackagePresetInstallTargets();
-		if (installTargets.length === 0) {
-			throw new Error(`No optional package presets are available on ${process.platform}.`);
-		}
-		throw new Error(`Usage: feynman packages install <${installTargets.join("|")}>`);
+		throw new Error(`Usage: feynman packages install <${listOptionalPackagePresets().map((preset) => preset.name).join("|")}>`);
 	}
 
-	const sources = getOptionalPackagePresetSources(target);
-	if (!sources) {
-		const normalizedPreset = normalizeOptionalPackagePresetName(target);
-		if (normalizedPreset && !isOptionalPackagePresetSupported(normalizedPreset)) {
-			console.log(`${normalizedPreset} is not available on this runtime.`);
-			if (normalizedPreset === "session-search") {
-				console.log(`Its sqlite-backed dependency is only supported through Node ${MAX_NATIVE_PACKAGE_NODE_MAJOR}.x.`);
-			}
-			return;
-		}
+	const presetName = normalizeOptionalPackagePresetName(target);
+	if (!presetName) {
 		throw new Error(`Unknown package preset: ${target}`);
 	}
-
-	const pendingSources = sources.filter((source) => !configuredSources.has(source));
-	for (const source of sources) {
-		if (configuredSources.has(source)) {
-			console.log(`${source} already installed`);
-		}
-	}
-
-	if (pendingSources.length === 0) {
-		console.log("Optional packages installed.");
+	if (!isOptionalPackagePresetSupported(presetName)) {
+		console.log(`${presetName} is not available on this runtime.`);
+		console.log(`Its sqlite-backed dependency is only supported through Node ${MAX_NATIVE_PACKAGE_NODE_MAJOR}.x.`);
 		return;
 	}
-
-	try {
-		const result = await installPackageSources(workingDir, feynmanAgentDir, pendingSources, { persist: true });
-		for (const skippedSource of result.skipped) {
-			console.log(`Skipped ${skippedSource} on Node ${process.versions.node} (native packages are only supported through Node ${MAX_NATIVE_PACKAGE_NODE_MAJOR}.x).`);
-		}
-		await settingsManager.flush();
-		console.log("Optional packages installed.");
-	} catch (error) {
-		const message = error instanceof Error ? error.message : String(error);
-		if (message.includes("No supported package manager found")) {
-			console.log("No package manager is available for optional package installs.");
-			console.log("Install npm, pnpm, or bun, or rerun the standalone installer for bundled package updates.");
-			return;
-		}
-		throw error;
+	const source = resolvePackageSource(presetName);
+	if (configuredSources.has(source)) {
+		console.log(`${source} already installed`);
+		return;
 	}
+	process.exitCode = await installPiPackage(piOptions, source);
 }
 
 function handleSearchCommand(subcommand: string | undefined, args: string[]): void {
@@ -636,7 +552,7 @@ async function runMain(input: { here: string; appRoot: string; feynmanVersion: s
 	const feynmanAgentDir = getFeynmanAgentDir(feynmanHome);
 
 	ensureFeynmanHome(feynmanHome);
-	syncBundledAssets(appRoot, feynmanAgentDir);
+	ensureFeynmanAgentDir(appRoot, feynmanHome, feynmanAgentDir);
 
 	const rawArgs = process.argv.slice(2);
 	const alphaPassthrough = resolveAlphaPassthroughArgs(rawArgs);
@@ -651,7 +567,10 @@ async function runMain(input: { here: string; appRoot: string; feynmanVersion: s
 			allowPositionals: true,
 			options: {
 				cwd: { type: "string" },
+				continue: { type: "boolean", short: "c" },
 				doctor: { type: "boolean" },
+				export: { type: "string" },
+				fork: { type: "string" },
 				help: { type: "boolean" },
 				version: { type: "boolean" },
 				"alpha-login": { type: "boolean" },
@@ -660,8 +579,11 @@ async function runMain(input: { here: string; appRoot: string; feynmanVersion: s
 				mode: { type: "string" },
 				model: { type: "string" },
 				"new-session": { type: "boolean" },
+				"no-session": { type: "boolean" },
 				prompt: { type: "string" },
+				resume: { type: "boolean", short: "r" },
 				"service-tier": { type: "string" },
+				session: { type: "string" },
 				"session-dir": { type: "string" },
 				"setup-preview": { type: "boolean" },
 				"tier1-threshold": { type: "string" },
@@ -701,13 +623,15 @@ async function runMain(input: { here: string; appRoot: string; feynmanVersion: s
 	const sessionDir = resolve(values["session-dir"] ?? getDefaultSessionDir(feynmanHome));
 	const feynmanSettingsPath = resolve(feynmanAgentDir, "settings.json");
 	const feynmanAuthPath = resolve(feynmanAgentDir, "auth.json");
-	const researchToolsExtensionPath = resolve(appRoot, "extensions", "research-tools.ts");
 	const { defaultThinkingLevel, launchThinkingLevel } = resolveThinkingConfig(values.thinking ?? process.env.FEYNMAN_THINKING);
+	const piOptions: PiRuntimeOptions = { appRoot, workingDir, sessionDir, feynmanAgentDir, feynmanVersion };
 
-	await normalizeFeynmanSettings(feynmanSettingsPath, bundledSettingsPath, defaultThinkingLevel, feynmanAuthPath, {
-		researchToolsExtensionPath,
-	});
-	reconcileManagedCorePackageInstalls(feynmanAgentDir, appRoot);
+	await ensureFeynmanSettings(feynmanSettingsPath, bundledSettingsPath, appRoot, defaultThinkingLevel, feynmanAuthPath);
+
+	if (values.export) {
+		process.exitCode = await runPi(piOptions, ["--export", values.export, ...positionals], buildPiEnv(piOptions));
+		return;
+	}
 
 	if (values.doctor) {
 		await runDoctor({
@@ -770,7 +694,6 @@ async function runMain(input: { here: string; appRoot: string; feynmanVersion: s
 			sessionDir,
 			appRoot,
 			defaultThinkingLevel,
-			researchToolsExtensionPath,
 		});
 		return;
 	}
@@ -808,12 +731,12 @@ async function runMain(input: { here: string; appRoot: string; feynmanVersion: s
 	}
 
 	if (command === "packages") {
-		await handlePackagesCommand(rest[0], rest.slice(1), workingDir, feynmanAgentDir);
+		await handlePackagesCommand(rest[0], rest.slice(1), piOptions);
 		return;
 	}
 
 	if (command === "update") {
-		await handleUpdateCommand(workingDir, feynmanAgentDir, appRoot, feynmanVersion, rest[0]);
+		await handleUpdateCommand(piOptions, feynmanVersion, rest[0]);
 		return;
 	}
 
@@ -866,20 +789,27 @@ async function runMain(input: { here: string; appRoot: string; feynmanVersion: s
 			sessionDir,
 			appRoot,
 			defaultThinkingLevel,
-			researchToolsExtensionPath,
 		});
 		if (!getCurrentModelSpec(feynmanSettingsPath)) {
 			return;
 		}
-		await normalizeFeynmanSettings(feynmanSettingsPath, bundledSettingsPath, defaultThinkingLevel, feynmanAuthPath, {
-			researchToolsExtensionPath,
-		});
+		await ensureFeynmanSettings(feynmanSettingsPath, bundledSettingsPath, appRoot, defaultThinkingLevel, feynmanAuthPath);
 	}
 
 	const workflowCommandNames = new Set(readPromptSpecs(appRoot).filter((s) => s.topLevelCli).map((s) => s.name));
 	const workflowRest = appendWorkflowFlagPositionals(command, rest, values);
 	const promptOptions = resolvePiPromptOptions(command, workflowRest, values.prompt, workflowCommandNames);
+	// Pi's own session flags pass through; Feynman continues the latest
+	// session only when none of them is given.
+	const piArgs = [
+		...(values.continue ? ["--continue"] : []),
+		...(values.resume ? ["--resume"] : []),
+		...(values.session ? ["--session", values.session] : []),
+		...(values.fork ? ["--fork", values.fork] : []),
+		...(values["no-session"] ? ["--no-session"] : []),
+	];
 	const resumeRecentSession =
+		piArgs.length === 0 &&
 		!values["new-session"] &&
 		mode !== "rpc" &&
 		mode !== "json" &&
@@ -895,15 +825,12 @@ async function runMain(input: { here: string; appRoot: string; feynmanVersion: s
 	}
 
 	await launchPiChat({
-		appRoot,
-		workingDir,
-		sessionDir,
-		feynmanAgentDir,
-		feynmanVersion,
+		...piOptions,
 		mode,
 		thinkingLevel: launchThinkingLevel,
 		explicitModelSpec,
 		resumeRecentSession,
+		piArgs,
 		preLaunchNotice,
 		...promptOptions,
 	});
