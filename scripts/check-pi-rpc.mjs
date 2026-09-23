@@ -33,8 +33,18 @@ const response = await new Promise((resolvePromise, reject) => {
 	child.stdin.write(`${JSON.stringify({ id: "commands", type: "get_commands" })}\n`);
 });
 child.removeAllListeners("exit");
-child.kill();
-rmSync(home, { recursive: true, force: true, maxRetries: 5 });
+// RPC mode exits when stdin closes. Wait for that before deleting the home:
+// on Windows, killing the launcher leaves Pi running with files open inside it.
+await new Promise((resolvePromise) => {
+	const timer = setTimeout(() => { child.kill(); resolvePromise(); }, 10_000);
+	child.once("exit", () => { clearTimeout(timer); resolvePromise(); });
+	child.stdin.end();
+});
+try {
+	rmSync(home, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
+} catch (error) {
+	console.warn(`could not remove ${home}: ${error.message}`);
+}
 
 assert.equal(response.success, true, JSON.stringify(response));
 const commands = response.data.commands;
