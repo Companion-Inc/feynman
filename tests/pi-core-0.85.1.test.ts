@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
+import { createRequire } from "node:module";
 import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import test from "node:test";
@@ -70,11 +71,21 @@ for (const [pkg, file, patch] of cases) {
 	});
 }
 
+// Bare imports fall back to the patched package's own resolution, so nested
+// dependencies (such as Pi's own chalk) do not rely on root-level hoisting.
+function resolveBare(specifier: string, parent: URL): string {
+	try {
+		return import.meta.resolve(specifier);
+	} catch {
+		return pathToFileURL(createRequire(parent).resolve(specifier)).href;
+	}
+}
+
 async function importPatched(pkg: string, file: string, source: string, overrides: Record<string, string> = {}) {
 	const url = pathToFileURL(installed(pkg, file));
 	const linked = source.replace(/from "([^"]+)";/g, (_match, specifier: string) => {
 		const target = overrides[specifier] ??
-			(specifier.startsWith(".") ? new URL(specifier, url).href : import.meta.resolve(specifier));
+			(specifier.startsWith(".") ? new URL(specifier, url).href : resolveBare(specifier, url));
 		return `from ${JSON.stringify(target)};`;
 	});
 	return import(`data:text/javascript;base64,${Buffer.from(linked).toString("base64")}`);

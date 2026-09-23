@@ -5,19 +5,12 @@ section: Getting Started
 order: 4
 ---
 
-Feynman stores user-level configuration and state under `~/.feynman/`. This directory is created on first run and contains the active local org manifest, Pi agent profile, model settings, authentication state, session history, org-scoped workbench app data, web-search routing, memory state, command shims, and installed user packages.
+Feynman stores user-level configuration and state under `~/.feynman/`. This directory is created on first run and contains the Pi agent profile, model settings, authentication state, session history, web-search routing, memory state, command shims, and installed user packages.
 
 ## Directory structure
 
 ```
 ~/.feynman/
-├── active-org.json      # Current local Feynman org selection
-├── orgs/
-│   └── <org_uuid>/
-│       ├── feynman-workbench.db  # Org-level SQLite mirror of core workbench records
-│       └── workbench/
-│           ├── workspaces.json  # Workspace index for the active org
-│           └── workspaces/      # Projects, sessions, settings, uploads, snapshots, and compute logs by workspace
 ├── agent/
 │   ├── settings.json   # Core model and runtime configuration
 │   ├── auth.json       # Provider auth metadata and API-key references
@@ -25,7 +18,6 @@ Feynman stores user-level configuration and state under `~/.feynman/`. This dire
 │   ├── skills/         # Synced bundled skills
 │   └── themes/         # Synced Feynman/Pi theme files
 ├── sessions/           # Persisted conversation history
-├── workbench/           # Legacy pre-org workbench location, copied forward on first access
 ├── memory/             # Feynman memory storage
 ├── web-search.json     # Web-search routing config
 ├── web-search-cache/   # Private one-hour fetched-page cache
@@ -160,7 +152,6 @@ Feynman respects the following environment variables, which take precedence over
 | --- | --- |
 | `FEYNMAN_MODEL` | Override the default with an approved research model |
 | `FEYNMAN_HOME` | Override the parent directory used to create `.feynman` (default parent: `~`) |
-| `FEYNMAN_WORKBENCH_HOME` | Override the workbench app-data root; otherwise Feynman uses `~/.feynman/orgs/<org_uuid>/workbench` |
 | `FEYNMAN_FETCH_CACHE_DIR` | Override the project-local directory used for `fetch_content` PDF scratch Markdown |
 | `FEYNMAN_THINKING` | Override the thinking level |
 | `ANTHROPIC_API_KEY` | Anthropic API key |

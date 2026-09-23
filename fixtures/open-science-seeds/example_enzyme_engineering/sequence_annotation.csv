@@ -1,4 +1,0 @@
-feature,start,end,length,pos_charge,neg_charge,net_charge
-RuvC (RNase H fold),1,122,122,17,19,-2
-Coiled-coil linker,123,188,66,10,13,-3
-Tnp (DNA/RNA binding),189,326,138,26,8,18

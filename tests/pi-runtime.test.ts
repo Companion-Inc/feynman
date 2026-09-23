@@ -568,20 +568,6 @@ test("resolvePiPaths falls back to the vendored runtime workspace in packed inst
 	assert.deepEqual(validatePiInstallation(appRoot), []);
 });
 
-test("package ships source modules required by source-loaded research extensions", () => {
-	const manifest = JSON.parse(readFileSync(join(process.cwd(), "package.json"), "utf8")) as { files?: string[] };
-	const packagedFiles = new Set(manifest.files ?? []);
-
-	for (const path of [
-		"src/config/paths.ts",
-		"src/workbench/data-root.ts",
-		"src/workbench/oauth-store.ts",
-		"src/workbench/settings-store.ts",
-	]) {
-		assert.equal(packagedFiles.has(path), true, `${path} must ship with the source-loaded research extension`);
-	}
-});
-
 test("resolveBundledAlphaCliPath resolves hoisted package installs before bundled fallbacks", () => {
 	const root = mkdtempSync(join(tmpdir(), "feynman-alpha-cli-hoisted-"));
 	const appRoot = join(root, "node_modules", "@companion-ai", "feynman");

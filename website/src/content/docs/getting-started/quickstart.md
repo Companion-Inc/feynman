@@ -17,16 +17,6 @@ feynman
 
 You are dropped into a conversational REPL where you can ask research questions, run workflows, and interact with agents in natural language. Type your question and press Enter.
 
-## Open the science workbench
-
-Use the workbench when a research run needs chat, artifacts, notebooks, compute, settings, and provenance together:
-
-```bash
-feynman serve
-```
-
-The command starts a local authenticated web app with Feynman projects, Pi-backed chat, Feynman Bio Tools, generated artifacts, media/document/science previews, notebook execution records, compute inventory, and verification state. See the [Science Workbench guide](/docs/getting-started/workbench) for the full surface.
-
 ## Run a one-shot prompt
 
 If you want a quick answer without entering the REPL, use the `--prompt` flag:

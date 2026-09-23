@@ -4,7 +4,6 @@ node_modules
 .feynman/npm
 .feynman/git
 .feynman/sessions
-.feynman/workbench
 .feynman/cache
 .feynman/schedule-prompts.json
 dist

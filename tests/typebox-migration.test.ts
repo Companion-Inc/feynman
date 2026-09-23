@@ -30,12 +30,9 @@ test("research extension source and direct locks use Pi's coordinated TypeBox pa
 		typeboxSources.map((path) => path.slice(researchToolsRoot.length + 1)).sort(),
 		[
 			"alpha.ts",
-			"chemistry-sketcher.ts",
 			"huggingface.ts",
 			"model-endpoints.ts",
 			"science-databases.ts",
-			"workbench-connectors.ts",
-			"workbench-context.ts",
 		],
 	);
 	assert.deepEqual(legacySources, []);

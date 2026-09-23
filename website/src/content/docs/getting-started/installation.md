@@ -62,7 +62,7 @@ npm install -g @companion-ai/feynman@latest
 
 ## Uninstalling
 
-Feynman does not currently ship a dedicated `uninstall` command. Remove the standalone launcher and runtime bundle directly, then optionally remove the Feynman home directory if you also want to delete settings, workbench app state, sessions, and installed package state. If you also want to clear alphaXiv login state, remove `~/.ahub`.
+Feynman does not currently ship a dedicated `uninstall` command. Remove the standalone launcher and runtime bundle directly, then optionally remove the Feynman home directory if you also want to delete settings, sessions, and installed package state. If you also want to clear alphaXiv login state, remove `~/.ahub`.
 
 If you installed Feynman with npm, uninstall it with:
 
@@ -75,7 +75,7 @@ On macOS or Linux:
 ```bash
 rm -f ~/.local/bin/feynman
 rm -rf ~/.local/share/feynman
-# optional: remove settings, workbench state, sessions, and installed package state
+# optional: remove settings, sessions, and installed package state
 rm -rf ~/.feynman
 # optional: remove alphaXiv auth state
 rm -rf ~/.ahub
@@ -85,7 +85,7 @@ On Windows PowerShell:
 
 ```powershell
 Remove-Item "$env:LOCALAPPDATA\\Programs\\feynman" -Recurse -Force
-# optional: remove settings, workbench state, sessions, and installed package state
+# optional: remove settings, sessions, and installed package state
 Remove-Item "$HOME\\.feynman" -Recurse -Force
 # optional: remove alphaXiv auth state
 Remove-Item "$HOME\\.ahub" -Recurse -Force

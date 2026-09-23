@@ -99,7 +99,6 @@ import {
 } from "./telemetry/posthog.js";
 import { ASH, printAsciiHeader, printInfo, printPanel, printSection, RESET, SAGE } from "./ui/terminal.js";
 import { createModelRuntime } from "./model/registry.js";
-import { parseWorkbenchPort, serveWorkbench } from "./workbench/server.js";
 import {
 	cliCommandSections,
 	formatCliWorkflowUsage,
@@ -926,13 +925,9 @@ async function runMain(input: { here: string; appRoot: string; feynmanVersion: s
 				model: { type: "string" },
 				"new-session": { type: "boolean" },
 				json: { type: "boolean" },
-				host: { type: "string" },
 				limit: { type: "string" },
-				"no-auth": { type: "boolean" },
-				"no-open": { type: "boolean" },
 				"expand-citations": { type: "string" },
 				"full-text-top": { type: "string" },
-				port: { type: "string" },
 				"critique-top": { type: "string" },
 				synthesize: { type: "boolean" },
 				"synthesis-top": { type: "string" },
@@ -1069,23 +1064,6 @@ async function runMain(input: { here: string; appRoot: string; feynmanVersion: s
 			sessionDir,
 			workingDir,
 			appRoot,
-		});
-		return;
-	}
-
-	if (command === "serve") {
-		await serveWorkbench({
-			appRoot,
-			sessionDir,
-			feynmanAgentDir,
-			settingsPath: feynmanSettingsPath,
-			authPath: feynmanAuthPath,
-			workingDir,
-			version: feynmanVersion,
-			host: values.host,
-			port: parseWorkbenchPort(values.port),
-			requireAuth: values["no-auth"] !== true,
-			shouldOpen: values["no-open"] !== true,
 		});
 		return;
 	}

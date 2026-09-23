@@ -114,7 +114,6 @@ export const cliCommandSections = [
 			{ usage: "feynman setup preview", description: "Install or verify preview dependencies." },
 			{ usage: "feynman doctor", description: "Diagnose config, auth, Pi runtime, and preview dependencies." },
 			{ usage: "feynman status", description: "Show the current setup summary." },
-						{ usage: "feynman serve [--port N] [--no-open] [--no-auth]", description: "Open the local research workbench with project sessions, in-app Pi chat, optional plain localhost mode, Feynman Bio Tools for exact OpenAlex/arXiv literature modes, PubMed workflows, trials, Grants.gov opportunity search, FDA regulatory data, ChEMBL molecular pharmacology, PubChem/ChEBI/BindingDB/Rhea chemistry modes, exact gnomAD/CADD/ClinVar/dbSNP variant modes, CIViC/ClinGen/Open Targets clinical-genomics modes, GTEx/PanglaoDB expression modes, MyGene/OLS/QuickGO/UniProt/Reactome/KEGG genes-and-ontologies modes, exact Ensembl and UCSC genome modes, exact ENCODE/JASPAR/UniBind regulation modes, exact GWAS/eQTL/PheWeb human-genetics modes, exact InterPro/Pfam/Human Protein Atlas/STRING protein-annotation modes, exact Antibody Registry reagent modes, exact Rfam RNA modes, exact ArrayExpress/GEO/MetaboLights/MGnify/PRIDE omics-archive modes, Ketcher KET/RXN/CDXML/CXSMILES chemistry artifacts, bio databases, artifacts, provenance, and the lab notebook." },
 			{ usage: 'feynman rank "topic" [--expand-citations N] [--full-text-top N] [--critique-top N] [--synthesize]', description: "Rank papers for deciding what to read first, with transparent citation, method, reproducibility, and provenance evidence." },
 			{ usage: "feynman paper <doi|arxiv-id|openalex-id|pmid|pmcid|title> [--fetch-full-text]", description: "Resolve legal full-text access candidates for one paper across OpenAlex, arXiv/alphaXiv, DOI, PMID/PMCID, and Europe PMC, with optional source-specific text fetching." },
 		],
@@ -170,7 +169,7 @@ export const legacyFlags = [
 	{ usage: "--setup-preview", description: "Alias for `feynman setup preview`." },
 ];
 
-export const topLevelCommandNames = ["alpha", "chat", "doctor", "help", "model", "packages", "paper", "rank", "search", "serve", "setup", "status", "update"];
+export const topLevelCommandNames = ["alpha", "chat", "doctor", "help", "model", "packages", "paper", "rank", "search", "setup", "status", "update"];
 
 export function formatSlashUsage(command) {
 	return `/${command.name}${command.args ? ` ${command.args}` : ""}`;

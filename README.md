@@ -31,7 +31,7 @@ The installer downloads a standalone native bundle with its own pinned Node.js r
 
 To upgrade the standalone app later, rerun the installer. `feynman update` only refreshes installed Pi packages inside Feynman's environment; it does not replace the standalone runtime bundle itself.
 
-To uninstall the standalone app, remove the launcher and runtime bundle, then optionally remove `~/.feynman` if you also want to delete settings, workbench app state, sessions, and installed package state. If you also want to delete alphaXiv login state, remove `~/.ahub`. See the installation guide for platform-specific paths.
+To uninstall the standalone app, remove the launcher and runtime bundle, then optionally remove `~/.feynman` if you also want to delete settings, sessions, and installed package state. If you also want to delete alphaXiv login state, remove `~/.ahub`. See the installation guide for platform-specific paths.
 
 **npm alternative** (uses your local Node.js runtime):
 
@@ -156,12 +156,6 @@ $ feynman rank "mechanistic interpretability sparse autoencoders" --synthesize
 $ feynman paper 10.7717/peerj.4375 --fetch-full-text
 → Resolves legal full-text access candidates for one paper and fetches source-specific text when available
 
-$ feynman serve
-→ Opens the standalone science workbench with projects, Pi chat, Feynman Bio Tools, notebooks, compute, artifact previews, provenance, settings, skills, and onboarding context
-
-$ feynman serve --no-auth
-→ Opens the same local workbench at a plain localhost URL for trusted local testing
-
 $ feynman audit 2401.12345
 → Compares paper claims against the public codebase
 
@@ -182,7 +176,6 @@ Ask naturally or use slash commands as shortcuts.
 | --- | --- |
 | `feynman rank <topic>` | PaperRank scoring for deciding what to read first, with transparent evidence for citations, methods, reproducibility, and provenance |
 | `feynman paper <id-or-title>` | Paper access resolver for one DOI, arXiv ID, OpenAlex ID, PMID, PMCID, or title, with OpenAlex, arXiv/alphaXiv, DOI, and Europe PMC candidates plus optional source-specific text fetching |
-| `feynman serve` | Standalone science workbench with project/session navigation, project metadata, in-app Pi chat, optional `--no-auth` plain localhost mode, Feynman Bio Tools, Ketcher chemistry sketch artifacts, notebooks, compute, Files host inventory for local, SSH/BYOC, and cloud-backed artifact contexts, audio/video/spreadsheet/notebook/LaTeX/science artifact previews including element-level HTML report annotations and KET/RXN/CDXML/CXSMILES chemistry sketches, artifact Notes and note preview modals, Cloud storage credential modal, Cloud export target/destination modal, frame records, frame message rows, frame backfill health records, lineage, provenance, settings, org-scoped app-data workbench state under `~/.feynman/orgs/<org_uuid>/workbench`, an org-level `feynman-workbench.db` mirror with physical tables for the full reference-shaped workbench ledger coverage map including compute egress/Modal environment fields and Feynman-owned connector ledgers, watch routine state, skill source/license state, setup decision state, review feedback state, compute poller lease state, redacted credential state, onboarding intent context, verification files, and `CHANGELOG.md` lab-notebook entries |
 | `/deepresearch <topic>` | Source-heavy multi-agent investigation |
 | `/lit <topic-or-lab>` | Literature review from paper search and primary sources; lab/PI inputs map publication trajectories and originality-ranked papers |
 | `/review <artifact>` | Research review with severity and revision plan |
@@ -216,10 +209,8 @@ Four bundled research agents, invoked by workflow prompts when decomposition hel
 - **[Hugging Face Hub](https://huggingface.co/docs/hub/api)** — dataset metadata, split/schema inspection, and small file reads from model, dataset, and Space repos
 - **Web research** — multi-provider search, explicit proxy routing, bounded GitHub issue/PR documents, raw or question-grounded page retrieval, direct images, external fetched-content caching, stored-page passage lookup, and auditable source text; tools, commands, images, PDFs, and browser cookies remain independently gated
 - **Session search** — indexed recall across prior research sessions
-- **Artifact previews** — local workbench viewers for reports, JSON/JSONL, tables, PDFs, images, audio, video, XLSX workbooks, Jupyter notebooks, LaTeX, sequences, alignments, variants, genomes, KET/RXN/CDXML/CXSMILES/Molfile/SDF/SMILES chemistry artifacts, structures, trees, and tensors
 - **Observability** — PostHog analytics, logs, distributed traces, and Pi AI runtime traces through OpenTelemetry metadata, with signal-specific HTTP OTLP routing for external collectors
 - **Research execution options** — Docker, Modal, and RunPod instructions for explicitly chosen replication, benchmark, or dataset-heavy experiment runs; not service deployment or generic cloud administration
-- **Workbench control plane** — local onboarding, project/session/frame state, upload-frame linkage, frame message rows, frame backfill health records, chat-produced artifact attachment, artifact/version lineage, Files host inventory for local workspace files, SSH/BYOC compute hosts, and cloud buckets, media/document/science previews, element-level HTML report annotations, artifact Notes and note preview modals, Cloud storage credential modal, Cloud export target/destination modal with audit logs, execution logs, verification checks, memory categories, watch routine records, skill source/license records, setup decision records, review feedback records, compute poller lease records, scoped settings, and redacted credential availability records under Feynman's own runtime and workspace files
 
 ---
 

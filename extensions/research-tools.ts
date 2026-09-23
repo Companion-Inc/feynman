@@ -1,7 +1,6 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 
 import { registerAlphaTools } from "./research-tools/alpha.js";
-import { registerChemistrySketcherTool } from "./research-tools/chemistry-sketcher.js";
 import { registerCurrentDateResearchContext } from "./research-tools/current-date.js";
 import { registerDiscoveryCommands } from "./research-tools/discovery.js";
 import { registerFeynmanModelCommand } from "./research-tools/feynman-model.js";
@@ -12,8 +11,6 @@ import { registerInitCommand, registerOutputsCommand } from "./research-tools/pr
 import { registerServiceTierControls } from "./research-tools/service-tier.js";
 import { registerScienceDatabaseTools } from "./research-tools/science-databases.js";
 import { registerModelEndpointTools } from "./research-tools/model-endpoints.js";
-import { registerWorkbenchConnectorTools } from "./research-tools/workbench-connectors.js";
-import { registerWorkbenchContextTool } from "./research-tools/workbench-context.js";
 
 export default function researchTools(pi: ExtensionAPI): void {
 	const cache: { agentSummaryPromise?: Promise<{ agents: string[]; chains: string[] }> } = {};
@@ -24,7 +21,6 @@ export default function researchTools(pi: ExtensionAPI): void {
 	});
 
 	registerAlphaTools(pi);
-	registerChemistrySketcherTool(pi);
 	registerCurrentDateResearchContext(pi);
 	registerHuggingFaceTools(pi);
 	registerDiscoveryCommands(pi);
@@ -35,6 +31,4 @@ export default function researchTools(pi: ExtensionAPI): void {
 	registerServiceTierControls(pi);
 	registerScienceDatabaseTools(pi);
 	registerModelEndpointTools(pi);
-	registerWorkbenchConnectorTools(pi);
-	registerWorkbenchContextTool(pi);
 }
