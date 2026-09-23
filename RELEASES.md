@@ -6,6 +6,8 @@ GitHub release notes are generated from the matching `## vX.Y.Z` section in this
 
 ## Unreleased
 
+## v0.4.0 - 2026-09-23
+
 ### Focused on the research loop
 
 Feynman now ships only what serves finding papers, reading them, synthesizing with verified citations, auditing papers against code, and planning replications. Removed:
