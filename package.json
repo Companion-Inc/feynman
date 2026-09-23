@@ -100,7 +100,7 @@
   },
   "dependencies": {
     "@clack/prompts": "^1.7.0",
-    "@companion-ai/alpha-hub": "0.1.5",
+    "@companion-ai/alpha-hub": "0.1.6",
     "@earendil-works/pi-agent-core": "0.85.1",
     "@earendil-works/pi-ai": "0.85.1",
     "@earendil-works/pi-client": "0.85.1",

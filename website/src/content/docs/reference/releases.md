@@ -35,6 +35,7 @@ Everything removed is preserved in the repository at the `archive/pre-deslop-0.3
 ### alphaXiv
 
 - Updated the bundled alphaXiv client to `@companion-ai/alpha-hub@0.1.5`, which now ships the fixes Feynman used to patch in at install time: opening the login browser from WSL, printing the login URL when no browser opens, and falling back to REST search when `discover_papers` is unavailable. It also adds a paste-the-URL login for headless sessions, fixes a hang in parallel searches, and writes the token file with `0600` permissions. Feynman no longer patches alpha-hub.
+- Updated `@companion-ai/alpha-hub` to 0.1.6. Expired alphaXiv tokens are now refreshed before paper tool calls instead of failing with "Invalid Authorization", concurrent calls share one refresh, logging out can no longer be undone by an in-flight refresh, the auth file is written atomically with `0600` permissions, and `feynman alpha status` checks the login with the alphaXiv server.
 
 ## v0.3.49 - 2026-09-23
 

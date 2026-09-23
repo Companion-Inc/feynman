@@ -360,7 +360,7 @@ test("bundled settings and package-list defaults use the same current core packa
 	) as { packages?: string[] };
 	assert.deepEqual(bundledSettings.packages, [...CORE_PACKAGE_SOURCES]);
 	assert.deepEqual(CORE_PACKAGE_SOURCES, [
-		"npm:@companion-ai/alpha-hub@0.1.5",
+		"npm:@companion-ai/alpha-hub@0.1.6",
 		"npm:pi-subagents@0.65.1",
 		"npm:pi-btw@0.4.1",
 		"npm:pi-docparser@4.0.0",
@@ -422,7 +422,7 @@ test("managed package reconciliation updates stale sources without changing cust
 			"npm:pi-web-access@0.28.0",
 			"npm:pi-subagents@0.65.1",
 			custom,
-			"npm:@companion-ai/alpha-hub@0.1.5",
+			"npm:@companion-ai/alpha-hub@0.1.6",
 			"npm:pi-btw@0.4.1",
 			"npm:pi-docparser@4.0.0",
 			"npm:pi-otel@0.1.0",
@@ -431,17 +431,19 @@ test("managed package reconciliation updates stale sources without changing cust
 });
 
 test("managed package reconciliation updates every previously shipped package pin", () => {
-	assert.deepEqual(
-		reconcileManagedCorePackageSources([
-			"npm:@companion-ai/alpha-hub@0.1.4",
-			"npm:pi-subagents@0.65.1",
-			"npm:pi-btw@0.4.1",
-			"npm:pi-docparser@4.0.0",
-			"npm:pi-web-access@0.28.0",
-			"npm:pi-otel@0.1.0",
-		]),
-		[...CORE_PACKAGE_SOURCES],
-	);
+	for (const previousAlphaHub of ["0.1.4", "0.1.5"]) {
+		assert.deepEqual(
+			reconcileManagedCorePackageSources([
+				`npm:@companion-ai/alpha-hub@${previousAlphaHub}`,
+				"npm:pi-subagents@0.65.1",
+				"npm:pi-btw@0.4.1",
+				"npm:pi-docparser@4.0.0",
+				"npm:pi-web-access@0.28.0",
+				"npm:pi-otel@0.1.0",
+			]),
+			[...CORE_PACKAGE_SOURCES],
+		);
+	}
 	assert.deepEqual(
 		reconcileManagedCorePackageSources([
 			"npm:pi-subagents@0.37.0",
@@ -450,7 +452,7 @@ test("managed package reconciliation updates every previously shipped package pi
 		[
 			"npm:pi-subagents@0.65.1",
 			"npm:pi-web-access@0.28.0",
-			"npm:@companion-ai/alpha-hub@0.1.5",
+			"npm:@companion-ai/alpha-hub@0.1.6",
 			"npm:pi-btw@0.4.1",
 			"npm:pi-docparser@4.0.0",
 			"npm:pi-otel@0.1.0",
@@ -460,7 +462,7 @@ test("managed package reconciliation updates every previously shipped package pi
 		reconcileManagedCorePackageSources(["npm:pi-web-access@0.18.0"]),
 		[
 			"npm:pi-web-access@0.28.0",
-			"npm:@companion-ai/alpha-hub@0.1.5",
+			"npm:@companion-ai/alpha-hub@0.1.6",
 			"npm:pi-subagents@0.65.1",
 			"npm:pi-btw@0.4.1",
 			"npm:pi-docparser@4.0.0",
@@ -471,7 +473,7 @@ test("managed package reconciliation updates every previously shipped package pi
 		reconcileManagedCorePackageSources(["npm:pi-web-access@0.22.0"]),
 		[
 			"npm:pi-web-access@0.28.0",
-			"npm:@companion-ai/alpha-hub@0.1.5",
+			"npm:@companion-ai/alpha-hub@0.1.6",
 			"npm:pi-subagents@0.65.1",
 			"npm:pi-btw@0.4.1",
 			"npm:pi-docparser@4.0.0",
@@ -482,7 +484,7 @@ test("managed package reconciliation updates every previously shipped package pi
 		reconcileManagedCorePackageSources(["npm:pi-web-access@0.23.0"]),
 		[
 			"npm:pi-web-access@0.28.0",
-			"npm:@companion-ai/alpha-hub@0.1.5",
+			"npm:@companion-ai/alpha-hub@0.1.6",
 			"npm:pi-subagents@0.65.1",
 			"npm:pi-btw@0.4.1",
 			"npm:pi-docparser@4.0.0",
@@ -493,7 +495,7 @@ test("managed package reconciliation updates every previously shipped package pi
 		reconcileManagedCorePackageSources(["npm:pi-web-access@0.24.0"]),
 		[
 			"npm:pi-web-access@0.28.0",
-			"npm:@companion-ai/alpha-hub@0.1.5",
+			"npm:@companion-ai/alpha-hub@0.1.6",
 			"npm:pi-subagents@0.65.1",
 			"npm:pi-btw@0.4.1",
 			"npm:pi-docparser@4.0.0",
@@ -504,7 +506,7 @@ test("managed package reconciliation updates every previously shipped package pi
 		reconcileManagedCorePackageSources(["npm:pi-web-access@0.24.2"]),
 		[
 			"npm:pi-web-access@0.28.0",
-			"npm:@companion-ai/alpha-hub@0.1.5",
+			"npm:@companion-ai/alpha-hub@0.1.6",
 			"npm:pi-subagents@0.65.1",
 			"npm:pi-btw@0.4.1",
 			"npm:pi-docparser@4.0.0",
@@ -523,7 +525,7 @@ test("managed package reconciliation preserves an explicit custom core selector 
 		[
 			"npm:pi-subagents@0.65.1",
 			custom,
-			"npm:@companion-ai/alpha-hub@0.1.5",
+			"npm:@companion-ai/alpha-hub@0.1.6",
 			"npm:pi-btw@0.4.1",
 			"npm:pi-docparser@4.0.0",
 			"npm:pi-otel@0.1.0",
@@ -540,7 +542,7 @@ test("managed package reconciliation preserves a custom core string selector", (
 		[
 			"npm:pi-subagents@0.65.1",
 			"npm:pi-web-access@next",
-			"npm:@companion-ai/alpha-hub@0.1.5",
+			"npm:@companion-ai/alpha-hub@0.1.6",
 			"npm:pi-btw@0.4.1",
 			"npm:pi-docparser@4.0.0",
 			"npm:pi-otel@0.1.0",
@@ -880,7 +882,7 @@ test("package update sources map core and optional aliases", () => {
 	assert.deepEqual(resolvePackageUpdateSources("subagents"), ["npm:pi-subagents@0.65.1"]);
 	assert.deepEqual(resolvePackageUpdateSources("npm:pi-subagents"), ["npm:pi-subagents@0.65.1"]);
 	assert.deepEqual(resolvePackageUpdateSources("pi-web-access"), ["npm:pi-web-access@0.28.0"]);
-	assert.deepEqual(resolvePackageUpdateSources("alpha-hub"), ["npm:@companion-ai/alpha-hub@0.1.5"]);
+	assert.deepEqual(resolvePackageUpdateSources("alpha-hub"), ["npm:@companion-ai/alpha-hub@0.1.6"]);
 	assert.deepEqual(resolvePackageUpdateSources("npm:pi-subagents@0.37.2"), ["npm:pi-subagents@0.37.2"]);
 	assert.deepEqual(resolvePackageUpdateSources("hindsight"), ["npm:@luxusai/pi-hindsight"]);
 	assert.deepEqual(resolvePackageUpdateSources("pi-hindsight"), ["npm:@luxusai/pi-hindsight"]);

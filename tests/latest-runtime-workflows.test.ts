@@ -39,7 +39,7 @@ function withInstalledFixture(run: (root: string, pkg: string) => void) {
 				put(`${modules}/@earendil-works/${name}/package.json`, { name: `@earendil-works/${name}`, version: "0.85.1" });
 			}
 			put(`${modules}/@earendil-works/pi-coding-agent/dist/cli/args.js`, "reviewed-pi-cli");
-			put(`${modules}/@companion-ai/alpha-hub/package.json`, { name: "@companion-ai/alpha-hub", version: "0.1.5" });
+			put(`${modules}/@companion-ai/alpha-hub/package.json`, { name: "@companion-ai/alpha-hub", version: "0.1.6" });
 		}
 		put(".feynman/npm/node_modules/pi-subagents/package.json", { name: "pi-subagents", version: "0.65.1" });
 		put(".feynman/npm/node_modules/pi-subagents/src/runs/shared/child-session.ts", "reviewed-native-session");
@@ -55,7 +55,7 @@ export const PI_SUBAGENTS_NATIVE_VERSION = "0.65.1";
 export function assertPiSubagentsNativeSources(read) {
   assert.equal(read("src/runs/shared/child-session.ts"), "reviewed-native-session");
 }`);
-		put("package.json", { name: "@companion-ai/feynman", dependencies: { "@companion-ai/alpha-hub": "0.1.5" } });
+		put("package.json", { name: "@companion-ai/feynman", dependencies: { "@companion-ai/alpha-hub": "0.1.6" } });
 		run(root, pkg);
 	} finally {
 		rmSync(root, { recursive: true, force: true });
