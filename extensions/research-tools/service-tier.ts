@@ -1,8 +1,7 @@
-import { homedir } from "node:os";
 import { readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import { type ExtensionAPI, getAgentDir } from "@earendil-works/pi-coding-agent";
 
 const FEYNMAN_SERVICE_TIERS = [
 	"auto",
@@ -26,13 +25,7 @@ type SelectOption<T> = {
 };
 
 function resolveFeynmanSettingsPath(): string {
-	const configured = process.env.PI_CODING_AGENT_DIR?.trim();
-	const agentDir = configured
-		? configured.startsWith("~/")
-			? resolve(homedir(), configured.slice(2))
-			: resolve(configured)
-		: resolve(homedir(), ".feynman", "agent");
-	return resolve(agentDir, "settings.json");
+	return resolve(getAgentDir(), "settings.json");
 }
 
 function normalizeServiceTier(value: string | undefined): FeynmanServiceTier | undefined {
