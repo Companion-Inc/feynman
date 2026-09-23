@@ -155,12 +155,6 @@ test("release manifests pin current document and website security repairs", () =
 		packages?: Record<string, { version?: string }>;
 	};
 
-	assert.equal(manifest.dependencies?.["pdfjs-dist"], "^6.3.289");
-	assert.equal(lock.packages?.["node_modules/pdfjs-dist"]?.version, "6.3.289");
-	assert.equal(manifest.overrides?.nanoid, "3.3.18");
-	const nanoidEntries = Object.entries(lock.packages ?? {}).filter(([path]) => path.endsWith("/node_modules/nanoid") || path === "node_modules/nanoid");
-	assert.ok(nanoidEntries.length > 0, "the resolved PostCSS nanoid dependency must remain covered");
-	for (const [path, entry] of nanoidEntries) assert.equal(entry.version, "3.3.18", path);
 	assert.equal(manifest.overrides?.["ip-address"], "10.7.0");
 	assert.equal(lock.packages?.["node_modules/ip-address"]?.version, "10.7.0");
 	for (const packageName of [

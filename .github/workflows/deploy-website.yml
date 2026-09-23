@@ -6,6 +6,10 @@ on:
     types: [completed]
     branches: [main]
   workflow_dispatch:
+  # Daily reconcile deploys current qualified main even if a workflow_run
+  # event was dropped or its pending run was replaced in the concurrency slot.
+  schedule:
+    - cron: "17 6 * * *"
 
 permissions:
   contents: read
@@ -19,7 +23,7 @@ jobs:
     if: >-
       github.repository == 'Companion-Inc/feynman' &&
       (
-        (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') ||
+        ((github.event_name == 'workflow_dispatch' || github.event_name == 'schedule') && github.ref == 'refs/heads/main') ||
         (
           github.event_name == 'workflow_run' &&
           github.event.workflow_run.name == 'Publish and Release' &&
@@ -50,7 +54,7 @@ jobs:
           set -euo pipefail
           case "$GITHUB_EVENT_NAME" in
             workflow_run) source_sha="$RELEASE_SHA" ;;
-            workflow_dispatch) source_sha="$MANUAL_SHA" ;;
+            workflow_dispatch|schedule) source_sha="$MANUAL_SHA" ;;
             *) exit 1 ;;
           esac
           [[ "$source_sha" =~ ^[0-9a-f]{40}$ ]] || exit 1

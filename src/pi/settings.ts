@@ -211,6 +211,11 @@ export async function normalizeFeynmanSettings(
 	if (settings.editorPaddingX === undefined) {
 		settings.editorPaddingX = 1;
 	}
+	if (settings.retry === undefined) {
+		// Research runs send large contexts and hit per-minute token limits;
+		// Pi's default 2s/4s/8s backoff gives up before the window resets.
+		settings.retry = { maxRetries: 6, baseDelayMs: 5000 };
+	}
 	settings.theme = "feynman";
 	settings.quietStartup = true;
 	settings.collapseChangelog = true;

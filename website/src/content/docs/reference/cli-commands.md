@@ -18,48 +18,6 @@ This page covers the dedicated Feynman CLI commands and flags. Workflow commands
 | `feynman setup preview` | Install or verify preview dependencies |
 | `feynman doctor` | Diagnose config, auth, Pi runtime, and preview dependencies |
 | `feynman status` | Show the current setup summary (model, auth, packages) |
-| `feynman serve` | Start the local science workbench for projects, Pi chat, Feynman Bio Tools, notebooks, compute, artifact previews, provenance, settings, and onboarding context |
-| `feynman rank "topic"` | Rank papers for deciding what to read first, with transparent citation, method, reproducibility, and provenance evidence |
-| `feynman paper <id-or-title>` | Resolve legal full-text access candidates for one paper and optionally fetch source-specific text |
-
-## Science workbench
-
-`feynman serve` starts a local authenticated web app for research runs that need a control plane instead of a terminal-only session. It exposes projects, sessions, Pi-backed chat, Feynman Bio Tools for exact OpenAlex/arXiv literature workflows, trials, Grants.gov opportunity search, FDA regulatory data, exact gnomAD/CADD/ClinVar/dbSNP variant workflows, GTEx/PanglaoDB expression workflows, MyGene/OLS/QuickGO/UniProt/Reactome/KEGG genes-and-ontologies workflows, exact Ensembl genome workflows, exact UCSC Genome Browser workflows, exact ENCODE/JASPAR/UniBind regulation workflows, exact InterPro/Pfam/Human Protein Atlas/STRING protein-annotation workflows, exact Antibody Registry reagent workflows, exact Rfam RNA workflows, exact ArrayExpress/GEO/MetaboLights/MGnify/PRIDE omics-archive workflows, and bio databases, attachments, artifacts, audio/video/spreadsheet/notebook/LaTeX/science previews including KET/RXN/CDXML/CXSMILES chemistry sketches, versions, lineage, execution logs, verification checks, notebooks, compute inventory, specialists, skills, connectors, memory categories, permissions, storage, and credential availability.
-
-Use `feynman serve --no-auth` for a trusted local-only session that should open at a plain `http://127.0.0.1:<port>/` URL without a launch token. Use the default token URL when exposing the server beyond your own machine.
-
-The workbench is Feynman-owned. It uses Feynman Bio Tools and Feynman's own workspace/settings records; it does not require another local app to be installed for core product behavior. Feynman Bio Tools includes exact OpenAlex work search/detail, citations, references, author search/detail, venue metadata, exact arXiv search and batch paper retrieval, PubMed metadata, PMID/PMCID/DOI conversion, related-article links, citation matching, copyright/license checks, PMC full-text routing, ClinicalTrials.gov NCT detail records, sponsor-specific programs, eligibility filters, investigator/contact discovery, endpoint summaries, Grants.gov Search2 opportunity lookup, exact Antibody Registry search/detail/catalog/stat workflows, ChEMBL compound/drug/ADMET/bioactivity/mechanism/target workflows, exact gnomAD short/SV/mitochondrial variant workflows, CADD variant/position/range scoring, direct ClinVar search/accession/rsID workflows, dbSNP rsID/region workflows, GTEx dataset/tissue/sample/gene/expression/eQTL workflows, PanglaoDB marker-gene and gene-to-cell-type workflows, Ensembl lookup/xrefs/VEP/homology/sequence/overlap-region retrieval, UCSC track/chromosome/track-data/conservation/TFBS retrieval, exact ENCODE experiment/biosample/file search and detail workflows, exact JASPAR matrix/version/catalog workflows, exact UniBind dataset and regional TFBS workflows, exact GWAS Catalog association/study/trait/SNP workflows, exact eQTL Catalogue dataset and association workflows, PheWeb/FinnGen PheWAS workflows, exact Rfam RNA family metadata/accession/alignment/model/tree/region/structure/search workflows, exact ArrayExpress experiment/files/sample workflows, GEO series search/detail, MetaboLights study/file workflows, MGnify study/analysis workflows, PRIDE project/protein-evidence workflows, exact InterPro/Pfam domain architecture, entry, clan, and family member workflows, Human Protein Atlas gene/search workflows, STRING mapping/network/similarity workflows, MyGene query-many lookup, OLS ontology catalogue/search/term lookup, QuickGO annotations, UniProt entry retrieval, Reactome pathway mapping, KEGG entry/search/link/ID-conversion workflows, and richer bioRxiv/medRxiv DOI lookup, date/category preprint windows, published-preprint links, funder/ROR lookup, and usage/content statistics. See the [Science Workbench guide](/docs/getting-started/workbench).
-
-## Paper access commands
-
-| Command | Description |
-| --- | --- |
-| `feynman paper 10.7717/peerj.4375` | Resolve OpenAlex, DOI, publisher/repository, and Europe PMC access candidates |
-| `feynman paper pmid:29456894` | Resolve a PubMed/PMC-indexed paper through exact OpenAlex PMID/PMCID metadata and Europe PMC candidates |
-| `feynman paper 2309.08600 --fetch-full-text` | Fetch text through source-specific APIs when available and write bounded access artifacts |
-| `feynman paper "paper title" --json` | Search OpenAlex by title and print a machine-readable access summary |
-
-Paper access writes `<slug>-paper-access.md` and `<slug>-paper-access.json`. It records access candidates from OpenAlex, DOI, PMID/PMCID, arXiv/alphaXiv, and Europe PMC. It does not bypass paywalls and does not write raw full-text bodies to artifacts.
-
-## PaperRank commands
-
-| Command | Description |
-| --- | --- |
-| `feynman rank "topic"` | Fetch OpenAlex works and rank papers for a topic |
-| `feynman rank "topic" --limit 20` | Limit the candidate paper count |
-| `feynman rank "topic" --expand-citations 2` | Add cited and citing works to the local graph before scoring graph prestige |
-| `feynman rank "topic" --full-text-top 3` | Fetch source-specific full text for top candidates, add section-aware rubric evidence, and rescore |
-| `feynman rank "topic" --critique-top 5` | Write research-critique strengths, concerns, and follow-up questions for top ranked papers |
-| `feynman rank "topic" --preference-file preferences.json` | Evaluate rank agreement against researcher read-order preferences |
-| `feynman rank "topic" --reproduction-notes reproduction-notes.json` | Record completed reproduction outcomes separately from planned replication checks |
-| `feynman rank "topic" --synthesis-top 7` | Choose how many ranked papers enter the bounded model-synthesis packet |
-| `feynman rank "topic" --synthesize` | Ask the recommended approved research model to write `<slug>-model-synthesis.md` and print the selected model |
-| `feynman rank "topic" --synthesize --model provider/model` | Run model synthesis with an explicit approved model for this command |
-| `feynman rank "topic" --synthesize --synthesis-model provider/model` | Run model synthesis with an explicit approved model without changing the chat model flag |
-| `feynman rank "topic" --output-dir outputs` | Choose where artifacts are written |
-| `feynman rank "topic" --json` | Print a compact JSON summary after writing artifacts |
-
-PaperRank writes a ranked brief, normalized paper/score JSONL, a score audit, citation/field context, graph explorer, rank-sensitivity data, and provenance by default. Optional flags add research critique, empirical preference calibration, completed reproduction notes, source-specific full-text enrichment, citation-neighborhood expansion, or model synthesis. The CLI output, JSON summary, generated synthesis, and provenance record the selected model and whether it came from the recommendation path or an explicit override. The score separates topical relevance, citation impact, local graph prestige, citation velocity, methodology screening, and reproducibility screening. The score audit explains per-paper weights, contribution math, visible evidence, missing components, rubric gaps, field roles, and critique status. Preference files and reproduction notes are treated as external evidence; without them, PaperRank labels those checks as not provided without writing extra calibration or reproduction files. The synthesis packet and prompt are bounded model inputs that omit raw full text and are written only when synthesis is requested. The graph explorer is an inspection view and does not embed raw full-text bodies.
 
 ## Model management
 

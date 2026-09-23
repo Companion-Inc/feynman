@@ -7,10 +7,10 @@ function waitSynchronously(delayMs) {
 	Atomics.wait(waitBuffer, 0, 0, delayMs);
 }
 
-function isRetryableRemoveError(error) {
+function isRetryableRemoveError(error, retryableCodes) {
 	return error instanceof Error
 		&& "code" in error
-		&& RETRYABLE_REMOVE_CODES.has(error.code);
+		&& retryableCodes.has(error.code);
 }
 
 export function removeTemporaryTree(
@@ -21,6 +21,7 @@ export function removeTemporaryTree(
 		maxRetries = 10,
 		retryDelayMs = 250,
 		maxRetryDelayMs = 5_000,
+		retryableCodes = RETRYABLE_REMOVE_CODES,
 	} = {},
 ) {
 	for (let attempt = 0; ; attempt += 1) {
@@ -28,7 +29,7 @@ export function removeTemporaryTree(
 			remove(path, { recursive: true, force: true });
 			return;
 		} catch (error) {
-			if (!isRetryableRemoveError(error) || attempt >= maxRetries) {
+			if (!isRetryableRemoveError(error, retryableCodes) || attempt >= maxRetries) {
 				throw error;
 			}
 			wait(Math.min(retryDelayMs * (2 ** attempt), maxRetryDelayMs));

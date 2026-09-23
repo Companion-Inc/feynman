@@ -31,7 +31,7 @@ Every run must leave these files on disk:
 - `outputs/<slug>.md` or `papers/<slug>.md`
 - `outputs/<slug>.provenance.md` or `papers/<slug>.provenance.md`
 
-After the user approves the plan, if any capability fails, continue in degraded mode and still write a blocked or partial final output and provenance sidecar. Never end with chat-only output after plan approval. Never end with only an explanation in chat after plan approval. Use `Verification: BLOCKED` when verification could not be completed.
+Before the plan is approved, only the plan file may exist; do not create placeholder drafts, final outputs, or provenance files. After the user approves the plan, if any capability fails, continue in degraded mode and still write a blocked or partial final output and provenance sidecar. Never end with chat-only output after plan approval. Never end with only an explanation in chat after plan approval. Use `Verification: BLOCKED` when verification could not be completed.
 
 ## Step 1: Plan
 

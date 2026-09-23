@@ -6,6 +6,36 @@ GitHub release notes are generated from the matching `## vX.Y.Z` section in this
 
 ## Unreleased
 
+## v0.4.0 - 2026-09-23
+
+### Focused on the research loop
+
+Feynman now ships only what serves finding papers, reading them, synthesizing with verified citations, auditing papers against code, and planning replications. Removed:
+
+- **Science workbench:** `feynman serve` and its `--port`, `--no-open`, `--no-auth` and `--host` flags, the local web app, its demo seed data, and the workbench-only Pi tools `feynman_connector_tools`, `feynman_connector_call`, `feynman_workbench_context`, and `feynman_open_chemistry_sketcher`. The molecule, genome, alignment, and structure viewer libraries are no longer installed with Feynman.
+- **Non-literature databases:** `feynman_science_database_search` now covers OpenAlex, arXiv ID lookup, PubMed, Europe PMC (including open-access full-text sections), bioRxiv/medRxiv, and Crossref. Biomedical, chemistry, genomics, variant, omics, regulatory, clinical-trial, grants, protein and structure sources were removed, along with DataCite. The tool's prompt text went from about 17 KB to about 2 KB per session.
+- **Model endpoints:** the NVIDIA BioNeMo `feynman_model_endpoint_call` tool.
+- **Skills:** protein and bio model templates (AlphaFold2, OpenFold3, Boltz, Chai-1, ESMFold, ESM2, Evo 2, Borzoi, DiffDock, ProteinMPNN, LigandMPNN, SolubleMPNN, scGPT, scvi-tools, indication dossier), Modal/RunPod/SSH/model-endpoint compute templates, and the `customize`, `self-awareness`, `product-self-knowledge`, `contributing`, `skill-creator`, `figure-composer`, `figure-style`, and `paper-narrative` skills. `/replicate` and `/autoresearch` still offer Docker, Modal, and RunPod as execution choices.
+- **Commands:** `/commands` and `/capabilities`. Use `/help` for the grouped command list and `/tools` for the tool list.
+- **Workflows:** `/watch` and `/jobs` (and `feynman watch` / `feynman jobs`). Both depended on a `schedule_prompt` scheduler tool that Feynman does not ship, so they could only report scheduling as blocked.
+- **PaperRank and paper access:** `feynman rank` (with `--limit`, `--expand-citations`, `--full-text-top`, `--critique-top`, `--synthesize`, `--synthesis-top`, `--synthesis-model`, `--preference-file`, `--reproduction-notes`, `--source-fixture`, `--output-dir`, `--json`) and `feynman paper` (`--fetch-full-text`). PaperRank seeded from an OpenAlex keyword search without an API key and missed seminal papers that a citation-sorted search finds; use `/lit` or `/deepresearch`, which search, rank, and read papers through the literature tools. For one paper's full text, ask the agent, which uses Europe PMC, PubMed, and `fetch_content`.
+- **arXiv topic search:** the `arxiv` source of `feynman_science_database_search` now only looks up papers by arXiv ID (bare IDs, URLs, or `arxiv_get_papers:`). `arxiv_search:` and free-text queries were removed because arXiv's lexical API ranked concept queries poorly (0 of 9 seminal papers in the search benchmark); search topics with `semanticscholar` or `openalex` instead.
+- **Removed commands exit with a pointer:** `feynman serve`, `watch`, `jobs`, `rank`, and `paper` now print that the command was removed after 0.3.49 and exit with status 1 instead of starting a chat with that word as the prompt.
+- **Local state:** Feynman no longer creates `~/.feynman/active-org.json` or `~/.feynman/orgs/`. Existing workbench data in those folders is left in place; delete it if you no longer need it.
+
+Everything removed is preserved in the repository at the `archive/pre-deslop-0.3.49` git tag. To recover a piece, check it out from that tag, for example `git checkout archive/pre-deslop-0.3.49 -- src/workbench workbench-web`, or install `@companion-ai/feynman@0.3.49` to keep using the workbench.
+
+### Paper search
+
+- **Semantic Scholar source:** `feynman_science_database_search` gains `source: "semanticscholar"`. By default it runs a bulk search sorted by citation count and keeps the top results (up to 20), which found 7 of 9 seminal papers in the search benchmark versus 2 for OpenAlex keyword search. `sort: "relevance"` uses relevance search and `sort: "pub_date"` returns newest first. Set `SEMANTIC_SCHOLAR_API_KEY` (free on request) to use your own rate limit; without it, a 429 from the shared anonymous pool is retried once and then reported with instructions.
+- **OpenAlex semantic search and key guidance:** prefix an `openalex` query with `semantic:` to use OpenAlex's embedding search (`search.semantic`), which found the test-time-compute paper at rank 1 where keyword search missed it. `OPENALEX_API_KEY` is still sent as the `api_key` parameter when set; when it is missing, results and 401/403/429 errors now say how to get a free key.
+- **Researcher and verifier guidance:** the researcher now routes by need (Semantic Scholar for general ML/CS papers, PubMed and Europe PMC for biomedicine, OpenAlex for citation graphs and semantic search, `web_search` for web sources with keyless Parallel MCP as a fallback, direct ID lookup for known papers) and runs 2–4 reworded queries per question instead of trusting one. The verifier cross-checks each cited paper's DOI or arXiv ID against two indexes and flags title/ID mismatches. Both agents can now call `feynman_science_database_search`. If you customized `~/.feynman/agent/agents/researcher.md` or `verifier.md`, Feynman keeps your copy, so merge these changes by hand.
+
+### alphaXiv
+
+- Updated the bundled alphaXiv client to `@companion-ai/alpha-hub@0.1.5`, which now ships the fixes Feynman used to patch in at install time: opening the login browser from WSL, printing the login URL when no browser opens, and falling back to REST search when `discover_papers` is unavailable. It also adds a paste-the-URL login for headless sessions, fixes a hang in parallel searches, and writes the token file with `0600` permissions. Feynman no longer patches alpha-hub.
+- Updated `@companion-ai/alpha-hub` to 0.1.6. Expired alphaXiv tokens are now refreshed before paper tool calls instead of failing with "Invalid Authorization", concurrent calls share one refresh, logging out can no longer be undone by an in-flight refresh, the auth file is written atomically with `0600` permissions, and `feynman alpha status` checks the login with the alphaXiv server.
+
 ## v0.3.49 - 2026-09-23
 
 ### Repository and package home

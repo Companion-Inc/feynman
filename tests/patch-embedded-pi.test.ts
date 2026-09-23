@@ -1,7 +1,11 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { spawnSync } from "node:child_process";
+import { mkdtempSync, readFileSync, realpathSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
 import test from "node:test";
-import { resolve } from "node:path";
+import { join, resolve } from "node:path";
+
+import { runtimeWorkspaceMatches } from "../scripts/lib/runtime-workspace-restore.mjs";
 
 test("embedded Pi patch covers nested release-bundle copies before artifact verification", () => {
 	const source = readFileSync(resolve("scripts", "patch-embedded-pi.mjs"), "utf8");
@@ -106,4 +110,32 @@ test("ensureBundledPackageLinks does not repeat the runtime workspace integrity 
 		workspaceUnlockedBody,
 		/if \(!workspaceMatchesRuntime\(supportedPackageSpecs\)\) \{\s*throw new Error\(\s*"Feynman restored an incomplete bundled research runtime\.",\s*\);\s*\}\s*ensureBundledPackageLinks\(\);/,
 	);
+});
+
+test("running the launch patcher leaves a prepared runtime workspace matching", () => {
+	// Launches must not rewrite a completed workspace; otherwise every launch
+	// sees a mismatched tree hash and restores the runtime again.
+	const home = realpathSync(mkdtempSync(join(tmpdir(), "feynman-patch-idempotence-")));
+	try {
+		const run = spawnSync(process.execPath, [resolve("scripts", "patch-embedded-pi.mjs")], {
+			encoding: "utf8",
+			env: { ...process.env, FEYNMAN_HOME: home, FEYNMAN_TELEMETRY: "0" },
+			timeout: 600_000,
+		});
+		assert.equal(run.status, 0, run.stderr);
+		const source = readFileSync(resolve("scripts", "patch-embedded-pi.mjs"), "utf8");
+		const pruneVersion = Number(source.match(/^const PRUNE_VERSION = (\d+);$/m)?.[1]);
+		const packageSpecs = (JSON.parse(readFileSync(resolve(".feynman", "settings.json"), "utf8")) as { packages: string[] })
+			.packages.filter((spec) => spec.startsWith("npm:")).map((spec) => spec.slice("npm:".length));
+		assert.equal(runtimeWorkspaceMatches(resolve(".feynman", "npm"), packageSpecs, {
+			archivePath: resolve(".feynman", "runtime-workspace.tgz"),
+			digestPath: resolve(".feynman", "runtime-workspace.sha256"),
+			pruneVersion,
+			requireCompletion: true,
+			requireCurrentPlatformPackageGraph: true,
+			requirePlatformIdentity: Number(process.versions.node.split(".")[0]) <= 22,
+		}), true);
+	} finally {
+		rmSync(home, { recursive: true, force: true });
+	}
 });

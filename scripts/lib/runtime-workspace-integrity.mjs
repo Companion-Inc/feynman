@@ -60,8 +60,6 @@ export const RUNTIME_INPUT_FILES = Object.freeze([
 	"scripts/lib/pi-state-file-permissions-patch.mjs",
 	"scripts/lib/pi-shrinkwrap-security-patch.mjs",
 	"scripts/lib/pi-undici-proxy-patch.mjs",
-	"scripts/lib/alpha-hub-auth-patch.mjs",
-	"scripts/lib/alpha-hub-search-patch.mjs",
 	"scripts/lib/mcp-sdk-package-patch.mjs",
 	"scripts/lib/package-root-patch-utils.mjs",
 	"scripts/lib/npm-command.mjs",

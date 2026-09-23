@@ -15,9 +15,9 @@ For broad deep research and literature review tasks, workflow prompts can spawn 
 
 ## Search strategy
 
-The researcher uses a multi-source search strategy. For academic topics, it queries AlphaXiv for papers and uses citation chains to discover related work. For applied topics, it searches the web for documentation, blog posts, and code repositories. For ML implementation tasks, it can inspect Hugging Face dataset metadata and repo files directly. For most topics, it uses multiple channels and cross-references findings.
+The researcher uses a multi-source search strategy. For general ML and CS papers it starts with a citation-sorted Semantic Scholar search (plus alphaXiv when you are logged in); for biomedical papers it uses PubMed and Europe PMC; for citation chains it uses OpenAlex citations and references; for conceptual or recent work that keyword search misses it uses OpenAlex semantic search; and it looks up known arXiv IDs and DOIs directly. For applied topics, it searches the web for documentation, blog posts, and code repositories. For ML implementation tasks, it can inspect Hugging Face dataset metadata and repo files directly. For most topics, it uses multiple channels and cross-references findings.
 
-Search queries are diversified when breadth is needed. Rather than running the same query multiple times, the researcher generates varied queries that approach the topic from different angles. This catches papers that use different terminology for the same concept and surfaces sources that a single query would miss.
+The researcher runs 2–4 reworded queries for each question and merges the results instead of trusting one query. Rather than running the same query multiple times, it generates varied queries that approach the topic from different angles. This catches papers that use different terminology for the same concept and surfaces sources that a single query would miss.
 
 ## Source evaluation
 

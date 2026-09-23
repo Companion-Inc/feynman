@@ -1,5 +1,4 @@
 import test from "node:test";
-import { gunzipSync } from "node:zlib";
 import assert from "node:assert/strict";
 import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { mkdir } from "node:fs/promises";
@@ -224,33 +223,6 @@ export async function indexAllSessions() {
 }
 `;
 
-const ALPHA_SEARCH_SOURCE = gunzipSync(Buffer.from(
-	"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",
-	"base64",
-)).toString("utf8");
-
-
 const PI_WEB_ACCESS_FIXTURE_ROOT = join(import.meta.dirname, "..", "fixtures", "pi-web-access-0.28.0");
 const PI_WEB_ACCESS_FORWARD_FIXTURE_ROOT = join(import.meta.dirname, "..", "fixtures", "pi-web-access-0.28.0");
 function writePiWebAccessFixture(webRoot: string, version = "0.28.0", patched = false): void {
@@ -425,7 +397,6 @@ test("patchPiRuntimeNodeModules patches installed Pi runtime files", async () =>
 	const modelRegistryPath = join(appRoot, "node_modules", "@earendil-works", "pi-coding-agent", "dist", "core", "model-registry.js");
 	const modelRuntimePath = join(appRoot, "node_modules", "@earendil-works", "pi-coding-agent", "dist", "core", "model-runtime.js");
 	const mcpManifestPath = join(appRoot, "node_modules", "@modelcontextprotocol", "sdk", "package.json");
-	const alphaSearchPath = join(appRoot, "node_modules", "@companion-ai", "alpha-hub", "src", "lib", "alphaxiv.js");
 	const sessionSearchPath = join(appRoot, "node_modules", "@kaiserlich-dev", "pi-session-search", "extensions", "indexer.ts");
 	await mkdir(dirname(agentLoopPath), { recursive: true });
 	await mkdir(dirname(tuiPath), { recursive: true });
@@ -439,7 +410,6 @@ test("patchPiRuntimeNodeModules patches installed Pi runtime files", async () =>
 	await mkdir(dirname(modelRegistryPath), { recursive: true });
 	await mkdir(dirname(modelRuntimePath), { recursive: true });
 	await mkdir(dirname(mcpManifestPath), { recursive: true });
-	await mkdir(dirname(alphaSearchPath), { recursive: true });
 	await mkdir(dirname(sessionSearchPath), { recursive: true });
 	writeFileSync(agentLoopPath, PI_AGENT_LOOP_SOURCE, "utf8");
 	writeFileSync(tuiPath, PI_TUI_SOURCE, "utf8");
@@ -485,7 +455,6 @@ test("patchPiRuntimeNodeModules patches installed Pi runtime files", async () =>
 		name: "@modelcontextprotocol/sdk",
 		dependencies: { "@hono/node-server": "^1.19.9" },
 	}) + "\n", "utf8");
-	writeFileSync(alphaSearchPath, ALPHA_SEARCH_SOURCE, "utf8");
 	writeFileSync(sessionSearchPath, SESSION_SEARCH_INDEXER_SOURCE, "utf8");
 
 	assert.equal(patchPiRuntimeNodeModules(appRoot), true);
@@ -535,11 +504,6 @@ test("patchPiRuntimeNodeModules patches installed Pi runtime files", async () =>
 			JSON.parse(readFileSync(mcpManifestPath, "utf8")).dependencies["@hono/node-server"],
 			"2.1.1",
 		);
-	assert.match(readFileSync(alphaSearchPath, "utf8"), /async function searchRestFast/);
-	assert.match(
-		readFileSync(alphaSearchPath, "utf8"),
-		/return await callTool\('answer_pdf_queries', \{ paper: url, queries: \[query\] \}\)/,
-	);
 	assert.match(readFileSync(sessionSearchPath, "utf8"), /process\.env\.FEYNMAN_SESSION_DIR/);
 	assert.equal(patchPiRuntimeNodeModules(appRoot), false);
 });

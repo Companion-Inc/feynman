@@ -20,7 +20,6 @@ Slash commands are available inside the Feynman REPL. They map to research workf
 | `/compare <topic>` | Compare multiple sources and produce an agreement/disagreement matrix |
 | `/draft <topic>` | Generate a paper-style draft from research findings |
 | `/autoresearch <idea>` | Start a bounded research experiment loop that iteratively optimizes against a benchmark |
-| `/watch <topic>` | Create a research watch baseline and optionally schedule follow-up checks |
 
 These are the primary commands you use during research runs. Workflow prompts can call specialized agents (researcher, reviewer, writer, verifier) through Pi's `subagent` tool when delegation helps; narrow tasks stay lead-owned. ML recipe and replication runs can inspect Hugging Face dataset metadata, repo files, and small Hub files when grounding implementation plans.
 
@@ -29,7 +28,6 @@ These are the primary commands you use during research runs. Workflow prompts ca
 | Command | Description |
 | --- | --- |
 | `/log` | Write a durable session log with completed work, findings, open questions, and next steps |
-| `/jobs` | Inspect visible research-run process/scheduler state and durable watch or experiment artifacts |
 | `/help` | Show grouped Feynman commands and prefill the editor with a selected command |
 | `/feynman-model` | Open the approved research model picker for the main default and per-subagent overrides |
 | `/init` | Bootstrap `AGENTS.md` and session-log folders for a new research project |

@@ -172,7 +172,10 @@ test("package consumer matrices allow two slow Windows package installs", () => 
 });
 
 test("publish uses the exact verified tarball after native bundles pass", () => {
-	assert.match(publishWorkflow, /concurrency:\s*\n\s+group: publish-/);
+	assert.match(publishWorkflow, /\nconcurrency:\s*\n\s+group: publish-\$\{\{ github\.repository \}\}-\$\{\{ github\.ref \}\}-\$\{\{ github\.event_name \}\}\n\s+cancel-in-progress: false/);
+	const releaseGithubJob = publishWorkflow.match(/\n  release-github:[\s\S]*?(?=\n  verify-published-state:)/);
+	assert.ok(releaseGithubJob, "publish workflow must define the GitHub release job");
+	assert.match(releaseGithubJob[0], /concurrency:\s*\n\s+group: release-github-\$\{\{ github\.repository \}\}\n\s+cancel-in-progress: false/);
 	assert.match(publishWorkflow, /workflow_dispatch:/);
 	assert.match(publishWorkflow, /name: npm-package/);
 	assert.match(publishWorkflow, /name: npm-package\s*\n\s+path: npm-package/);

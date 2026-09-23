@@ -38,8 +38,8 @@ Ask the user where to run:
 - **New git branch** — create a branch so main stays clean
 - **Virtual environment** — create an isolated venv/conda env first
 - **Docker** — run experiment code inside an isolated Docker container
-- **Modal** — run on Modal's serverless GPU infrastructure. Write Modal-decorated scripts and execute with `modal run`. Best for GPU-heavy benchmarks with no persistent state between iterations. Requires `modal` CLI.
-- **RunPod** — provision a GPU pod via `runpodctl` and run iterations there over SSH. Best for experiments needing persistent state, large datasets, or SSH access between iterations. Requires `runpodctl` CLI.
+- **Modal** — only if the user has the `modal` CLI installed and set up: write Modal-decorated scripts and execute with `modal run`. Best for GPU-heavy benchmarks with no persistent state between iterations.
+- **RunPod** — only if the user has the `runpodctl` CLI installed and `RUNPOD_API_KEY` set: provision a GPU pod and run iterations there over SSH. Best for experiments needing persistent state, large datasets, or SSH access between iterations.
 
 Do not proceed without a clear answer.
 
@@ -63,6 +63,8 @@ Initialize the session: create `autoresearch.md`, `autoresearch.jsonl`, `autores
 
 Each iteration: edit -> run the benchmark -> log the benchmark result, evidence, and decision -> compare against the baseline -> keep the change, revert it, or record the failed hypothesis -> repeat. Do not stop unless interrupted or `maxIterations` is reached.
 After the baseline and after meaningful iteration milestones, append a concise entry to `CHANGELOG.md` summarizing what changed, what metric result was observed, what failed, and the next step.
+
+When reporting results, include every configuration tried from `autoresearch.jsonl` (kept, reverted, and failed) with its metric. Do not claim an effect from the single most favorable setting; state how the result varies across all tried settings and seeds.
 
 ## Optional tools
 

@@ -5,7 +5,6 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/com
 
 const workflows = [
   { command: "/deepresearch", description: "Multi-agent investigation across papers, web, and code" },
-  { command: "rank", description: "PaperRank scoring for what to read first, with graph and methodology evidence" },
   { command: "/lit", description: "Literature review from primary sources with consensus mapping" },
   { command: "/review", description: "Internal research critique with severity scores and a revision plan" },
   { command: "/audit", description: "Paper-to-code mismatch audit for reproducibility claims" },
@@ -14,7 +13,6 @@ const workflows = [
   { command: "/compare", description: "Side-by-side source comparison with agreement and conflict matrix" },
   { command: "/draft", description: "Polished paper-style draft with inline citations from findings" },
   { command: "/autoresearch", description: "Bounded loop: hypothesize, experiment, measure, repeat" },
-  { command: "/watch", description: "Research watch baseline with optional scheduled follow-up" },
 ]
 
 const agents = [
@@ -25,31 +23,22 @@ const agents = [
 ]
 
 const sources = [
-  { name: "Feynman Bio Tools", description: "Open science connectors for literature, PubMed metadata, ID conversion, related articles, citation matching, copyright checks, PMC full-text routing, bioRxiv/medRxiv preprint windows, DOI lookup, published links, funder/ROR lookup, preprint statistics, Europe PMC open-access full-text sections, citation graphs, authors, venues, OA status, ClinicalTrials.gov trial details, sponsors, eligibility, investigators, endpoints, Grants.gov opportunities, FDA labels, adverse events, recalls, Drugs@FDA applications, application counts, pharmacologic classes, generic equivalents, ChEMBL compounds, drug indications, ADMET properties, bioactivity, mechanisms, targets, genes, BioMart, CellGuide, PanglaoDB marker genes and gene-to-cell-type lookup, Antibody Registry RRIDs and catalog lookups, reagents, cell types, metabolomics, genome tracks, exact ENCODE/JASPAR/UniBind regulation workflows, UniBind TF-DNA binding, exact gnomAD/CADD/ClinVar/dbSNP variant workflows, GTEx expression and eQTL workflows, KEGG cross-links and ID conversions, InterPro/Pfam protein domains, Rfam RNA family models and sequence search, ArrayExpress/GEO/MetaboLights/MGnify/PRIDE archive project, sample, file, analysis, and protein-evidence workflows, Human Protein Atlas records, STRING networks and homology, purchasable ZINC compounds, GWAS, eQTLs, proteins, predicted structures, EM maps, complexes, interactions, omics, chemistry, pathways, and canceromics" },
+  { name: "Literature databases", description: "Semantic Scholar, OpenAlex, arXiv ID lookup, PubMed, Europe PMC full-text sections, bioRxiv/medRxiv preprints, and Crossref DOI metadata with stable identifiers and provenance" },
   { name: "AlphaXiv", description: "Paper search, Q&A, code reading, and annotations via the alpha CLI", href: "https://alphaxiv.org" },
   { name: "Hugging Face Hub", description: "Dataset schema, repo file, and small text-file inspection" },
   { name: "Web search", description: "Searches via Exa, Perplexity, or Gemini API" },
   { name: "Session search", description: "Indexed recall across prior research sessions" },
-  { name: "Preview", description: "Local viewers for reports, PDFs, media, spreadsheets, notebooks, LaTeX, KET/RXN/CDXML/CXSMILES chemistry, structures, genomes, alignments, trees, and tensors" },
-]
-
-const workbenchFeatures = [
-  { name: "Project control plane", description: "Projects, sessions, frame records, upload-frame links, frame health records, onboarding context, and specialist selection stay in Feynman's workspace state" },
-  { name: "Pi chat and tools", description: "Chat runs through local Pi sessions with frame rows, frame message rows, transcripts, tool activity, attachments, and command insertion" },
-  { name: "Science artifacts", description: "Reports, data files, media, spreadsheets, notebooks, LaTeX, chemistry sketches, structures, genomes, previews, versions, lineage, execution logs, and verification checks are browsable together" },
-  { name: "Feynman-owned setup", description: "Bio connectors, frame records, frame message records, frame health records, watch routine records, skill source/license records, setup decision records, review feedback records, compute poller leases, memory categories, permissions, compute providers, and redacted credential availability do not depend on another local app" },
+  { name: "Preview", description: "Render generated Markdown, HTML, and PDF research artifacts when a preview command is available" },
 ]
 
 const compute = [
   { name: "Docker", description: "Isolated containers for explicitly chosen replication and benchmark runs", href: "https://www.docker.com/" },
-  { name: "Modal", description: "Burst GPU execution for bounded research benchmark jobs", href: "https://modal.com/" },
-  { name: "RunPod", description: "Persistent GPU pods for long-running research experiments with SSH", href: "https://www.runpod.io/" },
+  { name: "Modal", description: "Burst GPU execution for bounded research benchmark jobs, if you have the modal CLI installed", href: "https://modal.com/" },
+  { name: "RunPod", description: "Persistent GPU pods for long-running research experiments with SSH, if you have the runpodctl CLI installed", href: "https://www.runpod.io/" },
 ]
 
 const terminalCommands = [
   { command: 'feynman "what do we know about scaling laws"', description: "Cited research brief from papers and web" },
-  { command: 'feynman rank "sparse autoencoders"', description: "PaperRank table with citation, graph, methodology, and reproducibility scores" },
-  { command: "feynman serve", description: "Local science workbench with Pi chat, Bio Tools, notebooks, compute, artifacts, provenance, skills, and settings" },
   { command: 'feynman deepresearch "mechanistic interpretability"', description: "Multi-agent deep dive with synthesis and verification" },
   { command: 'feynman lit "RLHF alternatives"', description: "Literature review with consensus and open questions" },
   { command: "feynman audit 2401.12345", description: "Paper claims vs. what the code actually does" },
@@ -72,7 +61,7 @@ const installCommands = [
           The open source AI <br />research agent
         </h1>
         <p class="mx-auto max-w-2xl text-lg text-muted-foreground">
-          Reads papers, searches the web, writes research drafts, plans experiments, and cites research claims. Use it from the terminal or open the local science workbench for chat, artifacts, notebooks, compute, and provenance.
+          Reads papers, searches the web, writes research drafts, plans experiments, and cites research claims.
         </p>
         <p class="text-sm text-muted-foreground">
           Made by{" "}
@@ -133,30 +122,6 @@ const installCommands = [
       </div>
 
       <img src="/hero.png" class="w-full" alt="Feynman CLI" />
-    </section>
-
-    <section class="py-16">
-      <div class="flex flex-col items-center gap-8 text-center">
-        <div class="flex flex-col gap-2">
-          <h2 class="text-2xl font-bold sm:text-3xl">Local science workbench</h2>
-          <p class="max-w-2xl text-muted-foreground">
-            `feynman serve` opens a standalone Feynman app for research runs that need chat, files, tools, notebooks, and audit trails in one place.
-          </p>
-        </div>
-        <div class="grid w-full gap-4 sm:grid-cols-2">
-          {workbenchFeatures.map((feature) => (
-            <Card client:load size="sm" className="text-left">
-              <CardHeader client:load>
-                <CardTitle client:load>{feature.name}</CardTitle>
-                <CardDescription client:load>{feature.description}</CardDescription>
-              </CardHeader>
-            </Card>
-          ))}
-        </div>
-        <a href="/docs/getting-started/workbench">
-          <Button client:load variant="outline">Open Workbench Docs</Button>
-        </a>
-      </div>
     </section>
 
     <section class="py-16">

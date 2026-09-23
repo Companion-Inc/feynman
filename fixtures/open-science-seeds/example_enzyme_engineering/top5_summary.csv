@@ -1,6 +1,0 @@
-rank,mutation,domain,esm_score,mpnn_score,esmif_score,consensus_z,methods_favorable,rel_sasa,dist_to_active_site_A,plddt,mechanism
-1,L168A,Coiled-coil,5.01,1.79,3.59,2.64,3,0.61,38.9,91.1,Surface/packing relief
-2,N322L,Tnp (C-term),0.79,3.67,4.51,2.58,3,0.3,35.7,74.0,Hydrophobic core completion
-3,T152L,Coiled-coil,4.13,2.53,0.59,2.49,3,0.26,40.4,91.2,Hydrophobic core packing
-4,S258L,Tnp,3.64,0.89,3.46,2.35,3,0.18,20.0,88.4,Buried-cavity filling (strongest)
-5,H224N,Tnp,1.07,3.18,1.44,2.34,3,0.43,24.6,86.3,Buried-charge/strain relief

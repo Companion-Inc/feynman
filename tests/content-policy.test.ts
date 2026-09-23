@@ -181,51 +181,6 @@ test("review surfaces frame critique as internal research review, not external p
 	assert.doesNotMatch(combined, /reviewing a paper for a venue/i);
 });
 
-test("PaperRank top-level copy stays outcome-led instead of artifact-led", () => {
-	const commandMetadata = readFileSync(join(repoRoot, "metadata", "commands.mjs"), "utf8");
-	const readme = readFileSync(join(repoRoot, "README.md"), "utf8");
-	const cliDocs = readFileSync(join(repoRoot, "website", "src", "content", "docs", "reference", "cli-commands.md"), "utf8");
-	const releaseDocs = readFileSync(join(repoRoot, "website", "src", "content", "docs", "reference", "releases.md"), "utf8");
-	const paperRankDocs = readFileSync(join(repoRoot, "website", "src", "content", "docs", "workflows", "paper-rank.md"), "utf8");
-	const paperRankSource = readFileSync(join(repoRoot, "src", "rank", "paper-rank.ts"), "utf8");
-	const cliSource = readFileSync(join(repoRoot, "src", "cli.ts"), "utf8");
-	const releases = readFileSync(join(repoRoot, "RELEASES.md"), "utf8");
-	const currentCopy = `${readme}\n${cliDocs}\n${releaseDocs}\n${releases}\n${paperRankDocs}\n${paperRankSource}\n${cliSource}`;
-	const paperRankCopy = `${cliDocs}\n${paperRankDocs}\n${paperRankSource}`;
-
-	assert.match(commandMetadata, /deciding what to read first/i);
-	assert.match(commandMetadata, /citation, method, reproducibility, and provenance evidence/i);
-	assert.doesNotMatch(commandMetadata, /deterministic research agenda, field map, graph explorer/i);
-	assert.doesNotMatch(commandMetadata, /deterministic next research actions, field map, graph explorer/i);
-	assert.doesNotMatch(commandMetadata, /dashboard, JSONL outputs, citation graph state/i);
-	assert.doesNotMatch(commandMetadata, /calibration-fixture|reproduction-fixture/i);
-	assert.match(readme, /Decides what to read first with citation, method, reproducibility, and provenance evidence/i);
-	assert.doesNotMatch(readme, /PaperRank research memo, replication plan, score audit, rank sensitivity/i);
-	assert.doesNotMatch(readme, /calibration-fixture|reproduction-fixture/i);
-	assert.match(cliDocs, /Rank papers for deciding what to read first/i);
-	assert.match(paperRankCopy, /--preference-file/i);
-	assert.match(paperRankCopy, /--reproduction-notes/i);
-	assert.doesNotMatch(paperRankCopy, /--calibration-fixture|--reproduction-fixture/i);
-	assert.doesNotMatch(paperRankCopy, /fixtureSource|calibration fixture|reproduction evidence fixture|explicit fixture|small fixture can audit|How To Fill The Fixture/i);
-	assert.match(releaseDocs, /PaperRank scoring for read-first triage/i);
-	assert.match(releaseDocs, /ordinary read-first runs keep those extra artifacts out of the default output/i);
-	assert.doesNotMatch(releaseDocs, /deterministic research agenda, field map, graph explorer/i);
-	assert.doesNotMatch(releaseDocs, /deterministic next research actions, field map, graph explorer/i);
-	assert.doesNotMatch(releaseDocs, /Every run also writes an empty-safe reproduction notes template/i);
-	assert.match(currentCopy, /research-critique strengths, concerns, and follow-up questions/i);
-	assert.match(currentCopy, /Research Critique/i);
-	assert.match(currentCopy, /Research critique:/i);
-	assert.doesNotMatch(currentCopy, /Reviewer Critique/i);
-	assert.doesNotMatch(currentCopy, /Reviewer critique/i);
-	assert.doesNotMatch(currentCopy, /reviewer-style critique/i);
-	assert.doesNotMatch(currentCopy, /reviewer-style strengths/i);
-	assert.doesNotMatch(currentCopy, /reviewer concerns/i);
-	assert.doesNotMatch(currentCopy, /external peer-review decision/i);
-	assert.doesNotMatch(currentCopy, /peer-review verdict/i);
-	assert.doesNotMatch(paperRankCopy, /peer review/i);
-	assert.doesNotMatch(paperRankCopy, /reviewer/i);
-});
-
 test("autoresearch copy stays bounded to shipped experiment-loop behavior", () => {
 	const prompt = readFileSync(join(repoRoot, "prompts", "autoresearch.md"), "utf8");
 	const skill = readFileSync(join(repoRoot, "skills", "autoresearch", "SKILL.md"), "utf8");
@@ -241,28 +196,15 @@ test("autoresearch copy stays bounded to shipped experiment-loop behavior", () =
 	assert.match(docs, /autoresearch\.jsonl/i);
 });
 
-test("watch and jobs copy does not promise unshipped scheduler or process packages", () => {
+test("command copy does not promise unshipped scheduler or process packages", () => {
 	const systemPrompt = readFileSync(join(repoRoot, ".feynman", "SYSTEM.md"), "utf8");
-	const watchPrompt = readFileSync(join(repoRoot, "prompts", "watch.md"), "utf8");
-	const jobsPrompt = readFileSync(join(repoRoot, "prompts", "jobs.md"), "utf8");
-	const watchSkill = readFileSync(join(repoRoot, "skills", "watch", "SKILL.md"), "utf8");
-	const jobsSkill = readFileSync(join(repoRoot, "skills", "jobs", "SKILL.md"), "utf8");
-	const watchDocs = readFileSync(join(repoRoot, "website", "src", "content", "docs", "workflows", "watch.md"), "utf8");
 	const slashDocs = readFileSync(join(repoRoot, "website", "src", "content", "docs", "reference", "slash-commands.md"), "utf8");
 	const commandMetadata = readFileSync(join(repoRoot, "metadata", "commands.mjs"), "utf8");
-	const combined = `${systemPrompt}\n${watchPrompt}\n${jobsPrompt}\n${watchSkill}\n${jobsSkill}\n${watchDocs}\n${slashDocs}`;
+	const combined = `${systemPrompt}\n${slashDocs}`;
 
-	assert.doesNotMatch(combined, /pi-schedule-prompt|pi-processes/i);
-	assert.match(systemPrompt, /only when scheduling tools are visible/i);
-	assert.match(watchPrompt, /schedule_prompt` is not visible/i);
-	assert.match(jobsPrompt, /process tool not available/i);
-	assert.match(watchSkill, /scheduled follow-up only when `schedule_prompt` is visible/i);
-	assert.match(jobsSkill, /reports that capability as blocked/i);
-	assert.match(watchDocs, /when scheduling tools are visible/i);
-	assert.match(slashDocs, /durable watch or experiment artifacts/i);
+	assert.doesNotMatch(combined, /pi-schedule-prompt|pi-processes|schedule_prompt|\/watch|\/jobs/i);
 	assert.match(slashDocs, /curated live command list/i);
 	assert.match(commandMetadata, /Live Package Commands/i);
-	assert.match(commandMetadata, /approved live runtime commands/i);
 	assert.match(commandMetadata, /public research tools/i);
 	assert.doesNotMatch(commandMetadata, /\/schedule-prompt|\/ps/i);
 	assert.doesNotMatch(commandMetadata, /all available slash commands|built-in and package commands/i);
@@ -333,17 +275,12 @@ test("replication copy is plan-first and execution-gated", () => {
 test("compute copy stays scoped to explicit research experiments", () => {
 	const homePage = readFileSync(join(repoRoot, "website", "src", "pages", "index.astro"), "utf8");
 	const readme = readFileSync(join(repoRoot, "README.md"), "utf8");
-	const modalSkill = readFileSync(join(repoRoot, "skills", "modal-compute", "SKILL.md"), "utf8");
-	const runpodSkill = readFileSync(join(repoRoot, "skills", "runpod-compute", "SKILL.md"), "utf8");
 	const dockerSkill = readFileSync(join(repoRoot, "skills", "docker", "SKILL.md"), "utf8");
-	const combined = `${homePage}\n${readme}\n${modalSkill}\n${runpodSkill}\n${dockerSkill}`;
+	const combined = `${homePage}\n${readme}\n${dockerSkill}`;
 
 	assert.match(homePage, /Optional execution targets for research experiments after the workflow chooses an environment/i);
 	assert.match(readme, /Research execution options/i);
 	assert.match(readme, /explicitly chosen replication, benchmark, or dataset-heavy experiment runs/i);
-	assert.match(modalSkill, /bounded research experiments/i);
-	assert.match(modalSkill, /Do not use this skill to deploy services or unrelated batch jobs/i);
-	assert.match(runpodSkill, /specific research run/i);
 	assert.match(dockerSkill, /run research code safely or isolated for a Feynman workflow/i);
 	assert.doesNotMatch(readme, /^- \*\*Docker\*\*/m);
 	assert.doesNotMatch(readme, /^- \*\*Modal\*\*/m);
@@ -656,7 +593,6 @@ test("workflow prompts except explicit gated workflows do not introduce implicit
 		"review.md",
 		"recipe.md",
 		"summarize.md",
-		"watch.md",
 	];
 	const bannedConfirmationGates = [
 		/Do you want to proceed/i,

@@ -3,7 +3,7 @@
     "-themes/feynman.json"
   ],
   "packages": [
-    "npm:@companion-ai/alpha-hub@0.1.4",
+    "npm:@companion-ai/alpha-hub@0.1.6",
     "npm:pi-subagents@0.65.1",
     "npm:pi-btw@0.4.1",
     "npm:pi-docparser@4.0.0",

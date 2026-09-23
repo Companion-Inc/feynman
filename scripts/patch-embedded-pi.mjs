@@ -5,8 +5,6 @@ import { homedir } from "node:os";
 import { dirname, isAbsolute, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { FEYNMAN_LOGO_HTML } from "../logo.mjs";
-import { patchAlphaHubAuthSource } from "./lib/alpha-hub-auth-patch.mjs";
-import { patchAlphaHubSearchResultsSource, patchAlphaHubSearchSource } from "./lib/alpha-hub-search-patch.mjs";
 import { patchMcpSdkPackageJsonSource } from "./lib/mcp-sdk-package-patch.mjs";
 import { applyPackageRootPatchPlans, preflightPackageRootPatch, uniqueExistingPackageRoots } from "./lib/package-root-patch-utils.mjs";
 import { patchPiAgentCoreSource } from "./lib/pi-agent-core-patch.mjs";
@@ -1118,55 +1116,6 @@ if (oauthPagePath && existsSync(oauthPagePath)) {
 		changed = true;
 	}
 	if (changed) writeFileSync(oauthPagePath, source, "utf8");
-}
-
-const alphaHubAuthPath = findPackageRoot("@companion-ai/alpha-hub")
-	? resolve(findPackageRoot("@companion-ai/alpha-hub"), "src", "lib", "auth.js")
-	: null;
-const alphaHubSearchPath = findPackageRoot("@companion-ai/alpha-hub")
-	? resolve(findPackageRoot("@companion-ai/alpha-hub"), "src", "lib", "alphaxiv.js")
-	: null;
-const alphaHubIndexPath = findPackageRoot("@companion-ai/alpha-hub")
-	? resolve(findPackageRoot("@companion-ai/alpha-hub"), "src", "lib", "index.js")
-	: null;
-
-if (alphaHubAuthPath && existsSync(alphaHubAuthPath)) {
-	const source = readFileSync(alphaHubAuthPath, "utf8");
-	const patched = patchAlphaHubAuthSource(source, { version: "0.1.4" });
-	if (patched !== source) {
-		writeFileSync(alphaHubAuthPath, patched, "utf8");
-	}
-}
-if (alphaHubSearchPath && existsSync(alphaHubSearchPath)) {
-	const source = readFileSync(alphaHubSearchPath, "utf8");
-	const patched = patchAlphaHubSearchSource(source, { version: "0.1.4" });
-	if (patched !== source) {
-		writeFileSync(alphaHubSearchPath, patched, "utf8");
-	}
-}
-if (alphaHubIndexPath && existsSync(alphaHubIndexPath)) {
-	const source = readFileSync(alphaHubIndexPath, "utf8");
-	const patched = patchAlphaHubSearchResultsSource(source, { version: "0.1.4" });
-	if (patched !== source) {
-		writeFileSync(alphaHubIndexPath, patched, "utf8");
-	}
-}
-
-// The bundled workspace carries its own alpha-hub copy; patch it the same way
-// so search fixes apply regardless of which copy resolves at runtime.
-const workspaceAlphaHubLib = resolve(workspaceRoot, "@companion-ai", "alpha-hub", "src", "lib");
-for (const [fileName, patchFn] of [
-	["auth.js", patchAlphaHubAuthSource],
-	["alphaxiv.js", patchAlphaHubSearchSource],
-	["index.js", patchAlphaHubSearchResultsSource],
-]) {
-	const filePath = resolve(workspaceAlphaHubLib, fileName);
-	if (!existsSync(filePath)) continue;
-	const source = readFileSync(filePath, "utf8");
-	const patched = patchFn(source);
-	if (patched !== source) {
-		writeFileSync(filePath, patched, "utf8");
-	}
 }
 
 if (existsSync(piMemoryPath)) {

@@ -651,13 +651,6 @@ function flagValue(args: string[], flag: string): string | undefined {
 	return undefined;
 }
 
-function safeIntegerFlagValue(args: string[], flag: string): number | undefined {
-	const value = flagValue(args, flag);
-	if (value === undefined || !/^\d+$/.test(value.trim())) return undefined;
-	const numeric = Number(value);
-	return Number.isSafeInteger(numeric) ? numeric : undefined;
-}
-
 function safeEnumFlagValue<T extends string>(args: string[], flag: string, allowed: readonly T[]): T | undefined {
 	const value = flagValue(args, flag);
 	if (value === undefined) return undefined;
@@ -672,19 +665,9 @@ const FLAGS_WITH_VALUES = new Set([
 	"--cwd",
 	"--mode",
 	"--model",
-	"--limit",
-	"--expand-citations",
-	"--full-text-top",
-	"--critique-top",
-	"--synthesis-top",
-	"--synthesis-model",
-	"--output-dir",
-	"--preference-file",
-	"--reproduction-notes",
 	"--prompt",
 	"--service-tier",
 	"--session-dir",
-	"--source-fixture",
 	"--tier1-threshold",
 	"--tier2-threshold",
 	"--thinking",
@@ -717,8 +700,6 @@ const DEFAULT_COMMAND_NAMES = new Set([
 	"help",
 	"model",
 	"packages",
-	"paper",
-	"rank",
 	"search",
 	"setup",
 	"status",
@@ -749,7 +730,6 @@ export function getCliTelemetryMetadata(args: string[], options: { knownCommands
 	const subcommand = positionals[1] && SAFE_SUBCOMMANDS[command]?.has(positionals[1])
 		? positionals[1]
 		: undefined;
-	const isRankCommand = command === "rank";
 
 	return {
 		command,
@@ -759,16 +739,5 @@ export function getCliTelemetryMetadata(args: string[], options: { knownCommands
 		has_model_override: Boolean(flagValue(args, "--model")),
 		has_service_tier_override: Boolean(flagValue(args, "--service-tier")),
 		new_session: hasFlag(args, "--new-session"),
-		json: hasFlag(args, "--json"),
-		synthesize: isRankCommand ? hasFlag(args, "--synthesize") : undefined,
-		source_fixture: Boolean(flagValue(args, "--source-fixture")),
-		preference_file: Boolean(flagValue(args, "--preference-file")),
-		reproduction_notes: Boolean(flagValue(args, "--reproduction-notes")),
-		rank_topic_provided: isRankCommand && positionals.length > 1,
-		rank_limit: isRankCommand ? safeIntegerFlagValue(args, "--limit") : undefined,
-		rank_expand_citations: isRankCommand ? safeIntegerFlagValue(args, "--expand-citations") : undefined,
-		rank_full_text_top: isRankCommand ? safeIntegerFlagValue(args, "--full-text-top") : undefined,
-		rank_critique_top: isRankCommand ? safeIntegerFlagValue(args, "--critique-top") : undefined,
-		rank_synthesis_top: isRankCommand ? safeIntegerFlagValue(args, "--synthesis-top") : undefined,
 	};
 }

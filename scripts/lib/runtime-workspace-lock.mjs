@@ -14,8 +14,18 @@ import {
 import { hostname } from "node:os";
 import { basename, dirname, resolve } from "node:path";
 
+import { RUNTIME_WORKSPACE_PACKAGE_INSTALL_TIMEOUT_MS } from "./runtime-workspace-install.mjs";
+import { removeTemporaryTree } from "./temporary-tree-cleanup.mjs";
+
 export const RUNTIME_WORKSPACE_RESTORE_MAX_CLEANUPS = 16;
 export const RUNTIME_WORKSPACE_SETUP_LOCK_STALE_MS = 300000;
+// A live-looking owner whose heartbeat is older than two full package installs
+// is treated as a reused PID or a hung process.
+const SETUP_LOCK_PID_REUSE_CEILING_MS = 2 * RUNTIME_WORKSPACE_PACKAGE_INSTALL_TIMEOUT_MS;
+const SETUP_LOCK_BREAK_STALE_MS = 30_000;
+const SETUP_LOCK_WAIT_NOTICE_MS = 2_000;
+// Windows antivirus and indexers briefly hold directories open during release.
+const SETUP_LOCK_RELEASE_RETRY_CODES = new Set(["EACCES", "EBUSY", "EPERM"]);
 
 const heldRuntimeWorkspaceSetupLocks = new Map();
 
@@ -90,6 +100,22 @@ function writeSetupLockOwner(lockDir, owner, expectedIdentity) {
 	}
 }
 
+// Moves a lock directory this process created but could not claim out of the
+// way, so it does not block other launches until it goes stale.
+function discardUnclaimedSetupLock(lockDir, identity) {
+	try {
+		if (!directoryIdentityMatches(lockDir, identity)) return;
+		const discardedPath =
+			`${lockDir}.released-${process.pid}-${Date.now()}-${randomUUID()}`;
+		renameSync(lockDir, discardedPath);
+		if (!directoryIdentityMatches(discardedPath, identity)) {
+			if (!existsSync(lockDir)) renameSync(discardedPath, lockDir);
+			return;
+		}
+		rmSync(discardedPath, { recursive: true, force: true });
+	} catch {}
+}
+
 function setupLockOwnerSource(owner) {
 	return `${JSON.stringify(owner)}\n`;
 }
@@ -146,11 +172,83 @@ function runtimeWorkspaceLockOwnerIsAlive(
 		if (error?.code !== "EPERM") return false;
 	}
 	const liveProcessStartedAt = readOwnerProcessStartedAt(owner.pid);
-	return (
-		liveProcessStartedAt === undefined
-			? undefined
-			: Math.abs(liveProcessStartedAt - owner.processStartedAt) < 3_000
+	// The PID exists but its start time is unreadable (no `ps`, slow PowerShell):
+	// assume the owner is alive rather than stealing a lock from working setup.
+	if (liveProcessStartedAt === undefined) return true;
+	return Math.abs(liveProcessStartedAt - owner.processStartedAt) < 3_000;
+}
+
+function readSetupLockOwner(ownerPath) {
+	try {
+		return JSON.parse(readFileSync(ownerPath, "utf8"));
+	} catch {
+		return undefined;
+	}
+}
+
+// Returns the lock directory identity when its owner may be displaced, so the
+// caller can verify it is still breaking that same directory.
+function breakableSetupLockIdentity(lockDir, { staleMs, readOwnerProcessStartedAt }) {
+	const stat = statSync(lockDir);
+	const identity = directoryIdentity(lockDir);
+	const owner = readSetupLockOwner(resolve(lockDir, "owner.json"));
+	const ownerAlive = runtimeWorkspaceLockOwnerIsAlive(
+		owner,
+		readOwnerProcessStartedAt,
 	);
+	const heartbeatAt = Number.isFinite(owner?.heartbeatAt)
+		? owner.heartbeatAt
+		: Number.isFinite(owner?.createdAt)
+			? owner.createdAt
+			: stat.mtimeMs;
+	const heartbeatAge = Date.now() - heartbeatAt;
+	const breakable =
+		ownerAlive === false ||
+		(ownerAlive === undefined && heartbeatAge > staleMs) ||
+		heartbeatAge > SETUP_LOCK_PID_REUSE_CEILING_MS;
+	return breakable && directoryIdentityMatches(lockDir, identity)
+		? identity
+		: undefined;
+}
+
+// Only one waiter may displace a stale owner at a time; otherwise a second
+// waiter can rename away the lock the first one just acquired. Returns true when
+// the stale directory was moved aside and acquisition should retry at once.
+function breakStaleSetupLock(lockDir, expectedIdentity, options) {
+	const breakDir = `${lockDir}.break`;
+	try {
+		mkdirSync(breakDir);
+	} catch (error) {
+		if (error?.code !== "EEXIST") throw error;
+		try {
+			if (Date.now() - statSync(breakDir).mtimeMs > SETUP_LOCK_BREAK_STALE_MS) {
+				rmSync(breakDir, { recursive: true, force: true });
+			}
+		} catch {}
+		return false;
+	}
+	try {
+		const identity = breakableSetupLockIdentity(lockDir, options);
+		if (
+			identity?.dev !== expectedIdentity.dev ||
+			identity?.ino !== expectedIdentity.ino
+		) {
+			return false;
+		}
+		const staleLockPath =
+			`${lockDir}.stale-${process.pid}-${Date.now()}-${randomUUID()}`;
+		renameSync(lockDir, staleLockPath);
+		if (!directoryIdentityMatches(staleLockPath, identity)) {
+			if (!existsSync(lockDir)) {
+				renameSync(staleLockPath, lockDir);
+			}
+		} else {
+			rmSync(staleLockPath, { recursive: true, force: true });
+		}
+		return true;
+	} finally {
+		rmSync(breakDir, { recursive: true, force: true });
+	}
 }
 
 export function acquireRuntimeWorkspaceSetupLock(
@@ -158,6 +256,10 @@ export function acquireRuntimeWorkspaceSetupLock(
 	{
 		staleMs = RUNTIME_WORKSPACE_SETUP_LOCK_STALE_MS,
 		readOwnerProcessStartedAt = readProcessStartedAt,
+		// Outlast the PID-reuse ceiling so a concurrent relaunch waits for a live
+		// owner's package install instead of failing while it works.
+		waitTimeoutMs = SETUP_LOCK_PID_REUSE_CEILING_MS + staleMs,
+		writeOwner = writeSetupLockOwner,
 	} = {},
 ) {
 	mkdirSync(dirname(lockDir), { recursive: true });
@@ -167,7 +269,7 @@ export function acquireRuntimeWorkspaceSetupLock(
 	const ownerId = randomUUID();
 	const processStartedAt = currentProcessStartedAt();
 	const ownerHostname = hostname();
-	const ownerPath = resolve(lockDir, "owner.json");
+	let waitNoticeShown = false;
 	while (true) {
 		try {
 			mkdirSync(lockDir);
@@ -183,7 +285,13 @@ export function acquireRuntimeWorkspaceSetupLock(
 				heartbeatAt: createdAt,
 				processStartedAt,
 			};
-			if (!writeSetupLockOwner(lockDir, owner, identity)) {
+			let claimed = false;
+			try {
+				claimed = writeOwner(lockDir, owner, identity);
+			} finally {
+				if (!claimed) discardUnclaimedSetupLock(lockDir, identity);
+			}
+			if (!claimed) {
 				throw new Error("Feynman setup lock changed while it was acquired");
 			}
 			heldRuntimeWorkspaceSetupLocks.set(token, {
@@ -200,44 +308,30 @@ export function acquireRuntimeWorkspaceSetupLock(
 		} catch (error) {
 			if (error?.code !== "EEXIST") throw error;
 			try {
-				const initialStat = statSync(lockDir);
-				const initialIdentity = directoryIdentity(lockDir);
-				let owner;
-				try {
-					owner = JSON.parse(readFileSync(ownerPath, "utf8"));
-				} catch {
-					owner = undefined;
-				}
-				const ownerAlive = runtimeWorkspaceLockOwnerIsAlive(
-					owner,
+				const identity = breakableSetupLockIdentity(lockDir, {
+					staleMs,
 					readOwnerProcessStartedAt,
-				);
-				const heartbeatAt = Number.isFinite(owner?.heartbeatAt)
-					? owner.heartbeatAt
-					: Number.isFinite(owner?.createdAt)
-						? owner.createdAt
-						: initialStat.mtimeMs;
+				});
 				if (
-					ownerAlive !== true &&
-					Date.now() - heartbeatAt > staleMs &&
-					directoryIdentityMatches(lockDir, initialIdentity)
+					identity &&
+					breakStaleSetupLock(lockDir, identity, {
+						staleMs,
+						readOwnerProcessStartedAt,
+					})
 				) {
-					const staleLockPath =
-						`${lockDir}.stale-${process.pid}-${Date.now()}-${randomUUID()}`;
-					renameSync(lockDir, staleLockPath);
-					if (!directoryIdentityMatches(staleLockPath, initialIdentity)) {
-						if (!existsSync(lockDir)) {
-							renameSync(staleLockPath, lockDir);
-						}
-					} else {
-						rmSync(staleLockPath, { recursive: true, force: true });
-					}
 					continue;
 				}
 			} catch {}
-			if (Date.now() - startedAt > staleMs) {
+			const waitedMs = Date.now() - startedAt;
+			if (waitedMs > waitTimeoutMs) {
 				throw new Error(
 					"Timed out waiting for another Feynman process to finish package setup.",
+				);
+			}
+			if (!waitNoticeShown && waitedMs > SETUP_LOCK_WAIT_NOTICE_MS) {
+				waitNoticeShown = true;
+				process.stderr.write(
+					`[feynman] waiting for another Feynman process to finish runtime setup (${lockDir})\n`,
 				);
 			}
 			sleepSync(100);
@@ -325,7 +419,11 @@ export function heartbeatRuntimeWorkspaceSetupLock(lockDir, token) {
 	}
 }
 
-export function releaseRuntimeWorkspaceSetupLock(lockDir, token) {
+export function releaseRuntimeWorkspaceSetupLock(
+	lockDir,
+	token,
+	{ rename = renameSync, wait } = {},
+) {
 	const held = heldRuntimeWorkspaceSetupLocks.get(token);
 	if (
 		!held ||
@@ -345,12 +443,32 @@ export function releaseRuntimeWorkspaceSetupLock(lockDir, token) {
 		}
 		const releasedPath =
 			`${lockDir}.released-${process.pid}-${Date.now()}-${randomUUID()}`;
-		renameSync(lockDir, releasedPath);
+		try {
+			removeTemporaryTree(lockDir, {
+				remove: () => rename(lockDir, releasedPath),
+				retryableCodes: SETUP_LOCK_RELEASE_RETRY_CODES,
+				maxRetries: 5,
+				retryDelayMs: 50,
+				...(wait ? { wait } : {}),
+			});
+		} catch (error) {
+			// Without owner.json, waiters fall back to the directory mtime and take
+			// over after the stale window instead of trusting this owner's heartbeat.
+			if (directoryIdentityMatches(lockDir, held.identity)) {
+				rmSync(resolve(lockDir, "owner.json"), { force: true });
+			}
+			heldRuntimeWorkspaceSetupLocks.delete(token);
+			throw error;
+		}
 		if (!directoryIdentityMatches(releasedPath, held.identity)) {
 			if (!existsSync(lockDir)) renameSync(releasedPath, lockDir);
 			return;
 		}
 		rmSync(releasedPath, { recursive: true, force: true });
 		heldRuntimeWorkspaceSetupLocks.delete(token);
-	} catch {}
+	} catch (error) {
+		process.stderr.write(
+			`[feynman] could not release the runtime setup lock ${lockDir}: ${error instanceof Error ? error.message : String(error)}\n`,
+		);
+	}
 }

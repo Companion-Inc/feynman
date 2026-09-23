@@ -306,7 +306,7 @@ export function installFeynmanHeader(
 					];
 
 						for (const wf of workflows) {
-							if (wf.name === "/jobs" || wf.name === "/log") continue;
+							if (wf.name === "/log") continue;
 							const desc = shortDescription(wf.description);
 							const descLines = wrapWords(desc, descW);
 							for (let index = 0; index < descLines.length; index += 1) {
@@ -338,7 +338,7 @@ export function installFeynmanHeader(
 					push(row(theme.fg("accent", theme.bold("Research Workflows"))));
 						const narrowDescW = Math.max(1, contentW - 17);
 						for (const wf of workflows) {
-							if (wf.name === "/jobs" || wf.name === "/log") continue;
+							if (wf.name === "/log") continue;
 							const desc = shortDescription(wf.description);
 							push(row(`${theme.fg("accent", padRight(wf.name, 16))} ${theme.fg("dim", truncateVisible(desc, narrowDescW))}`));
 						}

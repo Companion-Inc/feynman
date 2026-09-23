@@ -48,8 +48,6 @@ import {
 } from "./lib/pi-web-access-runtime-verifier.mjs";
 
 const EXPECTED_FEYNMAN_COMMANDS = Object.freeze([
-	"capabilities",
-	"commands",
 	"feynman-model",
 	"help",
 	"init",
@@ -64,12 +62,7 @@ const EXPECTED_FEYNMAN_TOOLS = Object.freeze([
 	"alpha_list_annotations",
 	"alpha_read_code",
 	"alpha_search",
-	"feynman_connector_call",
-	"feynman_connector_tools",
-	"feynman_model_endpoint_call",
-	"feynman_open_chemistry_sketcher",
 	"feynman_science_database_search",
-	"feynman_workbench_context",
 	"hf_dataset_info",
 	"hf_repo_files",
 	"hf_repo_read_file",

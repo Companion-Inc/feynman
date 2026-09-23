@@ -46,6 +46,13 @@ function endpointPath(path: string): URL {
 	return new URL(`${OPENALEX_BASE}${path.startsWith("/") ? path : `/${path}`}`);
 }
 
+export const OPENALEX_API_KEY_HINT = "Get a free OpenAlex API key at https://openalex.org/settings/api and set OPENALEX_API_KEY; anonymous requests share a small daily budget.";
+
+export function openAlexRequestFailure(status: number, statusText: string, snippet: string, usingApiKey: boolean): Error {
+	const hint = !usingApiKey && [401, 403, 429].includes(status) ? ` ${OPENALEX_API_KEY_HINT}` : "";
+	return new Error(`OpenAlex request failed: ${status} ${statusText}. ${snippet}${hint}`);
+}
+
 function openAlexApiKey(): string | undefined {
 	return process.env.OPENALEX_API_KEY?.trim() || undefined;
 }
@@ -56,7 +63,7 @@ function addAuth(url: URL): { credentialStatus: string; usingApiKey: boolean } {
 		url.searchParams.set("api_key", key);
 		return { credentialStatus: "OPENALEX_API_KEY present", usingApiKey: true };
 	}
-	return { credentialStatus: "OPENALEX_API_KEY missing; OpenAlex anonymous/demo budget may reject or throttle requests", usingApiKey: false };
+	return { credentialStatus: `OPENALEX_API_KEY missing. ${OPENALEX_API_KEY_HINT}`, usingApiKey: false };
 }
 
 function scrubOpenAlexEndpoint(url: URL): string {
@@ -90,7 +97,7 @@ async function fetchJson(url: URL): Promise<{ credentialStatus: string; endpoint
 		});
 		if (!response.ok) {
 			const snippet = scrubOpenAlexText((await response.text()).slice(0, 4096), url).slice(0, 240);
-			throw new Error(`OpenAlex request failed: ${response.status} ${response.statusText}. ${snippet}`);
+			throw openAlexRequestFailure(response.status, response.statusText, snippet, auth.usingApiKey);
 		}
 		return { ...auth, endpoint, payload: await response.json() };
 	} finally {
@@ -491,7 +498,6 @@ async function exactWorkSearch(query: string, commandQuery: string): Promise<Rec
 		n_records_returned: rows.length,
 		records_truncated: total > rows.length,
 		records: rows,
-		results: rows,
 	}, "openalex_search_works", query, [result.endpoint], result.credentialStatus);
 }
 
@@ -536,7 +542,6 @@ async function exactCitations(query: string, commandQuery: string): Promise<Reco
 		n_records_returned: rows.length,
 		records_truncated: total > rows.length,
 		records: rows,
-		results: rows,
 	}, "openalex_citations", query, [...resolved.endpoints, result.endpoint], result.credentialStatus);
 }
 
@@ -573,7 +578,6 @@ async function exactReferences(query: string, commandQuery: string): Promise<Rec
 		references_not_hydrated: selected.filter((id) => !got.has(id)),
 		reference_ids: referenceIds,
 		records: rows,
-		results: rows,
 	}, "openalex_references", query, endpoints, credentialStatus);
 }
 
@@ -594,7 +598,6 @@ async function exactSearchAuthors(query: string, commandQuery: string): Promise<
 		n_records_returned: rows.length,
 		records_truncated: total > rows.length,
 		records: rows,
-		results: rows,
 	}, "openalex_search_authors", query, [result.endpoint], result.credentialStatus);
 }
 
@@ -635,7 +638,6 @@ async function exactVenueInfo(query: string, commandQuery: string): Promise<Reco
 			...row,
 			n_records_returned: 1,
 			records: [row],
-			results: [row],
 		}, "openalex_venue_info", query, [result.endpoint], result.credentialStatus);
 	}
 	const maxRecords = safeExactLimit(numberValue(parsed.flags.max_records), 10);
@@ -652,7 +654,6 @@ async function exactVenueInfo(query: string, commandQuery: string): Promise<Reco
 		n_records_returned: rows.length,
 		records_truncated: total > rows.length,
 		records: rows,
-		results: rows,
 	}, "openalex_venue_info", query, [result.endpoint], result.credentialStatus);
 }
 

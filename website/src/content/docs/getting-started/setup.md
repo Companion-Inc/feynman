@@ -118,12 +118,6 @@ Feynman's core ships with the research essentials: alphaXiv access, web access, 
 
 You can skip this step and install packages later with `feynman packages install <preset>`.
 
-## Workbench onboarding
-
-`feynman serve` includes a separate local onboarding flow for the science workbench. That flow creates a Feynman project and session, captures field and research-goal context, selects a suggested specialist, records chosen setup scopes, suggests seed workflows, and enables Feynman-owned connectors such as Feynman Bio Tools when science-database access is selected.
-
-Workbench onboarding stores setup intent and redacted credential availability records in Feynman-owned state. It does not require another local app and does not expose raw credential values in the browser.
-
 ## Re-running setup
 
 Configuration is stored in `~/.feynman/agent/settings.json`. Running `feynman setup` again overwrites previous settings. If you only need to change a specific value, edit the config file directly or use the targeted commands like `feynman model set` or `feynman alpha login`.

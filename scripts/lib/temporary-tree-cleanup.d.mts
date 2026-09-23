@@ -7,6 +7,7 @@ export interface TemporaryTreeCleanupOptions {
 	maxRetries?: number;
 	retryDelayMs?: number;
 	maxRetryDelayMs?: number;
+	retryableCodes?: ReadonlySet<string>;
 }
 
 export declare function removeTemporaryTree(

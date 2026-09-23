@@ -31,7 +31,7 @@ The installer downloads a standalone native bundle with its own pinned Node.js r
 
 To upgrade the standalone app later, rerun the installer. `feynman update` only refreshes installed Pi packages inside Feynman's environment; it does not replace the standalone runtime bundle itself.
 
-To uninstall the standalone app, remove the launcher and runtime bundle, then optionally remove `~/.feynman` if you also want to delete settings, workbench app state, sessions, and installed package state. If you also want to delete alphaXiv login state, remove `~/.ahub`. See the installation guide for platform-specific paths.
+To uninstall the standalone app, remove the launcher and runtime bundle, then optionally remove `~/.feynman` if you also want to delete settings, sessions, and installed package state. If you also want to delete alphaXiv login state, remove `~/.ahub`. See the installation guide for platform-specific paths.
 
 **npm alternative** (uses your local Node.js runtime):
 
@@ -138,30 +138,6 @@ $ feynman deepresearch "mechanistic interpretability"
 $ feynman lit "RLHF alternatives"
 → Literature review with consensus, disagreements, open questions, and lab/PI corpus mode when the input names a research group
 
-$ feynman rank "mechanistic interpretability sparse autoencoders"
-→ Decides what to read first with citation, method, reproducibility, and provenance evidence
-
-$ feynman rank "mechanistic interpretability sparse autoencoders" --expand-citations 2
-→ Adds cited and citing papers to the local citation graph before scoring graph prestige
-
-$ feynman rank "mechanistic interpretability sparse autoencoders" --full-text-top 3
-→ Adds section-aware full-text evidence and checklist rubric answers before rescoring
-
-$ feynman rank "mechanistic interpretability sparse autoencoders" --critique-top 5
-→ Adds research-critique strengths, concerns, and follow-up questions grounded in score evidence
-
-$ feynman rank "mechanistic interpretability sparse autoencoders" --synthesize
-→ Writes an auditable model synthesis and names the selected model plus whether it was recommended or explicitly requested
-
-$ feynman paper 10.7717/peerj.4375 --fetch-full-text
-→ Resolves legal full-text access candidates for one paper and fetches source-specific text when available
-
-$ feynman serve
-→ Opens the standalone science workbench with projects, Pi chat, Feynman Bio Tools, notebooks, compute, artifact previews, provenance, settings, skills, and onboarding context
-
-$ feynman serve --no-auth
-→ Opens the same local workbench at a plain localhost URL for trusted local testing
-
 $ feynman audit 2401.12345
 → Compares paper claims against the public codebase
 
@@ -180,9 +156,6 @@ Ask naturally or use slash commands as shortcuts.
 
 | Command | What it does |
 | --- | --- |
-| `feynman rank <topic>` | PaperRank scoring for deciding what to read first, with transparent evidence for citations, methods, reproducibility, and provenance |
-| `feynman paper <id-or-title>` | Paper access resolver for one DOI, arXiv ID, OpenAlex ID, PMID, PMCID, or title, with OpenAlex, arXiv/alphaXiv, DOI, and Europe PMC candidates plus optional source-specific text fetching |
-| `feynman serve` | Standalone science workbench with project/session navigation, project metadata, in-app Pi chat, optional `--no-auth` plain localhost mode, Feynman Bio Tools, Ketcher chemistry sketch artifacts, notebooks, compute, Files host inventory for local, SSH/BYOC, and cloud-backed artifact contexts, audio/video/spreadsheet/notebook/LaTeX/science artifact previews including element-level HTML report annotations and KET/RXN/CDXML/CXSMILES chemistry sketches, artifact Notes and note preview modals, Cloud storage credential modal, Cloud export target/destination modal, frame records, frame message rows, frame backfill health records, lineage, provenance, settings, org-scoped app-data workbench state under `~/.feynman/orgs/<org_uuid>/workbench`, an org-level `feynman-workbench.db` mirror with physical tables for the full reference-shaped workbench ledger coverage map including compute egress/Modal environment fields and Feynman-owned connector ledgers, watch routine state, skill source/license state, setup decision state, review feedback state, compute poller lease state, redacted credential state, onboarding intent context, verification files, and `CHANGELOG.md` lab-notebook entries |
 | `/deepresearch <topic>` | Source-heavy multi-agent investigation |
 | `/lit <topic-or-lab>` | Literature review from paper search and primary sources; lab/PI inputs map publication trajectories and originality-ranked papers |
 | `/review <artifact>` | Research review with severity and revision plan |
@@ -192,7 +165,6 @@ Ask naturally or use slash commands as shortcuts.
 | `/compare <topic>` | Source comparison matrix |
 | `/draft <topic>` | Paper-style draft from research findings |
 | `/autoresearch <idea>` | Bounded experiment loop with benchmark evidence |
-| `/watch <topic>` | Research watch baseline with optional scheduled follow-up |
 | `/btw <question>` | Side conversation while the main research agent is busy, with optional handoff back into the main thread |
 | `/outputs` | Browse all research artifacts |
 
@@ -212,14 +184,12 @@ Four bundled research agents, invoked by workflow prompts when decomposition hel
 ### Skills & Tools
 
 - **[AlphaXiv](https://www.alphaxiv.org/)** — paper search, Q&A, code reading, annotations (via Feynman's `alpha` tools and `feynman alpha` command)
-- **Feynman Bio Tools** — Feynman-owned open science connector catalog for literature, exact OpenAlex work/citation/reference/author/venue workflows, exact arXiv search and batch-paper retrieval, PubMed metadata, PMID/PMCID/DOI conversion, related-article links, citation matching, copyright/license checks, PMC full-text routing, bioRxiv/medRxiv preprint DOI lookup, date/category windows, published-preprint links, funder/ROR lookup, usage/content statistics, Europe PMC open-access full-text sections, citation graphs, authors, venues, OA status, ClinicalTrials.gov trial search, NCT details, sponsor programs, eligibility filters, investigator records, endpoint summaries, Grants.gov exact opportunity search, FDA labels, adverse events, recalls, Drugs@FDA applications, sponsor/status/route counts, pharmacologic classes, generic-equivalent active-ingredient sets, ChEMBL compound/drug/ADMET/bioactivity/mechanism/target workflows, PubChem compound/search/similarity/bioassay/safety workflows, ChEBI entity/ontology workflows, BindingDB target/compound workflows, editable Ketcher chemistry sketch seeds, gene, BioMart, Ensembl lookup/xref/VEP/homology/sequence/overlap workflows, MyGene query-many, OLS ontology, QuickGO annotation, UniProt entry, Reactome pathway, CellGuide, PanglaoDB marker genes and gene-to-cell-type workflows, exact Antibody Registry antibody/RRID/catalog/stat workflows, reagent, cell-type, metabolomics, genome-track, UCSC exact track/chromosome/conservation/TFBS workflows, UniBind TF-DNA binding, KEGG entry/search/link/ID-conversion workflows, InterPro/Pfam exact domain architecture, entry, clan, family protein/proteome modes, Human Protein Atlas exact gene/search modes, STRING exact ID mapping, network, similarity, and best-hit workflows, purchasable ZINC compounds, protein, predicted-structure, structure, EM-map, complex, interaction, exact ENCODE/JASPAR/UniBind regulation modes for experiments, biosamples, files, matrices, species/taxa/collections/releases, datasets, and regional TFBS, exact ArrayExpress/GEO/MetaboLights/MGnify/PRIDE omics-archive modes for experiments, samples, files, analyses, projects, and protein evidence, metagenomics, chemical-ontology, chemistry, pathway, exact Rfam RNA family metadata, accession/id conversion, seed alignment, covariance model, tree, region, structure-mapping, and sequence-search workflows, exact gnomAD short variant, gene, region, liftover, ClinVar-mirror, structural, and mitochondrial workflows, exact CADD variant/position/range scores, exact direct ClinVar search/accession/rsID workflows, exact dbSNP rsID/region workflows, GWAS Catalog exact association/study/trait/SNP workflows, eQTL Catalogue exact dataset and association workflows, PheWeb/FinnGen PheWAS workflows, GTEx dataset/tissue/sample/gene/expression/eQTL workflows, tissue/protein-atlas, expression, human-genetics, cBioPortal study/detail/mutation-frequency/mutation/CNA/clinical-attribute workflows, DepMap model/gene/dependency workflows, CIViC gene/variant/evidence/assertion/profile/disease/therapy workflows, ClinGen validity/dosage/actionability/classification workflows, Open Targets disease-drug/disease-target/drug/search workflows, and canceromics sources
+- **Literature databases** — read-only Semantic Scholar (citation-sorted search that surfaces seminal papers), OpenAlex (keyword and semantic search, citation graphs, authors, venues, OA status), arXiv ID lookup, PubMed (metadata, PMID/PMCID/DOI conversion, related articles, citation matching, copyright checks, PMC full-text routing), Europe PMC open-access full-text sections, bioRxiv/medRxiv preprints, and Crossref DOI metadata, with stable identifiers and endpoint provenance. Set the free `OPENALEX_API_KEY` ([create one](https://openalex.org/settings/api)) and optionally `SEMANTIC_SCHOLAR_API_KEY` ([request one](https://www.semanticscholar.org/product/api#api-key-form)) so searches use your own rate limits
 - **[Hugging Face Hub](https://huggingface.co/docs/hub/api)** — dataset metadata, split/schema inspection, and small file reads from model, dataset, and Space repos
 - **Web research** — multi-provider search, explicit proxy routing, bounded GitHub issue/PR documents, raw or question-grounded page retrieval, direct images, external fetched-content caching, stored-page passage lookup, and auditable source text; tools, commands, images, PDFs, and browser cookies remain independently gated
 - **Session search** — indexed recall across prior research sessions
-- **Artifact previews** — local workbench viewers for reports, JSON/JSONL, tables, PDFs, images, audio, video, XLSX workbooks, Jupyter notebooks, LaTeX, sequences, alignments, variants, genomes, KET/RXN/CDXML/CXSMILES/Molfile/SDF/SMILES chemistry artifacts, structures, trees, and tensors
 - **Observability** — PostHog analytics, logs, distributed traces, and Pi AI runtime traces through OpenTelemetry metadata, with signal-specific HTTP OTLP routing for external collectors
-- **Research execution options** — Docker, Modal, and RunPod instructions for explicitly chosen replication, benchmark, or dataset-heavy experiment runs; not service deployment or generic cloud administration
-- **Workbench control plane** — local onboarding, project/session/frame state, upload-frame linkage, frame message rows, frame backfill health records, chat-produced artifact attachment, artifact/version lineage, Files host inventory for local workspace files, SSH/BYOC compute hosts, and cloud buckets, media/document/science previews, element-level HTML report annotations, artifact Notes and note preview modals, Cloud storage credential modal, Cloud export target/destination modal with audit logs, execution logs, verification checks, memory categories, watch routine records, skill source/license records, setup decision records, review feedback records, compute poller lease records, scoped settings, and redacted credential availability records under Feynman's own runtime and workspace files
+- **Research execution options** — Docker, plus Modal or RunPod when their CLIs are installed, for explicitly chosen replication, benchmark, or dataset-heavy experiment runs; not service deployment or generic cloud administration
 
 ---
 
