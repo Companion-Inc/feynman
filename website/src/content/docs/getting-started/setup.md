@@ -99,6 +99,8 @@ Model ids: llama3.1:8b
 API key: local
 ```
 
+Hosted OpenAI-compatible gateways use the same flow. For [Requesty](https://www.requesty.ai), choose `openai-completions`, set the base URL to `https://router.requesty.ai/v1`, send the Authorization header, enter `REQUESTY_API_KEY` as the API key resolver, and pick model ids such as `anthropic/claude-sonnet-4-5` from the prefilled list.
+
 After saving the provider, run:
 
 ```bash
