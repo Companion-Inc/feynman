@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import {
 	existsSync,
 	mkdirSync,
+	renameSync,
 	mkdtempSync,
 	readFileSync,
 	rmSync,
@@ -106,5 +107,45 @@ test("waiting for a live owner outlasts a package install instead of the stale w
 		assert.ok(Date.now() - startedAt >= 300);
 		releaseRuntimeWorkspaceSetupLock(lockDir, token);
 		assert.equal(existsSync(lockDir), false);
+	});
+});
+
+function failingRename(code: string, failures: number) {
+	let calls = 0;
+	return {
+		get calls() {
+			return calls;
+		},
+		rename(from: string, to: string) {
+			calls += 1;
+			if (calls <= failures) {
+				throw Object.assign(new Error(`${code}: locked`), { code });
+			}
+			renameSync(from, to);
+		},
+	};
+}
+
+test("lock release retries transient Windows rename failures", () => {
+	withLockDir((lockDir) => {
+		const token = acquireRuntimeWorkspaceSetupLock(lockDir);
+		const flaky = failingRename("EPERM", 2);
+		releaseRuntimeWorkspaceSetupLock(lockDir, token, { rename: flaky.rename, wait: () => {} });
+		assert.equal(flaky.calls, 3);
+		assert.equal(existsSync(lockDir), false);
+	});
+});
+
+test("a lock that cannot be renamed away drops its owner record so waiters fall back to mtime", () => {
+	withLockDir((lockDir) => {
+		const token = acquireRuntimeWorkspaceSetupLock(lockDir);
+		const stuck = failingRename("EBUSY", Number.POSITIVE_INFINITY);
+		releaseRuntimeWorkspaceSetupLock(lockDir, token, { rename: stuck.rename, wait: () => {} });
+		assert.equal(stuck.calls, 6);
+		assert.equal(existsSync(lockDir), true);
+		assert.equal(existsSync(join(lockDir, "owner.json")), false);
+		// The token is forgotten, so a later release cannot act on a lock it no longer owns.
+		releaseRuntimeWorkspaceSetupLock(lockDir, token);
+		assert.equal(existsSync(lockDir), true);
 	});
 });

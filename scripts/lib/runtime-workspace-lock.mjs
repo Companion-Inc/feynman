@@ -15,6 +15,7 @@ import { hostname } from "node:os";
 import { basename, dirname, resolve } from "node:path";
 
 import { RUNTIME_WORKSPACE_PACKAGE_INSTALL_TIMEOUT_MS } from "./runtime-workspace-install.mjs";
+import { removeTemporaryTree } from "./temporary-tree-cleanup.mjs";
 
 export const RUNTIME_WORKSPACE_RESTORE_MAX_CLEANUPS = 16;
 export const RUNTIME_WORKSPACE_SETUP_LOCK_STALE_MS = 300000;
@@ -23,6 +24,8 @@ export const RUNTIME_WORKSPACE_SETUP_LOCK_STALE_MS = 300000;
 const SETUP_LOCK_PID_REUSE_CEILING_MS = 2 * RUNTIME_WORKSPACE_PACKAGE_INSTALL_TIMEOUT_MS;
 const SETUP_LOCK_BREAK_STALE_MS = 30_000;
 const SETUP_LOCK_WAIT_NOTICE_MS = 2_000;
+// Windows antivirus and indexers briefly hold directories open during release.
+const SETUP_LOCK_RELEASE_RETRY_CODES = new Set(["EACCES", "EBUSY", "EPERM"]);
 
 const heldRuntimeWorkspaceSetupLocks = new Map();
 
@@ -393,7 +396,11 @@ export function heartbeatRuntimeWorkspaceSetupLock(lockDir, token) {
 	}
 }
 
-export function releaseRuntimeWorkspaceSetupLock(lockDir, token) {
+export function releaseRuntimeWorkspaceSetupLock(
+	lockDir,
+	token,
+	{ rename = renameSync, wait } = {},
+) {
 	const held = heldRuntimeWorkspaceSetupLocks.get(token);
 	if (
 		!held ||
@@ -413,12 +420,32 @@ export function releaseRuntimeWorkspaceSetupLock(lockDir, token) {
 		}
 		const releasedPath =
 			`${lockDir}.released-${process.pid}-${Date.now()}-${randomUUID()}`;
-		renameSync(lockDir, releasedPath);
+		try {
+			removeTemporaryTree(lockDir, {
+				remove: () => rename(lockDir, releasedPath),
+				retryableCodes: SETUP_LOCK_RELEASE_RETRY_CODES,
+				maxRetries: 5,
+				retryDelayMs: 50,
+				...(wait ? { wait } : {}),
+			});
+		} catch (error) {
+			// Without owner.json, waiters fall back to the directory mtime and take
+			// over after the stale window instead of trusting this owner's heartbeat.
+			if (directoryIdentityMatches(lockDir, held.identity)) {
+				rmSync(resolve(lockDir, "owner.json"), { force: true });
+			}
+			heldRuntimeWorkspaceSetupLocks.delete(token);
+			throw error;
+		}
 		if (!directoryIdentityMatches(releasedPath, held.identity)) {
 			if (!existsSync(lockDir)) renameSync(releasedPath, lockDir);
 			return;
 		}
 		rmSync(releasedPath, { recursive: true, force: true });
 		heldRuntimeWorkspaceSetupLocks.delete(token);
-	} catch {}
+	} catch (error) {
+		process.stderr.write(
+			`[feynman] could not release the runtime setup lock ${lockDir}: ${error instanceof Error ? error.message : String(error)}\n`,
+		);
+	}
 }

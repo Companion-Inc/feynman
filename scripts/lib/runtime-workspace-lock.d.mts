@@ -11,6 +11,10 @@ export declare function acquireRuntimeWorkspaceSetupLock(
 export declare function releaseRuntimeWorkspaceSetupLock(
 	lockDir: string,
 	token: string,
+	options?: {
+		rename?: (from: string, to: string) => void;
+		wait?: (delayMs: number) => void;
+	},
 ): void;
 export declare function cleanupRuntimeWorkspaceSetupLockTombstones(
 	lockDir: string,
