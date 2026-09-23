@@ -64,7 +64,6 @@ const EXPECTED_FEYNMAN_TOOLS = Object.freeze([
 	"alpha_list_annotations",
 	"alpha_read_code",
 	"alpha_search",
-	"feynman_model_endpoint_call",
 	"feynman_science_database_search",
 	"hf_dataset_info",
 	"hf_repo_files",

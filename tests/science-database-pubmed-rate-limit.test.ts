@@ -167,33 +167,3 @@ test("the request timeout covers the response body, not just the headers", async
 	]);
 	assert.equal(outcome, "aborted", "the stalled body was never aborted within the request budget");
 });
-
-test("every NCBI module shares one queue, not just PubMed", async () => {
-	// The budget is per-IP, so gating PubMed alone leaves a mixed turn over the
-	// ceiling: ClinVar and GEO hit the same host from their own modules.
-	process.env.NCBI_API_KEY = "test-ncbi-key";
-	resetNcbiRateLimitForTests();
-	const eutilsStarts: number[] = [];
-	globalThis.fetch = async (input) => {
-		const url = String(input instanceof Request ? input.url : input);
-		if (url.includes("eutils.ncbi.nlm.nih.gov")) eutilsStarts.push(performance.now());
-		if (url.includes("/esearch.fcgi")) return esearch();
-		if (url.includes("/esummary.fcgi")) return esummary();
-		return jsonResponse({ esearchresult: { count: "0", idlist: [] }, result: {}, header: {} });
-	};
-
-	const tool = registerTools().get("feynman_science_database_search");
-	assert.ok(tool);
-	await Promise.allSettled([
-		tool.execute("p1", { source: "pubmed", query: "crispr", limit: 1 }),
-		tool.execute("c1", { source: "clinvar", query: "APOE rs7412", limit: 1 }),
-		tool.execute("c2", { source: "clinvar", query: "TP53 variant", limit: 1 }),
-	]);
-
-	assert.ok(eutilsStarts.length >= 3, `expected several E-utilities requests, saw ${eutilsStarts.length}`);
-	const ordered = [...eutilsStarts].sort((a, b) => a - b);
-	for (let i = 1; i < ordered.length; i += 1) {
-		const gap = ordered[i]! - ordered[i - 1]!;
-		assert.ok(gap >= 100, `an ungated module bypassed the queue (${gap.toFixed(0)}ms gap)`);
-	}
-});

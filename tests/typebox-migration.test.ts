@@ -9,7 +9,6 @@ import { validateToolArguments } from "@earendil-works/pi-ai";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 
 import { registerAlphaTools } from "../extensions/research-tools/alpha.js";
-import { registerModelEndpointTools } from "../extensions/research-tools/model-endpoints.js";
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const researchToolsRoot = join(repoRoot, "extensions", "research-tools");
@@ -31,7 +30,6 @@ test("research extension source and direct locks use Pi's coordinated TypeBox pa
 		[
 			"alpha.ts",
 			"huggingface.ts",
-			"model-endpoints.ts",
 			"science-databases.ts",
 		],
 	);
@@ -88,40 +86,5 @@ test("Pi runtime validation omits null alpha_get_paper sections without losing o
 	assert.throws(
 		() => validate({ paper: "2401.00001", sections: "methodology" }),
 		/Validation failed for tool "alpha_get_paper":[\s\S]*sections: must be array/,
-	);
-});
-
-test("Pi runtime validation omits null AlphaFold2 databases without losing optional arrays", () => {
-	const tools = new Map<string, Tool>();
-	registerModelEndpointTools({
-		registerTool(tool) {
-			tools.set(tool.name, tool);
-		},
-	} as ExtensionAPI);
-
-	const tool = tools.get("feynman_model_endpoint_call");
-	assert.ok(tool);
-	const validate = (arguments_: Record<string, unknown>) =>
-		validateToolArguments(tool, {
-			type: "toolCall",
-			id: "typebox-model-endpoint-regression",
-			name: tool.name,
-			arguments: arguments_,
-		} satisfies ToolCall);
-	const required = {
-		provider: "nvidia-bionemo",
-		model: "alphafold2",
-		sequence: "MSTNPKPQR",
-	};
-
-	assert.deepEqual(validate(required), required);
-	assert.deepEqual(validate({ ...required, databases: ["uniref90", "mgnify"] }), {
-		...required,
-		databases: ["uniref90", "mgnify"],
-	});
-	assert.deepEqual(validate({ ...required, databases: null }), required);
-	assert.throws(
-		() => validate({ ...required, databases: "uniref90" }),
-		/Validation failed for tool "feynman_model_endpoint_call":[\s\S]*databases: must be array/,
 	);
 });

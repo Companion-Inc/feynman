@@ -10,7 +10,6 @@ import { registerHuggingFaceTools } from "./research-tools/huggingface.js";
 import { registerInitCommand, registerOutputsCommand } from "./research-tools/project.js";
 import { registerServiceTierControls } from "./research-tools/service-tier.js";
 import { registerScienceDatabaseTools } from "./research-tools/science-databases.js";
-import { registerModelEndpointTools } from "./research-tools/model-endpoints.js";
 
 export default function researchTools(pi: ExtensionAPI): void {
 	const cache: { agentSummaryPromise?: Promise<{ agents: string[]; chains: string[] }> } = {};
@@ -30,5 +29,4 @@ export default function researchTools(pi: ExtensionAPI): void {
 	registerOutputsCommand(pi);
 	registerServiceTierControls(pi);
 	registerScienceDatabaseTools(pi);
-	registerModelEndpointTools(pi);
 }

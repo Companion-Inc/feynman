@@ -10,7 +10,7 @@ Use this skill when a PDF answer depends on more than one page or section.
 Workflow:
 
 1. Parse or inspect the full PDF enough to map title, abstract, methods, figures, tables, supplement references, and citations.
-2. Extract the exact pages and regions that support the answer. Use Feynman's PDF preview annotations for page/line/rectangle anchors when available.
+2. Extract the exact pages and regions that support the answer.
 3. Keep table values, figure labels, accession IDs, and quoted snippets tied to page numbers.
 4. Cross-check claims against methods, captions, supplement text, and cited papers when the conclusion depends on them.
 5. Save extracted notes, annotations, and provenance as artifacts.

@@ -333,17 +333,12 @@ test("replication copy is plan-first and execution-gated", () => {
 test("compute copy stays scoped to explicit research experiments", () => {
 	const homePage = readFileSync(join(repoRoot, "website", "src", "pages", "index.astro"), "utf8");
 	const readme = readFileSync(join(repoRoot, "README.md"), "utf8");
-	const modalSkill = readFileSync(join(repoRoot, "skills", "modal-compute", "SKILL.md"), "utf8");
-	const runpodSkill = readFileSync(join(repoRoot, "skills", "runpod-compute", "SKILL.md"), "utf8");
 	const dockerSkill = readFileSync(join(repoRoot, "skills", "docker", "SKILL.md"), "utf8");
-	const combined = `${homePage}\n${readme}\n${modalSkill}\n${runpodSkill}\n${dockerSkill}`;
+	const combined = `${homePage}\n${readme}\n${dockerSkill}`;
 
 	assert.match(homePage, /Optional execution targets for research experiments after the workflow chooses an environment/i);
 	assert.match(readme, /Research execution options/i);
 	assert.match(readme, /explicitly chosen replication, benchmark, or dataset-heavy experiment runs/i);
-	assert.match(modalSkill, /bounded research experiments/i);
-	assert.match(modalSkill, /Do not use this skill to deploy services or unrelated batch jobs/i);
-	assert.match(runpodSkill, /specific research run/i);
 	assert.match(dockerSkill, /run research code safely or isolated for a Feynman workflow/i);
 	assert.doesNotMatch(readme, /^- \*\*Docker\*\*/m);
 	assert.doesNotMatch(readme, /^- \*\*Modal\*\*/m);
