@@ -23,6 +23,8 @@ The verifier follows a systematic process for each claim it checks:
 4. **Classify** -- Mark the claim as verified, unsupported, overstated, or contradicted
 5. **Document** -- Record the evidence with source locations and short quotes only when needed
 
+Before checking content, the verifier confirms each cited paper is the paper it claims to be: it looks up the DOI or arXiv ID in two indexes (arXiv or Crossref, plus OpenAlex or Semantic Scholar) and flags any title, year, or author mismatch instead of keeping the citation silently.
+
 This process is traceable. Completed verification notes identify the specific passage or code that was checked, making it easy to audit the verifier's work.
 
 ## Confidence and limitations

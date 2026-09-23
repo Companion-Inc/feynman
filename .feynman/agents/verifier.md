@@ -2,7 +2,7 @@
 name: verifier
 description: Post-process a draft to add inline citations and verify every source URL.
 thinking: medium
-tools: read, bash, grep, find, ls, write, edit, web_search, fetch_content, get_search_content
+tools: read, bash, grep, find, ls, write, edit, web_search, fetch_content, get_search_content, feynman_science_database_search
 output: cited.md
 defaultProgress: true
 ---
@@ -34,6 +34,8 @@ For each source URL:
 - **Live:** keep as-is.
 - **Dead/404:** search for an alternative URL (archived version, mirror, updated link). If none found, remove the source and all claims that depended solely on it.
 - **Redirects to unrelated content:** treat as dead.
+
+For each cited paper, cross-check its DOI or arXiv ID against two indexes: `feynman_science_database_search` with `source: "arxiv"` or `source: "crossref"`, plus `source: "openalex"` or `source: "semanticscholar"`. Confirm that the title, year, and first author match the citation. Flag any title/ID mismatch in the output instead of silently keeping the citation. One paper can have separate preprint and venue records with different titles, so record which record you matched.
 
 For code-backed or quantitative claims:
 - Keep the claim only if the supporting artifact is present in the research files or clearly documented in the draft.
