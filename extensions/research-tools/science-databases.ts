@@ -6,7 +6,7 @@ import { searchPreprints } from "./science-database-preprints.js";
 import { searchPubMed } from "./science-database-pubmed.js";
 import { isEuropePmcFullTextQuery, searchEuropePmcFullText } from "./science-database-europepmc-fulltext.js";
 
-type ScienceDatabaseSource = "arxiv" | "biorxiv" | "crossref" | "europepmc" | "medrxiv" | "openalex" | "pubmed";
+type ScienceDatabaseSource = "arxiv" | "biorxiv" | "crossref" | "europepmc" | "medrxiv" | "openalex" | "pubmed" | "semanticscholar";
 
 type ScienceDatabaseSearchParams = {
 	limit?: number;
@@ -17,6 +17,12 @@ type ScienceDatabaseSearchParams = {
 
 const CROSSREF_BASE = "https://api.crossref.org";
 const EUROPE_PMC_SEARCH_URL = "https://www.ebi.ac.uk/europepmc/webservices/rest/search";
+const SEMANTIC_SCHOLAR_BASE = "https://api.semanticscholar.org/graph/v1";
+const SEMANTIC_SCHOLAR_FIELDS = "title,year,authors,venue,citationCount,externalIds,openAccessPdf,abstract";
+const SEMANTIC_SCHOLAR_KEY_URL = "https://www.semanticscholar.org/product/api#api-key-form";
+const SEMANTIC_SCHOLAR_ABSTRACT_CHARS = 600;
+const SEMANTIC_SCHOLAR_DEFAULT_RETRY_MS = 1_000;
+const SEMANTIC_SCHOLAR_MAX_RETRY_MS = 5_000;
 const DEFAULT_LIMIT = 5;
 const MAX_LIMIT = 20;
 const REQUEST_TIMEOUT_MS = 25_000;
@@ -28,6 +34,7 @@ const SCIENCE_DATABASE_SOURCE_IDS = [
 	"medrxiv",
 	"openalex",
 	"pubmed",
+	"semanticscholar",
 ] as const;
 const SCIENCE_DATABASE_SOURCE_SCHEMA = Type.Unsafe({
 	description: "Database to search.",
@@ -67,16 +74,31 @@ function cleanQuery(query: string): string {
 	return clean;
 }
 
-async function fetchJson(url: URL): Promise<unknown> {
+class ScienceDatabaseRequestError extends Error {
+	constructor(message: string, readonly status: number, readonly retryAfterMs?: number) {
+		super(message);
+	}
+}
+
+function retryAfterMs(value: string | null): number | undefined {
+	const seconds = numberValue(value ?? undefined);
+	return seconds === undefined || seconds < 0 ? undefined : seconds * 1000;
+}
+
+async function fetchJson(url: URL, headers: Record<string, string> = {}): Promise<unknown> {
 	const controller = new AbortController();
 	const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 	try {
 		const response = await fetch(url, {
-			headers: { accept: "application/json" },
+			headers: { accept: "application/json", ...headers },
 			signal: controller.signal,
 		});
 		if (!response.ok) {
-			throw new Error(`Science database request failed: ${response.status} ${response.statusText}`);
+			throw new ScienceDatabaseRequestError(
+				`Science database request failed: ${response.status} ${response.statusText}`,
+				response.status,
+				retryAfterMs(response.headers.get("retry-after")),
+			);
 		}
 		return response.json();
 	} finally {
@@ -211,12 +233,89 @@ async function searchEuropePmc(params: ScienceDatabaseSearchParams): Promise<Rec
 	};
 }
 
+async function fetchSemanticScholar(url: URL): Promise<unknown> {
+	const apiKey = process.env.SEMANTIC_SCHOLAR_API_KEY?.trim();
+	const headers: Record<string, string> = apiKey ? { "x-api-key": apiKey } : {};
+	for (let attempt = 0; ; attempt += 1) {
+		try {
+			return await fetchJson(url, headers);
+		} catch (error) {
+			if (!(error instanceof ScienceDatabaseRequestError) || error.status !== 429) throw error;
+			if (attempt >= 1) {
+				throw new Error(apiKey
+					? "Semantic Scholar rate-limited this API key (HTTP 429) after one retry. Wait and retry, or search with source openalex."
+					: `Semantic Scholar's shared anonymous pool is rate-limited (HTTP 429) after one retry. Set SEMANTIC_SCHOLAR_API_KEY (free key: ${SEMANTIC_SCHOLAR_KEY_URL}) or search with source openalex.`);
+			}
+			const waitMs = Math.min(error.retryAfterMs ?? SEMANTIC_SCHOLAR_DEFAULT_RETRY_MS, SEMANTIC_SCHOLAR_MAX_RETRY_MS);
+			await new Promise((resolve) => setTimeout(resolve, waitMs));
+		}
+	}
+}
+
+function truncateText(value: string | undefined, maxChars: number): string | undefined {
+	if (!value || value.length <= maxChars) return value;
+	return `${value.slice(0, maxChars).trimEnd()}…`;
+}
+
+// Bulk search sorted by citation count surfaces seminal papers that relevance
+// ranking misses; it returns up to 1,000 rows, so only the top `limit` are kept.
+async function searchSemanticScholar(params: ScienceDatabaseSearchParams): Promise<Record<string, unknown>> {
+	const query = cleanQuery(params.query);
+	const limit = safeLimit(params.limit);
+	const relevance = params.sort === "relevance";
+	const sort = relevance ? "relevance" : params.sort === "pub_date" ? "publicationDate:desc" : "citationCount:desc";
+	const url = new URL(`${SEMANTIC_SCHOLAR_BASE}/paper/search${relevance ? "" : "/bulk"}`);
+	url.search = new URLSearchParams({
+		query,
+		fields: SEMANTIC_SCHOLAR_FIELDS,
+		...(relevance ? { limit: String(limit) } : { sort }),
+	}).toString();
+	const payload = recordValue(await fetchSemanticScholar(url));
+	const results = arrayValue(payload.data).slice(0, limit).flatMap((item) => {
+		const record = recordValue(item);
+		const paperId = stringValue(record.paperId);
+		if (!paperId) return [];
+		const externalIds = recordValue(record.externalIds);
+		const doi = stringValue(externalIds.DOI);
+		return [{
+			paperId,
+			title: stringValue(record.title),
+			year: numberValue(record.year),
+			authors: arrayValue(record.authors).map((author) => stringValue(recordValue(author).name)).filter(Boolean).slice(0, 8),
+			venue: stringValue(record.venue),
+			citationCount: numberValue(record.citationCount),
+			doi,
+			arxivId: stringValue(externalIds.ArXiv),
+			pmid: stringValue(externalIds.PubMed),
+			openAccessPdf: stringValue(recordValue(record.openAccessPdf).url),
+			abstract: truncateText(stringValue(record.abstract), SEMANTIC_SCHOLAR_ABSTRACT_CHARS),
+			url: `https://www.semanticscholar.org/paper/${paperId}`,
+			...(doiUrl(doi) ? { doiUrl: doiUrl(doi) } : {}),
+		}];
+	});
+	return {
+		schema: "feynman.scienceDatabaseSearch.v1",
+		source: "semanticscholar",
+		query,
+		sort,
+		totalCount: numberValue(payload.total) ?? results.length,
+		returned: results.length,
+		results,
+		provenance: {
+			docs: "https://api.semanticscholar.org/api-docs/graph",
+			license: "https://www.semanticscholar.org/product/api/license",
+			endpoints: [url.toString()],
+		},
+	};
+}
+
 async function scienceDatabaseSearch(params: ScienceDatabaseSearchParams): Promise<Record<string, unknown>> {
 	if (params.source === "arxiv") return searchArxiv(params);
 	if (params.source === "biorxiv") return searchPreprints(params, "biorxiv");
 	if (params.source === "medrxiv") return searchPreprints(params, "medrxiv");
 	if (params.source === "pubmed") return searchPubMed(params);
 	if (params.source === "crossref") return searchCrossref(params);
+	if (params.source === "semanticscholar") return searchSemanticScholar(params);
 	if (params.source === "openalex") {
 		return searchOpenAlex({
 			limit: params.limit,
@@ -232,12 +331,12 @@ export function registerScienceDatabaseTools(pi: ExtensionAPI): void {
 		name: "feynman_science_database_search",
 		label: "Science Database Search",
 		description:
-			"Search read-only scholarly literature databases: OpenAlex, arXiv ID lookup, PubMed (search, metadata, ID conversion, related articles, citation matching, copyright, PMC full-text routing), Europe PMC (metadata and open-access full-text sections), bioRxiv/medRxiv preprints, and Crossref DOI metadata. Returns stable identifiers, bounded section snippets when requested, source URLs, and endpoint provenance.",
-		promptSnippet: "Search OpenAlex, PubMed, Europe PMC metadata and open-access full-text sections, bioRxiv/medRxiv, or Crossref, or look up arXiv IDs, for source-backed literature evidence.",
+			"Search read-only scholarly literature databases: Semantic Scholar (citation-sorted by default), OpenAlex, arXiv ID lookup, PubMed (search, metadata, ID conversion, related articles, citation matching, copyright, PMC full-text routing), Europe PMC (metadata and open-access full-text sections), bioRxiv/medRxiv preprints, and Crossref DOI metadata. Returns stable identifiers, bounded section snippets when requested, source URLs, and endpoint provenance.",
+		promptSnippet: "Search Semantic Scholar, OpenAlex, PubMed, Europe PMC metadata and open-access full-text sections, bioRxiv/medRxiv, or Crossref, or look up arXiv IDs, for source-backed literature evidence.",
 		promptGuidelines: [
-			"Use feynman_science_database_search to find and pin down papers before making source-backed claims: OpenAlex for cross-discipline works, citation graphs, authors, venues, and OA status; arXiv only to look up known arXiv IDs (it has no topic search); PubMed for biomedical search, PMID metadata, PMID/PMCID/DOI conversion, related articles, citation matching, and copyright checks; Europe PMC for open-access full-text section snippets; bioRxiv/medRxiv for preprint DOI lookup, date/category windows, and published-preprint links; Crossref for DOI metadata.",
+			"Use feynman_science_database_search to find and pin down papers before making source-backed claims: Semantic Scholar for general discovery (default sort is citation count, which surfaces seminal work; sort=relevance or pub_date for newer work); OpenAlex for cross-discipline works, citation graphs, authors, venues, and OA status; arXiv only to look up known arXiv IDs (it has no topic search); PubMed for biomedical search, PMID metadata, PMID/PMCID/DOI conversion, related articles, citation matching, and copyright checks; Europe PMC for open-access full-text section snippets; bioRxiv/medRxiv for preprint DOI lookup, date/category windows, and published-preprint links; Crossref for DOI metadata.",
 			"Exact literature modes: `openalex_search_works`, `openalex_get_work`, `openalex_citations`, `openalex_references`, `openalex_search_authors`, `openalex_get_author`, `openalex_venue_info`, and `arxiv_get_papers` (the arxiv source also accepts bare IDs such as 2309.08600). PubMed accepts `pmid:`, `convert:`, `related:`, `fulltext:`, `copyright:`, and `citation` prefixes; Europe PMC accepts `fulltext:`/`sections:` with a PMCID or PMID.",
-			"Preserve returned PMIDs, PMCIDs, DOIs, arXiv IDs, preprint DOIs, OpenAlex W/A/S IDs, author ORCIDs, citation/reference counts, OA status, Europe PMC full-text statuses and section inventories, source URLs, and endpoint provenance in research artifacts and answers.",
+			"Preserve returned PMIDs, PMCIDs, DOIs, arXiv IDs, Semantic Scholar paper IDs, preprint DOIs, OpenAlex W/A/S IDs, author ORCIDs, citation/reference counts, OA status, Europe PMC full-text statuses and section inventories, source URLs, and endpoint provenance in research artifacts and answers.",
 			"Treat database summaries as retrieval evidence, then verify decisive claims against the full paper when needed.",
 		],
 		parameters: Type.Object({
@@ -250,7 +349,7 @@ export function registerScienceDatabaseTools(pi: ExtensionAPI): void {
 			sort: Type.Optional(Type.Union([
 				Type.Literal("relevance"),
 				Type.Literal("pub_date"),
-			], { description: "PubMed sort order. Ignored for other sources." })),
+			], { description: "PubMed sort order. For semanticscholar, relevance uses relevance search and pub_date sorts newest first; the default sorts by citation count. Ignored for other sources." })),
 		}),
 		async execute(_toolCallId, params) {
 			const result = await scienceDatabaseSearch(params as ScienceDatabaseSearchParams);

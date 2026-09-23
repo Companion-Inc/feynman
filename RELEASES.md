@@ -11,7 +11,7 @@ GitHub release notes are generated from the matching `## vX.Y.Z` section in this
 Feynman now ships only what serves finding papers, reading them, synthesizing with verified citations, auditing papers against code, and planning replications. Removed:
 
 - **Science workbench:** `feynman serve` and its `--port`, `--no-open`, `--no-auth` and `--host` flags, the local web app, its demo seed data, and the workbench-only Pi tools `feynman_connector_tools`, `feynman_connector_call`, `feynman_workbench_context`, and `feynman_open_chemistry_sketcher`. The molecule, genome, alignment, and structure viewer libraries are no longer installed with Feynman.
-- **Non-literature databases:** `feynman_science_database_search` now covers OpenAlex, arXiv, PubMed, Europe PMC (including open-access full-text sections), bioRxiv/medRxiv, and Crossref. Biomedical, chemistry, genomics, variant, omics, regulatory, clinical-trial, grants, protein and structure sources were removed, along with DataCite. The tool's prompt text went from about 17 KB to about 2 KB per session.
+- **Non-literature databases:** `feynman_science_database_search` now covers OpenAlex, arXiv ID lookup, PubMed, Europe PMC (including open-access full-text sections), bioRxiv/medRxiv, and Crossref. Biomedical, chemistry, genomics, variant, omics, regulatory, clinical-trial, grants, protein and structure sources were removed, along with DataCite. The tool's prompt text went from about 17 KB to about 2 KB per session.
 - **Model endpoints:** the NVIDIA BioNeMo `feynman_model_endpoint_call` tool.
 - **Skills:** protein and bio model templates (AlphaFold2, OpenFold3, Boltz, Chai-1, ESMFold, ESM2, Evo 2, Borzoi, DiffDock, ProteinMPNN, LigandMPNN, SolubleMPNN, scGPT, scvi-tools, indication dossier), Modal/RunPod/SSH/model-endpoint compute templates, and the `customize`, `self-awareness`, `product-self-knowledge`, `contributing`, `skill-creator`, `figure-composer`, `figure-style`, and `paper-narrative` skills. `/replicate` and `/autoresearch` still offer Docker, Modal, and RunPod as execution choices.
 - **Commands:** `/commands` and `/capabilities`. Use `/help` for the grouped command list and `/tools` for the tool list.
@@ -21,6 +21,10 @@ Feynman now ships only what serves finding papers, reading them, synthesizing wi
 - **Local state:** Feynman no longer creates `~/.feynman/active-org.json` or `~/.feynman/orgs/`. Existing workbench data in those folders is left in place; delete it if you no longer need it.
 
 Everything removed is preserved in the repository at the `archive/pre-deslop-0.3.49` git tag. To recover a piece, check it out from that tag, for example `git checkout archive/pre-deslop-0.3.49 -- src/workbench workbench-web`, or install `@companion-ai/feynman@0.3.49` to keep using the workbench.
+
+### Paper search
+
+- **Semantic Scholar source:** `feynman_science_database_search` gains `source: "semanticscholar"`. By default it runs a bulk search sorted by citation count and keeps the top results (up to 20), which found 7 of 9 seminal papers in the search benchmark versus 2 for OpenAlex keyword search. `sort: "relevance"` uses relevance search and `sort: "pub_date"` returns newest first. Set `SEMANTIC_SCHOLAR_API_KEY` (free on request) to use your own rate limit; without it, a 429 from the shared anonymous pool is retried once and then reported with instructions.
 
 ## v0.3.49 - 2026-09-23
 
