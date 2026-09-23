@@ -24,6 +24,7 @@
     "logo.mjs",
     "logo.d.mts",
     "scripts/check-node-version.mjs",
+    "scripts/check-pi-rpc.mjs",
     "scripts/install/",
     "skills/",
     ".nvmrc",

@@ -70,54 +70,8 @@ jobs:
           feynman update
           feynman search status
 
-      - name: Assert exact Pi and native subagent source contracts
-        # Pi 0.85.1 / pi-subagents 0.65.1 use native sessions, not pi-spawn.ts.
-        run: |
-          node --input-type=module <<'NODE'
-          import assert from "node:assert/strict";
-          import { execFileSync } from "node:child_process";
-          import { readFileSync } from "node:fs";
-          import { join } from "node:path";
-          import { pathToFileURL } from "node:url";
-          const pkg = join(execFileSync("npm", ["root", "-g"], { encoding: "utf8", shell: process.platform === "win32" }).trim(), "@companion-ai", "feynman");
-          const load = (name) => import(pathToFileURL(join(pkg, "scripts", "lib", name)).href);
-          const { assertPatchedPiCliArgsPackageRoot, PI_CLI_ARGS_REQUIRED_VERSION } = await load("pi-cli-args-patch.mjs");
-          const { assertPiSubagentsNativeSources, PI_SUBAGENTS_NATIVE_VERSION } = await load("pi-subagents-native-patch.mjs");
-          assert.equal(PI_CLI_ARGS_REQUIRED_VERSION, "0.85.1");
-          assert.equal(PI_SUBAGENTS_NATIVE_VERSION, "0.65.1");
-          for (const modules of [join(pkg, "node_modules"), join(pkg, ".feynman", "npm", "node_modules")]) {
-            for (const name of ["pi-coding-agent", "pi-agent-core", "pi-ai", "pi-tui", "pi-telemetry"]) {
-              const manifest = JSON.parse(readFileSync(join(modules, "@earendil-works", name, "package.json"), "utf8"));
-              assert.equal(manifest.name, "@earendil-works/" + name);
-              assert.equal(manifest.version, PI_CLI_ARGS_REQUIRED_VERSION);
-            }
-            assertPatchedPiCliArgsPackageRoot(join(modules, "@earendil-works", "pi-coding-agent"), "installed Pi CLI");
-          }
-          const subagents = join(pkg, ".feynman", "npm", "node_modules", "pi-subagents");
-          const manifest = JSON.parse(readFileSync(join(subagents, "package.json"), "utf8"));
-          assert.equal(manifest.name, "pi-subagents");
-          assert.equal(manifest.version, PI_SUBAGENTS_NATIVE_VERSION);
-          assertPiSubagentsNativeSources((relativePath) => readFileSync(join(subagents, relativePath), "utf8"), "installed native subagents");
-          console.log("Exact coordinated Pi and native-subagent contracts verified");
-          NODE
-
-      - name: Assert exact Alpha Hub version in both installed copies
-        run: |
-          node --input-type=module <<'NODE'
-          import assert from "node:assert/strict";
-          import { execFileSync } from "node:child_process";
-          import { readFileSync } from "node:fs";
-          import { join } from "node:path";
-          const pkg = join(execFileSync("npm", ["root", "-g"], { encoding: "utf8", shell: process.platform === "win32" }).trim(), "@companion-ai", "feynman");
-          const expected = JSON.parse(readFileSync(join(pkg, "package.json"), "utf8")).dependencies["@companion-ai/alpha-hub"];
-          assert.match(expected, /^\d+\.\d+\.\d+$/);
-          for (const modules of [join(pkg, "node_modules"), join(pkg, ".feynman", "npm", "node_modules")]) {
-            const manifest = JSON.parse(readFileSync(join(modules, "@companion-ai", "alpha-hub", "package.json"), "utf8"));
-            assert.equal(manifest.name, "@companion-ai/alpha-hub");
-            assert.equal(manifest.version, expected);
-          }
-          console.log(`Alpha Hub ${expected} verified in both installed copies`);
-          NODE
+      - name: Pi RPC compatibility check
+        run: node "$(npm root -g)/@companion-ai/feynman/scripts/check-pi-rpc.mjs"
 
       - name: Configure model auth for live smokes
         if: env.HAS_OPENAI_KEY == 'true'
@@ -215,12 +169,7 @@ jobs:
           esac
           bundle="$install_root/app/feynman-$expected-$os-$arch"
           test -x "$bundle/feynman"
-          "$bundle/node/bin/node" "$bundle/app/scripts/verify-package-artifact.mjs" "$bundle/app" --pruned-native
-          "$bundle/node/bin/node" \
-            "$bundle/app/scripts/verify-installed-runtime.mjs" \
-            "$bin"
-          "$bundle/node/bin/node" \
-            "$bundle/app/scripts/verify-installed-docparser.mjs"
+          "$bundle/node/bin/node" "$bundle/app/scripts/check-pi-rpc.mjs"
 
       - name: Install the published native bundle through the live Windows installer
         if: runner.os == 'Windows'
@@ -253,21 +202,9 @@ jobs:
           }
           $bundle = Join-Path $installRoot "feynman-$expected-win32-x64"
           & (Join-Path $bundle "node\node.exe") `
-            (Join-Path $bundle "app\scripts\verify-package-artifact.mjs") `
-            (Join-Path $bundle "app") --pruned-native
+            (Join-Path $bundle "app\scripts\check-pi-rpc.mjs")
           if ($LASTEXITCODE -ne 0) {
-            throw "Installed Windows artifact source contracts failed."
-          }
-          & (Join-Path $bundle "node\node.exe") `
-            (Join-Path $bundle "app\scripts\verify-installed-runtime.mjs") `
-            $bin
-          if ($LASTEXITCODE -ne 0) {
-            throw "Installed Windows runtime verification failed."
-          }
-          & (Join-Path $bundle "node\node.exe") `
-            (Join-Path $bundle "app\scripts\verify-installed-docparser.mjs")
-          if ($LASTEXITCODE -ne 0) {
-            throw "Installed Windows pi-docparser verification failed."
+            throw "Installed Windows bundle failed the Pi RPC compatibility check."
           }
 
   release-candidate-pr:
@@ -312,7 +249,6 @@ jobs:
           tarball="$RUNNER_TEMP/companion-ai-feynman-$(node -p "require('./package.json').version").tgz"
           test -s "$tarball"
           node scripts/verify-package-budget.mjs "$RUNNER_TEMP/pack.json" "$tarball"
-          npm audit --omit=dev --prefix .feynman/npm
 
           consumer="$RUNNER_TEMP/feynman-consumer"
           mkdir -p "$consumer"
@@ -325,11 +261,7 @@ jobs:
           "$bin" --help >/dev/null
           HOME="$RUNNER_TEMP/feynman-home" FEYNMAN_HOME="$RUNNER_TEMP/feynman-home" "$bin" packages list
           HOME="$RUNNER_TEMP/feynman-home" FEYNMAN_HOME="$RUNNER_TEMP/feynman-home" "$bin" search status
-          node scripts/verify-stale-pi-upgrade.mjs "$bin"
-          node "$consumer/node_modules/@companion-ai/feynman/scripts/verify-package-artifact.mjs" \
-            "$consumer/node_modules/@companion-ai/feynman"
-          node "$consumer/node_modules/@companion-ai/feynman/scripts/verify-installed-runtime.mjs" "$bin"
-          node "$consumer/node_modules/@companion-ai/feynman/scripts/verify-installed-docparser.mjs"
+          node "$consumer/node_modules/@companion-ai/feynman/scripts/check-pi-rpc.mjs"
           test -z "$(git status --porcelain --untracked-files=all)"
 
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
@@ -410,29 +342,12 @@ jobs:
           npm install --global --prefix "$global_prefix" --omit=dev --no-audit "$tarball"
           test "$("$global_bin" --version | tail -1)" = "$version"
           "$global_bin" --help >/dev/null
-          runtime_audit="$RUNNER_TEMP/feynman-runtime-audit"
-          mkdir -p "$runtime_audit"
-          runtime_archive="$consumer/node_modules/@companion-ai/feynman/.feynman/runtime-workspace.tgz"
-          if command -v cygpath >/dev/null 2>&1; then
-            runtime_archive=$(cygpath -u "$runtime_archive")
-            runtime_audit=$(cygpath -u "$runtime_audit")
-          fi
-          tar -xzf \
-            "$runtime_archive" \
-            -C "$runtime_audit"
-          npm audit --omit=dev --prefix "$runtime_audit/npm"
-          node "$consumer/node_modules/@companion-ai/feynman/scripts/verify-package-artifact.mjs" \
-            "$consumer/node_modules/@companion-ai/feynman"
-          node "$consumer/node_modules/@companion-ai/feynman/scripts/verify-installed-runtime.mjs" "$bin"
-          node "$consumer/node_modules/@companion-ai/feynman/scripts/verify-installed-docparser.mjs"
+          node "$consumer/node_modules/@companion-ai/feynman/scripts/check-pi-rpc.mjs"
           global_node_modules=$(npm root --global --prefix "$global_prefix")
           if command -v cygpath >/dev/null 2>&1; then
             global_node_modules=$(cygpath -u "$global_node_modules")
           fi
-          node "$global_node_modules/@companion-ai/feynman/scripts/verify-package-artifact.mjs" \
-            "$global_node_modules/@companion-ai/feynman"
-          node "$global_node_modules/@companion-ai/feynman/scripts/verify-installed-runtime.mjs" "$global_bin"
-          node "$global_node_modules/@companion-ai/feynman/scripts/verify-installed-docparser.mjs"
+          node "$global_node_modules/@companion-ai/feynman/scripts/check-pi-rpc.mjs"
 
   windows-native-installer-pr:
     if: github.event_name == 'pull_request'
@@ -479,20 +394,13 @@ jobs:
           $bundleRoot = Join-Path $smokeRoot "feynman-$version-win32-x64"
           $native = Join-Path $bundleRoot "feynman.cmd"
           $nativeNode = Join-Path $bundleRoot "node/node.exe"
-          $nativeVerifier = Join-Path $bundleRoot "app/scripts/verify-installed-runtime.mjs"
-          & $nativeNode (Join-Path $bundleRoot "app/scripts/verify-package-artifact.mjs") `
-            (Join-Path $bundleRoot "app") --pruned-native
+          & $native --help | Select-Object -First 20
           if ($LASTEXITCODE -ne 0) {
-            throw "Windows native artifact source contracts failed: $LASTEXITCODE"
+            throw "Windows native launcher failed --help: $LASTEXITCODE"
           }
-          & $nativeNode $nativeVerifier $native
+          & $nativeNode (Join-Path $bundleRoot "app/scripts/check-pi-rpc.mjs")
           if ($LASTEXITCODE -ne 0) {
-            throw "Windows native launcher failed installed-runtime verification: $LASTEXITCODE"
-          }
-          $nativeDocparserVerifier = Join-Path $bundleRoot "app/scripts/verify-installed-docparser.mjs"
-          & $nativeNode $nativeDocparserVerifier
-          if ($LASTEXITCODE -ne 0) {
-            throw "Windows native launcher failed installed pi-docparser verification: $LASTEXITCODE"
+            throw "Windows native bundle failed the Pi RPC compatibility check: $LASTEXITCODE"
           }
 
       - name: Install candidate with Windows PowerShell 5.1

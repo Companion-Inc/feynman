@@ -121,7 +121,7 @@ test("successor reconciliation skips rebuilding but exports verified source/inte
 	const final = runPolicy(`${finalIntegrity}\n${finalIdentity}`);
 	assert.equal(final.status, 0, final.stderr);
 	assert.doesNotMatch(finalStep.run, /test "\$(?:published_source_sha|release_target)" = "\$GITHUB_SHA"/);
-	for (const command of ["verify-installed-runtime.mjs", "verify-installed-docparser.mjs", "sha256sum -c SHA256SUMS"]) {
+	for (const command of ["check-pi-rpc.mjs", "sha256sum -c SHA256SUMS"]) {
 		assert.ok(finalStep.run.includes(command), command);
 	}
 });

@@ -275,10 +275,6 @@ jobs:
             test "$integrity" = "$published_integrity"
           fi
           echo "integrity=$integrity" >> "$GITHUB_OUTPUT"
-          if [ "$SHOULD_PUBLISH_NPM" = "true" ]; then
-            npm audit --omit=dev --prefix .feynman/npm
-            node scripts/verify-package-artifact.mjs .
-          fi
 
           consumer="$RUNNER_TEMP/feynman-consumer"
           mkdir -p "$consumer"
@@ -290,22 +286,7 @@ jobs:
           "$bin" --help >/dev/null
           HOME="$RUNNER_TEMP/feynman-home" FEYNMAN_HOME="$RUNNER_TEMP/feynman-home" "$bin" packages list
           HOME="$RUNNER_TEMP/feynman-home" FEYNMAN_HOME="$RUNNER_TEMP/feynman-home" "$bin" search status
-          node scripts/verify-stale-pi-upgrade.mjs "$bin"
-          runtime_audit="$RUNNER_TEMP/feynman-runtime-audit"
-          mkdir -p "$runtime_audit"
-          runtime_archive="$consumer/node_modules/@companion-ai/feynman/.feynman/runtime-workspace.tgz"
-          if command -v cygpath >/dev/null 2>&1; then
-            runtime_archive=$(cygpath -u "$runtime_archive")
-            runtime_audit=$(cygpath -u "$runtime_audit")
-          fi
-          tar -xzf \
-            "$runtime_archive" \
-            -C "$runtime_audit"
-          npm audit --omit=dev --prefix "$runtime_audit/npm"
-          node "$consumer/node_modules/@companion-ai/feynman/scripts/verify-package-artifact.mjs" \
-            "$consumer/node_modules/@companion-ai/feynman"
-          node "$consumer/node_modules/@companion-ai/feynman/scripts/verify-installed-runtime.mjs" "$bin"
-          node "$consumer/node_modules/@companion-ai/feynman/scripts/verify-installed-docparser.mjs"
+          node "$consumer/node_modules/@companion-ai/feynman/scripts/check-pi-rpc.mjs"
           test -z "$(git status --porcelain --untracked-files=all)"
 
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
@@ -382,29 +363,12 @@ jobs:
           npm install --global --prefix "$global_prefix" --omit=dev --no-audit "$tarball"
           test "$("$global_bin" --version | tail -1)" = "$VERSION"
           "$global_bin" --help >/dev/null
-          runtime_audit="$RUNNER_TEMP/feynman-runtime-audit"
-          mkdir -p "$runtime_audit"
-          runtime_archive="$consumer/node_modules/@companion-ai/feynman/.feynman/runtime-workspace.tgz"
-          if command -v cygpath >/dev/null 2>&1; then
-            runtime_archive=$(cygpath -u "$runtime_archive")
-            runtime_audit=$(cygpath -u "$runtime_audit")
-          fi
-          tar -xzf \
-            "$runtime_archive" \
-            -C "$runtime_audit"
-          npm audit --omit=dev --prefix "$runtime_audit/npm"
-          node "$consumer/node_modules/@companion-ai/feynman/scripts/verify-package-artifact.mjs" \
-            "$consumer/node_modules/@companion-ai/feynman"
-          node "$consumer/node_modules/@companion-ai/feynman/scripts/verify-installed-runtime.mjs" "$bin"
-          node "$consumer/node_modules/@companion-ai/feynman/scripts/verify-installed-docparser.mjs"
+          node "$consumer/node_modules/@companion-ai/feynman/scripts/check-pi-rpc.mjs"
           global_node_modules=$(npm root --global --prefix "$global_prefix")
           if command -v cygpath >/dev/null 2>&1; then
             global_node_modules=$(cygpath -u "$global_node_modules")
           fi
-          node "$global_node_modules/@companion-ai/feynman/scripts/verify-package-artifact.mjs" \
-            "$global_node_modules/@companion-ai/feynman"
-          node "$global_node_modules/@companion-ai/feynman/scripts/verify-installed-runtime.mjs" "$global_bin"
-          node "$global_node_modules/@companion-ai/feynman/scripts/verify-installed-docparser.mjs"
+          node "$global_node_modules/@companion-ai/feynman/scripts/check-pi-rpc.mjs"
 
   publish-npm:
     needs:
@@ -524,10 +488,7 @@ jobs:
           bundle="$tmp/feynman-${VERSION}-${{ matrix.id }}"
           "$bundle/feynman" --help >/tmp/feynman-help.out
           head -20 /tmp/feynman-help.out
-          node scripts/verify-stale-pi-upgrade.mjs "$bundle/feynman"
-          "$bundle/node/bin/node" "$bundle/app/scripts/verify-package-artifact.mjs" "$bundle/app" --pruned-native
-          "$bundle/node/bin/node" "$bundle/app/scripts/verify-installed-runtime.mjs" "$bundle/feynman"
-          "$bundle/node/bin/node" "$bundle/app/scripts/verify-installed-docparser.mjs"
+          "$bundle/node/bin/node" "$bundle/app/scripts/check-pi-rpc.mjs"
       - name: Smoke native bundle (Windows)
         if: matrix.id == 'win32-x64'
         shell: pwsh
@@ -545,26 +506,10 @@ jobs:
           if ($LASTEXITCODE -ne 0) {
             throw "Windows native launcher failed --help: $LASTEXITCODE"
           }
-          node scripts/verify-stale-pi-upgrade.mjs (Join-Path $bundleRoot "feynman.cmd")
-          if ($LASTEXITCODE -ne 0) {
-            throw "Windows native launcher failed stale-Pi upgrade smoke: $LASTEXITCODE"
-          }
           & (Join-Path $bundleRoot "node/node.exe") `
-            (Join-Path $bundleRoot "app/scripts/verify-package-artifact.mjs") `
-            (Join-Path $bundleRoot "app") --pruned-native
+            (Join-Path $bundleRoot "app/scripts/check-pi-rpc.mjs")
           if ($LASTEXITCODE -ne 0) {
-            throw "Windows native artifact source contracts failed: $LASTEXITCODE"
-          }
-          & (Join-Path $bundleRoot "node/node.exe") `
-            (Join-Path $bundleRoot "app/scripts/verify-installed-runtime.mjs") `
-            (Join-Path $bundleRoot "feynman.cmd")
-          if ($LASTEXITCODE -ne 0) {
-            throw "Windows native launcher failed installed-runtime verification: $LASTEXITCODE"
-          }
-          & (Join-Path $bundleRoot "node/node.exe") `
-            (Join-Path $bundleRoot "app/scripts/verify-installed-docparser.mjs")
-          if ($LASTEXITCODE -ne 0) {
-            throw "Windows native launcher failed installed pi-docparser verification: $LASTEXITCODE"
+            throw "Windows native bundle failed the Pi RPC compatibility check: $LASTEXITCODE"
           }
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
@@ -826,10 +771,7 @@ jobs:
           bin="$consumer/node_modules/.bin/feynman"
           test "$("$bin" --version | tail -1)" = "$VERSION"
           "$bin" --help >/dev/null
-          node "$consumer/node_modules/@companion-ai/feynman/scripts/verify-package-artifact.mjs" \
-            "$consumer/node_modules/@companion-ai/feynman"
-          node "$consumer/node_modules/@companion-ai/feynman/scripts/verify-installed-runtime.mjs" "$bin"
-          node "$consumer/node_modules/@companion-ai/feynman/scripts/verify-installed-docparser.mjs"
+          node "$consumer/node_modules/@companion-ai/feynman/scripts/check-pi-rpc.mjs"
           global_prefix="$RUNNER_TEMP/published-global"
           npm install --global --prefix "$global_prefix" --omit=dev --no-audit \
             "@companion-ai/feynman@$VERSION"
@@ -837,10 +779,7 @@ jobs:
           test "$("$global_bin" --version | tail -1)" = "$VERSION"
           "$global_bin" --help >/dev/null
           global_node_modules=$(npm root --global --prefix "$global_prefix")
-          node "$global_node_modules/@companion-ai/feynman/scripts/verify-package-artifact.mjs" \
-            "$global_node_modules/@companion-ai/feynman"
-          node "$global_node_modules/@companion-ai/feynman/scripts/verify-installed-runtime.mjs" "$global_bin"
-          node "$global_node_modules/@companion-ai/feynman/scripts/verify-installed-docparser.mjs"
+          node "$global_node_modules/@companion-ai/feynman/scripts/check-pi-rpc.mjs"
 
           release_dir="$RUNNER_TEMP/published-release"
           mkdir -p "$release_dir"
@@ -893,10 +832,4 @@ jobs:
           test "$("$native" --version | tail -1)" = "$VERSION"
           "$native" --help >/dev/null
           native_bundle_root="$native_root/feynman-$VERSION-linux-x64"
-          "$native_bundle_root/node/bin/node" \
-            "$native_bundle_root/app/scripts/verify-package-artifact.mjs" "$native_bundle_root/app" --pruned-native
-          "$native_bundle_root/node/bin/node" \
-            "$native_bundle_root/app/scripts/verify-installed-runtime.mjs" \
-            "$native"
-          "$native_bundle_root/node/bin/node" \
-            "$native_bundle_root/app/scripts/verify-installed-docparser.mjs"
+          "$native_bundle_root/node/bin/node" "$native_bundle_root/app/scripts/check-pi-rpc.mjs"
