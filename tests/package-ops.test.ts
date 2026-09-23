@@ -477,7 +477,7 @@ test("reconcileManagedCorePackageInstalls preserves a usable current prefix copy
 	assert.equal(existsSync(managedPackagePath), false);
 });
 
-test("reconcileManagedCorePackageInstalls uses normalized personal Alpha and latest agent presets", (t) => {
+test("reconcileManagedCorePackageInstalls uses normalized Alpha and latest agent presets", (t) => {
 	const root = mkdtempSync(join(tmpdir(), "feynman-preset-migration-"));
 	t.after(() => rmSync(root, { recursive: true, force: true }));
 	const agentDir = resolve(root, "agent");
@@ -505,10 +505,9 @@ test("reconcileManagedCorePackageInstalls uses normalized personal Alpha and lat
 	}
 	const repaired = reconcileManagedCorePackageInstalls(agentDir, appRoot);
 	assert.deepEqual(repaired, [...CORE_PACKAGE_SOURCES]);
-	assert.equal(readInstalledPackageVersion(resolve(root, "npm-global/lib/node_modules/@advaitpaliwal/alpha-hub")), "0.1.4");
+	assert.equal(readInstalledPackageVersion(resolve(root, "npm-global/lib/node_modules/@companion-ai/alpha-hub")), "0.1.4");
 	assert.equal(readInstalledPackageVersion(resolve(root, "npm-global/lib/node_modules/pi-subagents")), "0.65.1");
 	assert.equal(readInstalledPackageVersion(resolve(root, "npm-global/lib/node_modules/pi-web-access")), "0.28.0");
-	assert.equal(existsSync(resolve(root, "npm-global/lib/node_modules/@companion-ai/alpha-hub")), false);
 });
 
 test("reconcileManagedCorePackageInstalls rejects a stale bundle before changing installed state", (t) => {

@@ -55,7 +55,6 @@ const EXPECTED_FEYNMAN_COMMANDS = Object.freeze([
 	"init",
 	"outputs",
 	"service-tier",
-	"thinking",
 	"tools",
 ]);
 const EXPECTED_FEYNMAN_TOOLS = Object.freeze([

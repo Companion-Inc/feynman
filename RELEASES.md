@@ -6,7 +6,23 @@ GitHub release notes are generated from the matching `## vX.Y.Z` section in this
 
 ## Unreleased
 
-## v0.3.49 - 2026-09-06
+## v0.3.49 - 2026-09-23
+
+### Repository and package home
+
+- Feynman is back at `Companion-Inc/feynman` on GitHub and `@companion-ai/feynman` on npm. Installers, skills downloads, self-update checks, package metadata, research-source request identities, and docs use the Companion locations directly.
+- `@companion-ai/feynman` 0.3.47 installs now see this update through `feynman`'s normal update notice. If you installed the interim `@advaitpaliwal/feynman` 0.3.48 package, migrate once with `npm uninstall -g @advaitpaliwal/feynman`, then `npm install -g @companion-ai/feynman`. The command remains `feynman`, and native install commands are unchanged.
+
+### Telemetry privacy
+
+- Research-runtime traces no longer include OpenTelemetry's automatic process and host attributes, which carried the command line (including the system prompt and any prompt passed as an argument), host name, and user name. Telemetry now goes to the new Feynman PostHog project; `FEYNMAN_TELEMETRY=off` or `DO_NOT_TRACK=1` still disables it.
+
+### Startup and Windows reliability
+
+- `feynman --version` answers immediately instead of first verifying the whole bundled research runtime, and healthy launches skip one redundant full runtime validation pass.
+- Fixed macOS and Linux standalone bundles whose `node_modules/.bin` command links pointed at the build machine, which also blocked this release.
+- Windows: patching the bundled Undici proxy runtime copies real files instead of recreating symlinks, so commands no longer fail with EPERM on non-elevated accounts; transient antivirus locks on freshly written esbuild binaries are retried.
+- Removed Feynman's own `/thinking` command; Pi's built-in `/thinking` now handles thinking levels without a startup conflict warning.
 
 ### Research runtime refresh
 
@@ -14,7 +30,7 @@ GitHub release notes are generated from the matching `## vX.Y.Z` section in this
 - Updated native bundles to Node 24.20.0 and the research runtime compiler to esbuild 0.28.2. Kept portable npm installs within the existing package budget by removing redundant compiler binaries and dependency source maps, not platform support.
 - Updated web research to pi-web-access 0.28.0 with bounded batch searches, retrievable response IDs, citation preservation, and session-scoped page-answer models. Browser cookies and new paid providers remain opt-in.
 - Updated pi-subagents to 0.65.1. Research delegation now uses async workflow scripts with `runs.run` / `runs.all`; obsolete top-level `tasks` / `chain` parameters and `/chain` / `/parallel` commands are replaced by the documented workflow interface. Existing user settings are preserved; fresh installs disable automatic missions and Fleet UI.
-- Moved the bundled paper tools to `@advaitpaliwal/alpha-hub@0.1.4`, including the current alphaXiv OAuth/MCP API and result parser. Updated LiteParse to 2.14.3 while retaining document integrity checks.
+- Moved the bundled paper tools to `@companion-ai/alpha-hub@0.1.4`, including the current alphaXiv OAuth/MCP API and result parser. Updated LiteParse to 2.14.3 while retaining document integrity checks.
 - Refreshed the CLI, scientific viewers, telemetry, and website dependencies. The CLI builds with TypeScript 7; the website retains TypeScript 6 because its current Astro/ESLint integrations require the older compiler API. Preserved supported dependency majors and upstream-required pins rather than forcing incompatible upgrades.
 
 ## v0.3.48 - 2026-09-06

@@ -64,7 +64,7 @@ const BEFORE_LATEST_CORE_PACKAGE_SOURCES = [
 ] as const;
 
 export const CORE_PACKAGE_SOURCES = [
-	"npm:@advaitpaliwal/alpha-hub@0.1.4",
+	"npm:@companion-ai/alpha-hub@0.1.4",
 	"npm:pi-subagents@0.65.1",
 	"npm:pi-btw@0.4.1",
 	"npm:pi-docparser@4.0.0",

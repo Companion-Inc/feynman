@@ -878,7 +878,7 @@ function patchBundledPiDocparser() {
 function patchBundledAlphaHub() {
 	const alphaHubLib = resolve(
 		workspaceNodeModulesDir,
-		"@advaitpaliwal",
+		"@companion-ai",
 		"alpha-hub",
 		"src",
 		"lib",

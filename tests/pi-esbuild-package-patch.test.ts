@@ -287,7 +287,7 @@ test("a pruned native root remains portable without requiring or rehydrating dec
 
 function hoistedFixture(t: TestContext) {
 	const f = fixture(t), consumer = join(f.root, "consumer");
-	const app = join(consumer, "node_modules/@advaitpaliwal/feynman");
+	const app = join(consumer, "node_modules/@companion-ai/feynman");
 	mkdirSync(dirname(app), { recursive: true }); renameSync(f.app, app);
 	const modules = join(app, "node_modules"), externalHost = join(consumer, "node_modules", host);
 	mkdirSync(dirname(externalHost), { recursive: true });

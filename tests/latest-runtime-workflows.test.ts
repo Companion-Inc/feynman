@@ -27,7 +27,7 @@ function scriptFor(name: string): string {
 
 function withInstalledFixture(run: (root: string, pkg: string) => void) {
 	const root = mkdtempSync(join(tmpdir(), "feynman-workflow-contracts-"));
-	const pkg = join(root, "@advaitpaliwal", "feynman");
+	const pkg = join(root, "@companion-ai", "feynman");
 	const put = (path: string, source: unknown) => {
 		const target = join(pkg, path);
 		mkdirSync(dirname(target), { recursive: true });
@@ -39,9 +39,9 @@ function withInstalledFixture(run: (root: string, pkg: string) => void) {
 				put(`${modules}/@earendil-works/${name}/package.json`, { name: `@earendil-works/${name}`, version: "0.85.1" });
 			}
 			put(`${modules}/@earendil-works/pi-coding-agent/dist/cli/args.js`, "reviewed-pi-cli");
-			put(`${modules}/@advaitpaliwal/alpha-hub/package.json`, { name: "@advaitpaliwal/alpha-hub", version: "0.1.4" });
+			put(`${modules}/@companion-ai/alpha-hub/package.json`, { name: "@companion-ai/alpha-hub", version: "0.1.4" });
 			for (const file of ["auth.js", "alphaxiv.js", "index.js"]) {
-				put(`${modules}/@advaitpaliwal/alpha-hub/src/lib/${file}`, `reviewed-${file}`);
+				put(`${modules}/@companion-ai/alpha-hub/src/lib/${file}`, `reviewed-${file}`);
 			}
 		}
 		put(".feynman/npm/node_modules/pi-subagents/package.json", { name: "pi-subagents", version: "0.65.1" });
@@ -81,12 +81,12 @@ function execute(script: string, root: string) {
 }
 
 test("manual e2e requires exact Alpha Hub contracts for both installed copies", () => {
-	const script = scriptFor("Assert exact personal Alpha Hub source contracts");
+	const script = scriptFor("Assert exact Alpha Hub source contracts");
 	withInstalledFixture((root, pkg) => {
 		const good = execute(script, root);
 		assert.equal(good.status, 0, good.stderr);
 		for (const modules of ["node_modules", ".feynman/npm/node_modules"]) {
-			const alpha = join(pkg, modules, "@advaitpaliwal", "alpha-hub");
+			const alpha = join(pkg, modules, "@companion-ai", "alpha-hub");
 			for (const file of ["auth.js", "alphaxiv.js", "index.js"]) {
 				const path = join(alpha, "src/lib", file);
 				const source = readFileSync(path, "utf8");
@@ -100,7 +100,7 @@ test("manual e2e requires exact Alpha Hub contracts for both installed copies", 
 			assert.notEqual(execute(script, root).status, 0, "old identity must fail");
 			writeFileSync(manifest, source);
 		}
-		rmSync(join(pkg, ".feynman/npm/node_modules/@advaitpaliwal/alpha-hub"), { recursive: true });
+		rmSync(join(pkg, ".feynman/npm/node_modules/@companion-ai/alpha-hub"), { recursive: true });
 		assert.notEqual(execute(script, root).status, 0, "missing second copy must fail");
 	});
 });
@@ -129,8 +129,8 @@ test("manual e2e requires coordinated Pi and exact native subagent contracts", (
 
 test("workflows retain exact artifact checks on local, global, and native consumers", () => {
 	for (const source of [e2eSource, publishSource]) {
-		assert.doesNotMatch(source, /@companion-ai|src", "runs", "shared", "pi-spawn\.ts"|parseStructuredSearchResults/);
-		assert.match(source, /global_node_modules\/@advaitpaliwal\/feynman\/scripts\/verify-package-artifact\.mjs/);
+		assert.doesNotMatch(source, /@advaitpaliwal|src", "runs", "shared", "pi-spawn\.ts"|parseStructuredSearchResults/);
+		assert.match(source, /global_node_modules\/@companion-ai\/feynman\/scripts\/verify-package-artifact\.mjs/);
 		assert.equal((source.match(/--pruned-native/g) ?? []).length, 3);
 		assert.match(source, /consumer=\$\(cygpath -u "\$consumer"\)/);
 	}

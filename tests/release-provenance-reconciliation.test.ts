@@ -44,10 +44,10 @@ printf '%s\\n' "$*" >> "$MOCK_CALLS"
 case "$*" in
   "release view v0.3.48 --json targetCommitish --jq .targetCommitish")
     printf '%s' "$MOCK_TARGET" ;;
-  "api repos/advaitpaliwal/feynman/commits/refs/tags/v0.3.48 --jq .sha")
+  "api repos/Companion-Inc/feynman/commits/refs/tags/v0.3.48 --jq .sha")
     test "\${MOCK_TAG_ERROR:-false}" = false
     printf '%s' "$MOCK_TAG" ;;
-  "api repos/advaitpaliwal/feynman/compare/$MOCK_SOURCE...$GITHUB_SHA --jq .status")
+  "api repos/Companion-Inc/feynman/compare/$MOCK_SOURCE...$GITHUB_SHA --jq .status")
     test "\${MOCK_COMPARE_ERROR:-false}" = false
     printf '%s' "$MOCK_RELATION" ;;
   *) exit 99 ;;
@@ -63,7 +63,7 @@ esac
 			env: {
 				PATH: `${bin}:/usr/bin:/bin`,
 				GITHUB_OUTPUT: output,
-				GITHUB_REPOSITORY: "advaitpaliwal/feynman",
+				GITHUB_REPOSITORY: "Companion-Inc/feynman",
 				GITHUB_SHA: successor,
 				LOCAL: "0.3.48", VERSION: "0.3.48", PUBLISHED: "0.3.48",
 				RELEASE_COMPLETE: "true", RELEASE_EXISTS: "true", RELEASE_TARGET: source,

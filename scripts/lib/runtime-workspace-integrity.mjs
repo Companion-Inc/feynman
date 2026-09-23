@@ -65,6 +65,7 @@ export const RUNTIME_INPUT_FILES = Object.freeze([
 	"scripts/lib/mcp-sdk-package-patch.mjs",
 	"scripts/lib/package-root-patch-utils.mjs",
 	"scripts/lib/npm-command.mjs",
+	"scripts/lib/temporary-tree-cleanup.mjs",
 	"scripts/lib/deterministic-archive.mjs",
 	"scripts/lib/runtime-workspace-integrity.mjs",
 	"scripts/lib/runtime-workspace-install.mjs",

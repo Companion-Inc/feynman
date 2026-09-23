@@ -17,7 +17,7 @@ env:
 jobs:
   deploy:
     if: >-
-      github.repository == 'advaitpaliwal/feynman' &&
+      github.repository == 'Companion-Inc/feynman' &&
       (
         (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') ||
         (
@@ -67,7 +67,7 @@ jobs:
           node <<'NODE'
           const { execFileSync } = require("node:child_process");
           const { appendFileSync } = require("node:fs");
-          const repository = "advaitpaliwal/feynman";
+          const repository = "Companion-Inc/feynman";
           const path = ".github/workflows/publish.yml";
           const api = (endpoint, ...flags) => JSON.parse(execFileSync(
             "gh", ["api", "--hostname", "github.com", `repos/${repository}/${endpoint}`, ...flags],
@@ -113,7 +113,7 @@ jobs:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         if: steps.source.outputs.eligible == 'true'
         with:
-          repository: advaitpaliwal/feynman
+          repository: Companion-Inc/feynman
           ref: ${{ steps.source.outputs.sha }}
           persist-credentials: false
 
@@ -122,14 +122,14 @@ jobs:
         with:
           node-version-file: .nvmrc
 
-      - name: Require the personal npm release
+      - name: Require the published npm release
         if: steps.source.outputs.eligible == 'true'
         shell: bash
         run: |
           set -euo pipefail
           package_name=$(node -p "require('./package.json').name")
           version=$(node -p "require('./package.json').version")
-          test "$package_name" = "@advaitpaliwal/feynman"
+          test "$package_name" = "@companion-ai/feynman"
           published=$(npm view "$package_name@$version" version --registry=https://registry.npmjs.org)
           test "$published" = "$version"
 
@@ -161,7 +161,7 @@ jobs:
         run: |
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
-          main_sha=$(git ls-remote https://github.com/advaitpaliwal/feynman.git refs/heads/main | cut -f1)
+          main_sha=$(git ls-remote https://github.com/Companion-Inc/feynman.git refs/heads/main | cut -f1)
           [[ "$main_sha" =~ ^[0-9a-f]{40}$ ]] || exit 1
           if [ "$SOURCE_SHA" != "$main_sha" ]; then
             echo "Skipping superseded source $SOURCE_SHA; main is $main_sha."

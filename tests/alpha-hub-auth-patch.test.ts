@@ -96,7 +96,7 @@ test("patchAlphaHubAuthSource is idempotent", () => {
 	assert.equal(twice, once);
 });
 
-// Exact source fixtures from the integrity-verified @advaitpaliwal/alpha-hub@0.1.4 tarball.
+// Exact source fixtures from the integrity-verified @companion-ai/alpha-hub@0.1.4 tarball.
 // Published gitHead: 9ec42ba0d499284552220315247b3f2a811e6607. Gzip keeps tests self-contained.
 const PERSONAL_AUTH = gunzipSync(Buffer.from(
 	"H4sIAAAAAAAC/+1Ze3PbuBH/358Cdj1HqpVo2XmeLDvjyEqtxrU9lp3eTXMjwSQkIaFIHQH5UZ2+e3cBkAT0sJOMp9PONJqJJXJ3sdj9YV/g40maSTIjYcao" +

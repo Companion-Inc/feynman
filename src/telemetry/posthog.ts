@@ -32,8 +32,8 @@ import { PostHog, type PostHogOptions } from "posthog-node";
 import { getFeynmanHome, getFeynmanStateDir } from "../config/paths.js";
 
 export const DEFAULT_POSTHOG_HOST = "https://us.i.posthog.com";
-export const DEFAULT_POSTHOG_PROJECT_ID = "479027";
-export const DEFAULT_POSTHOG_PROJECT_TOKEN = "phc_ApbFL3s7uL2wonxA3Cs2H2vt7BQLahzhSP7NPjJrsJSv";
+export const DEFAULT_POSTHOG_PROJECT_ID = "623906";
+export const DEFAULT_POSTHOG_PROJECT_TOKEN = "phc_owCZbr7c4mchCuVN5JXA6uBByjbT2kFVXSbmpUyAgEva";
 const TELEMETRY_STATE_FILE = "telemetry.json";
 const TELEMETRY_DISABLED_VALUES = new Set(["0", "false", "no", "off", "disabled"]);
 const TELEMETRY_KEY_PATTERN = /^[A-Za-z0-9_$./-]+$/;
@@ -54,6 +54,7 @@ const CHILD_TELEMETRY_ENV_KEYS = [
 	"OTEL_EXPORTER_OTLP_METRICS_HEADERS",
 	"OTEL_EXPORTER_OTLP_METRICS_PROTOCOL",
 	"OTEL_RESOURCE_ATTRIBUTES",
+	"OTEL_NODE_RESOURCE_DETECTORS",
 	"OTEL_TRACES_EXPORTER",
 	"OTEL_LOGS_EXPORTER",
 	"OTEL_METRICS_EXPORTER",
@@ -317,6 +318,9 @@ export function buildPostHogOtelEnv(config: Pick<PostHogTelemetryConfig, "host" 
 		OTEL_EXPORTER_OTLP_TRACES_HEADERS: `Authorization=Bearer ${config.projectToken}`,
 		OTEL_EXPORTER_OTLP_TRACES_PROTOCOL: "http/protobuf",
 		PI_OTEL_CAPTURE_CONTENT: "metadata_only",
+		// The default process/host detectors export the command line (which
+		// carries the system prompt and user prompt), host name, and user name.
+		OTEL_NODE_RESOURCE_DETECTORS: "none",
 		PI_OTEL_LOGS: "0",
 		PI_OTEL_METRICS: "0",
 		OTEL_SERVICE_NAME: serviceName,

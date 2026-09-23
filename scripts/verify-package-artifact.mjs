@@ -452,7 +452,7 @@ assertPiInteractiveUpdateNoticeSource(
 	"bundled Pi interactive update notice",
 );
 
-const alphaLib = resolve(packageRoot, "node_modules", "@advaitpaliwal", "alpha-hub", "src", "lib");
+const alphaLib = resolve(packageRoot, "node_modules", "@companion-ai", "alpha-hub", "src", "lib");
 assertAlphaHubAuthSource(readText(resolve(alphaLib, "auth.js"), "bundled alpha-hub auth"));
 assertAlphaHubSearchSource(readText(resolve(alphaLib, "alphaxiv.js"), "bundled alpha-hub search"));
 assertAlphaHubSearchResultsSource(readText(resolve(alphaLib, "index.js"), "bundled alpha-hub parser"));
@@ -789,7 +789,7 @@ for (const [fileName, assertSource] of [
 	["alphaxiv.js", assertAlphaHubSearchSource],
 	["index.js", assertAlphaHubSearchResultsSource],
 ]) {
-	assertSource(readArchivedText(archivePath, `npm/node_modules/@advaitpaliwal/alpha-hub/src/lib/${fileName}`));
+	assertSource(readArchivedText(archivePath, `npm/node_modules/@companion-ai/alpha-hub/src/lib/${fileName}`));
 }
 
 requireMarkers(

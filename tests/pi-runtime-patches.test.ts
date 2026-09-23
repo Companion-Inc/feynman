@@ -425,7 +425,7 @@ test("patchPiRuntimeNodeModules patches installed Pi runtime files", async () =>
 	const modelRegistryPath = join(appRoot, "node_modules", "@earendil-works", "pi-coding-agent", "dist", "core", "model-registry.js");
 	const modelRuntimePath = join(appRoot, "node_modules", "@earendil-works", "pi-coding-agent", "dist", "core", "model-runtime.js");
 	const mcpManifestPath = join(appRoot, "node_modules", "@modelcontextprotocol", "sdk", "package.json");
-	const alphaSearchPath = join(appRoot, "node_modules", "@advaitpaliwal", "alpha-hub", "src", "lib", "alphaxiv.js");
+	const alphaSearchPath = join(appRoot, "node_modules", "@companion-ai", "alpha-hub", "src", "lib", "alphaxiv.js");
 	const sessionSearchPath = join(appRoot, "node_modules", "@kaiserlich-dev", "pi-session-search", "extensions", "indexer.ts");
 	await mkdir(dirname(agentLoopPath), { recursive: true });
 	await mkdir(dirname(tuiPath), { recursive: true });
