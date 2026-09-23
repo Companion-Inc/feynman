@@ -2,6 +2,7 @@ import {
 	askPaper,
 	annotatePaper,
 	clearPaperAnnotation,
+	disconnect,
 	getPaper,
 	listPaperAnnotations,
 	readPaperCode,
@@ -28,6 +29,12 @@ const paperSectionsSchema = Type.Unsafe<string[]>({
 });
 
 export function registerAlphaTools(pi: ExtensionAPI): void {
+	// The alphaXiv MCP client keeps a connection open; close it so print and
+	// JSON runs can exit once the session ends.
+	pi.on("session_shutdown", async () => {
+		await disconnect();
+	});
+
 	pi.registerTool({
 		name: "alpha_search",
 		label: "Alpha Search",
