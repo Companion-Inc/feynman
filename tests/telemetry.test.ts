@@ -322,57 +322,17 @@ test("getPostHogOtelEnv clears inherited collectors before setting PostHog route
 	}
 });
 
-test("getCliTelemetryMetadata records rank shape without raw topic, prompt, or paths", () => {
-	const metadata = getCliTelemetryMetadata([
-		"rank",
-		"private mechanistic interpretability topic",
-		"--prompt",
-		"private model prompt",
-		"--source-fixture",
-		"/private/path/openalex.json",
-		"--preference-file=/private/path/preferences.json",
-		"--reproduction-notes",
-		"/private/path/reproduction.json",
-		"--synthesize",
-		"--limit",
-		"7",
-	]);
-	const serialized = JSON.stringify(metadata);
-
-	assert.equal(metadata.command, "rank");
-	assert.equal(metadata.rank_topic_provided, true);
-	assert.equal(metadata.has_prompt, true);
-	assert.equal(metadata.source_fixture, true);
-	assert.equal(metadata.preference_file, true);
-	assert.equal(metadata.reproduction_notes, true);
-	assert.equal(metadata.synthesize, true);
-	assert.equal(metadata.rank_limit, 7);
-	assert.equal(serialized.includes("mechanistic"), false);
-	assert.equal(serialized.includes("private model prompt"), false);
-	assert.equal(serialized.includes("/private/path"), false);
-});
-
 test("getCliTelemetryMetadata does not record unknown commands or malformed flag values", () => {
 	const metadata = getCliTelemetryMetadata([
 		"private-research-prompt",
 		"--mode",
 		"/private/path/mode",
-		"--limit",
-		"/private/path/limit",
-		"--expand-citations=/private/path/citations",
-		"--full-text-top",
-		"2",
-		"--critique-top",
-		"not-a-number",
+		"--service-tier=not-a-number",
 	]);
 	const serialized = JSON.stringify(metadata);
 
 	assert.equal(metadata.command, "chat");
 	assert.equal(metadata.mode, undefined);
-	assert.equal(metadata.rank_limit, undefined);
-	assert.equal(metadata.rank_expand_citations, undefined);
-	assert.equal(metadata.rank_full_text_top, undefined);
-	assert.equal(metadata.rank_critique_top, undefined);
 	assert.equal(serialized.includes("private-research-prompt"), false);
 	assert.equal(serialized.includes("/private/path"), false);
 	assert.equal(serialized.includes("not-a-number"), false);
@@ -384,7 +344,6 @@ test("getCliTelemetryMetadata keeps whitelisted workflow commands and safe subco
 	const knownSubcommand = getCliTelemetryMetadata(["model", "list"]);
 
 	assert.equal(workflow.command, "review");
-	assert.equal(workflow.rank_topic_provided, false);
 	assert.equal(unknownSubcommand.command, "model");
 	assert.equal(unknownSubcommand.subcommand, undefined);
 	assert.equal(knownSubcommand.command, "model");

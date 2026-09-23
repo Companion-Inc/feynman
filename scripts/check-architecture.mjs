@@ -10,14 +10,6 @@ const ignoredPathParts = new Set(["node_modules", "dist", ".git", ".feynman"]);
 
 const allowedOversizedFiles = new Map([
 	[
-		"src/rank/paper-rank.ts",
-		"Existing PaperRank god-file. Split into papers/evidence/rank/artifact modules before adding new ranking surface.",
-	],
-	[
-		"tests/paper-rank.test.ts",
-		"Existing PaperRank coverage cluster. Move tests alongside extracted PaperRank modules.",
-	],
-	[
 		"src/cli.ts",
 		"Existing CLI dispatcher. Split command handlers into src/commands/ before growing CLI behavior.",
 	],
@@ -27,7 +19,6 @@ const domainRoots = [
 	"src/artifacts/",
 	"src/evidence/",
 	"src/papers/",
-	"src/rank/",
 ];
 
 const disallowedDomainImportRoots = [

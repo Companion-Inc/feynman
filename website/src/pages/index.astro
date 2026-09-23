@@ -5,7 +5,6 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/com
 
 const workflows = [
   { command: "/deepresearch", description: "Multi-agent investigation across papers, web, and code" },
-  { command: "rank", description: "PaperRank scoring for what to read first, with graph and methodology evidence" },
   { command: "/lit", description: "Literature review from primary sources with consensus mapping" },
   { command: "/review", description: "Internal research critique with severity scores and a revision plan" },
   { command: "/audit", description: "Paper-to-code mismatch audit for reproducibility claims" },
@@ -40,7 +39,6 @@ const compute = [
 
 const terminalCommands = [
   { command: 'feynman "what do we know about scaling laws"', description: "Cited research brief from papers and web" },
-  { command: 'feynman rank "sparse autoencoders"', description: "PaperRank table with citation, graph, methodology, and reproducibility scores" },
   { command: 'feynman deepresearch "mechanistic interpretability"', description: "Multi-agent deep dive with synthesis and verification" },
   { command: 'feynman lit "RLHF alternatives"', description: "Literature review with consensus and open questions" },
   { command: "feynman audit 2401.12345", description: "Paper claims vs. what the code actually does" },

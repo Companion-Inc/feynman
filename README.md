@@ -138,24 +138,6 @@ $ feynman deepresearch "mechanistic interpretability"
 $ feynman lit "RLHF alternatives"
 → Literature review with consensus, disagreements, open questions, and lab/PI corpus mode when the input names a research group
 
-$ feynman rank "mechanistic interpretability sparse autoencoders"
-→ Decides what to read first with citation, method, reproducibility, and provenance evidence
-
-$ feynman rank "mechanistic interpretability sparse autoencoders" --expand-citations 2
-→ Adds cited and citing papers to the local citation graph before scoring graph prestige
-
-$ feynman rank "mechanistic interpretability sparse autoencoders" --full-text-top 3
-→ Adds section-aware full-text evidence and checklist rubric answers before rescoring
-
-$ feynman rank "mechanistic interpretability sparse autoencoders" --critique-top 5
-→ Adds research-critique strengths, concerns, and follow-up questions grounded in score evidence
-
-$ feynman rank "mechanistic interpretability sparse autoencoders" --synthesize
-→ Writes an auditable model synthesis and names the selected model plus whether it was recommended or explicitly requested
-
-$ feynman paper 10.7717/peerj.4375 --fetch-full-text
-→ Resolves legal full-text access candidates for one paper and fetches source-specific text when available
-
 $ feynman audit 2401.12345
 → Compares paper claims against the public codebase
 
@@ -174,8 +156,6 @@ Ask naturally or use slash commands as shortcuts.
 
 | Command | What it does |
 | --- | --- |
-| `feynman rank <topic>` | PaperRank scoring for deciding what to read first, with transparent evidence for citations, methods, reproducibility, and provenance |
-| `feynman paper <id-or-title>` | Paper access resolver for one DOI, arXiv ID, OpenAlex ID, PMID, PMCID, or title, with OpenAlex, arXiv/alphaXiv, DOI, and Europe PMC candidates plus optional source-specific text fetching |
 | `/deepresearch <topic>` | Source-heavy multi-agent investigation |
 | `/lit <topic-or-lab>` | Literature review from paper search and primary sources; lab/PI inputs map publication trajectories and originality-ranked papers |
 | `/review <artifact>` | Research review with severity and revision plan |

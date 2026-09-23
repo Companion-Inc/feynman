@@ -181,51 +181,6 @@ test("review surfaces frame critique as internal research review, not external p
 	assert.doesNotMatch(combined, /reviewing a paper for a venue/i);
 });
 
-test("PaperRank top-level copy stays outcome-led instead of artifact-led", () => {
-	const commandMetadata = readFileSync(join(repoRoot, "metadata", "commands.mjs"), "utf8");
-	const readme = readFileSync(join(repoRoot, "README.md"), "utf8");
-	const cliDocs = readFileSync(join(repoRoot, "website", "src", "content", "docs", "reference", "cli-commands.md"), "utf8");
-	const releaseDocs = readFileSync(join(repoRoot, "website", "src", "content", "docs", "reference", "releases.md"), "utf8");
-	const paperRankDocs = readFileSync(join(repoRoot, "website", "src", "content", "docs", "workflows", "paper-rank.md"), "utf8");
-	const paperRankSource = readFileSync(join(repoRoot, "src", "rank", "paper-rank.ts"), "utf8");
-	const cliSource = readFileSync(join(repoRoot, "src", "cli.ts"), "utf8");
-	const releases = readFileSync(join(repoRoot, "RELEASES.md"), "utf8");
-	const currentCopy = `${readme}\n${cliDocs}\n${releaseDocs}\n${releases}\n${paperRankDocs}\n${paperRankSource}\n${cliSource}`;
-	const paperRankCopy = `${cliDocs}\n${paperRankDocs}\n${paperRankSource}`;
-
-	assert.match(commandMetadata, /deciding what to read first/i);
-	assert.match(commandMetadata, /citation, method, reproducibility, and provenance evidence/i);
-	assert.doesNotMatch(commandMetadata, /deterministic research agenda, field map, graph explorer/i);
-	assert.doesNotMatch(commandMetadata, /deterministic next research actions, field map, graph explorer/i);
-	assert.doesNotMatch(commandMetadata, /dashboard, JSONL outputs, citation graph state/i);
-	assert.doesNotMatch(commandMetadata, /calibration-fixture|reproduction-fixture/i);
-	assert.match(readme, /Decides what to read first with citation, method, reproducibility, and provenance evidence/i);
-	assert.doesNotMatch(readme, /PaperRank research memo, replication plan, score audit, rank sensitivity/i);
-	assert.doesNotMatch(readme, /calibration-fixture|reproduction-fixture/i);
-	assert.match(cliDocs, /Rank papers for deciding what to read first/i);
-	assert.match(paperRankCopy, /--preference-file/i);
-	assert.match(paperRankCopy, /--reproduction-notes/i);
-	assert.doesNotMatch(paperRankCopy, /--calibration-fixture|--reproduction-fixture/i);
-	assert.doesNotMatch(paperRankCopy, /fixtureSource|calibration fixture|reproduction evidence fixture|explicit fixture|small fixture can audit|How To Fill The Fixture/i);
-	assert.match(releaseDocs, /PaperRank scoring for read-first triage/i);
-	assert.match(releaseDocs, /ordinary read-first runs keep those extra artifacts out of the default output/i);
-	assert.doesNotMatch(releaseDocs, /deterministic research agenda, field map, graph explorer/i);
-	assert.doesNotMatch(releaseDocs, /deterministic next research actions, field map, graph explorer/i);
-	assert.doesNotMatch(releaseDocs, /Every run also writes an empty-safe reproduction notes template/i);
-	assert.match(currentCopy, /research-critique strengths, concerns, and follow-up questions/i);
-	assert.match(currentCopy, /Research Critique/i);
-	assert.match(currentCopy, /Research critique:/i);
-	assert.doesNotMatch(currentCopy, /Reviewer Critique/i);
-	assert.doesNotMatch(currentCopy, /Reviewer critique/i);
-	assert.doesNotMatch(currentCopy, /reviewer-style critique/i);
-	assert.doesNotMatch(currentCopy, /reviewer-style strengths/i);
-	assert.doesNotMatch(currentCopy, /reviewer concerns/i);
-	assert.doesNotMatch(currentCopy, /external peer-review decision/i);
-	assert.doesNotMatch(currentCopy, /peer-review verdict/i);
-	assert.doesNotMatch(paperRankCopy, /peer review/i);
-	assert.doesNotMatch(paperRankCopy, /reviewer/i);
-});
-
 test("autoresearch copy stays bounded to shipped experiment-loop behavior", () => {
 	const prompt = readFileSync(join(repoRoot, "prompts", "autoresearch.md"), "utf8");
 	const skill = readFileSync(join(repoRoot, "skills", "autoresearch", "SKILL.md"), "utf8");
