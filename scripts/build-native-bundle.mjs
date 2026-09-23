@@ -11,7 +11,7 @@ import { resolveChildProcessCommand } from "./lib/child-process-command.mjs";
 
 const appRoot = resolve(import.meta.dirname, "..");
 const packageJson = JSON.parse(readFileSync(resolve(appRoot, "package.json"), "utf8"));
-const shrinkwrapPath = resolve(appRoot, "npm-shrinkwrap.json");
+const packageLockPath = resolve(appRoot, "package-lock.json");
 const minBundledNodeVersion = packageJson.engines?.node?.match(/>=\s*([0-9]+\.[0-9]+\.[0-9]+)/)?.[1] || process.version.slice(1);
 const releaseNodeVersion = readFileSync(resolve(appRoot, ".nvmrc"), "utf8").trim().replace(/^v/, "");
 const PINNED_NODE_ARCHIVE_SHA256 = {
@@ -208,7 +208,7 @@ function installAppDependencies(appDir, stagingRoot, target) {
 	mkdirSync(depsDir, { recursive: true });
 
 	cpSync(resolve(appRoot, "package.json"), resolve(depsDir, "package.json"));
-	cpSync(shrinkwrapPath, resolve(depsDir, "npm-shrinkwrap.json"));
+	cpSync(packageLockPath, resolve(depsDir, "package-lock.json"));
 
 	run("npm", ["ci", "--omit=dev", "--ignore-scripts", "--no-audit", "--no-fund", "--loglevel", "error"], {
 		cwd: depsDir,

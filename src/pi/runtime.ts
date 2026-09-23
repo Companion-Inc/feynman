@@ -9,11 +9,10 @@ import {
 	resolveExecutable,
 	type ResolvedExecutables,
 } from "../system/executables.js";
-import { getPostHogOtelEnv, isTelemetryDisabled } from "../telemetry/posthog.js";
 
 // Pi packages shipped as Feynman dependencies and loaded from their install
 // paths through settings.json `packages` (Pi's documented local-path source).
-export const BUNDLED_PI_PACKAGES = ["pi-subagents", "pi-web-access", "pi-docparser", "pi-btw", "pi-otel"] as const;
+export const BUNDLED_PI_PACKAGES = ["pi-subagents", "pi-web-access", "pi-docparser", "pi-btw"] as const;
 
 export type PiRuntimeOptions = {
 	appRoot: string;
@@ -46,12 +45,9 @@ export function resolvePiCliPath(appRoot: string): string | undefined {
 }
 
 export function getFeynmanPackageSources(appRoot: string): string[] {
-	// pi-otel only carries Feynman telemetry; without its PostHog env it would
-	// probe a local collector and warn on stderr.
-	const packageNames = isTelemetryDisabled() ? BUNDLED_PI_PACKAGES.filter((name) => name !== "pi-otel") : BUNDLED_PI_PACKAGES;
 	return [
 		appRoot,
-		...packageNames.map((packageName) => resolvePackageRoot(appRoot, packageName))
+		...BUNDLED_PI_PACKAGES.map((packageName) => resolvePackageRoot(appRoot, packageName))
 			.filter((packageRoot): packageRoot is string => Boolean(packageRoot)),
 	];
 }
@@ -160,7 +156,6 @@ export function buildPiEnv(options: PiRuntimeOptions, executables?: ResolvedExec
 		process.env.PUPPETEER_EXECUTABLE_PATH ?? executables?.browser ?? resolveExecutable("google-chrome", BROWSER_FALLBACK_PATHS);
 	return {
 		...process.env,
-		...getPostHogOtelEnv("feynman-pi", options.feynmanVersion),
 		PATH: `${binPath}${delimiter}${process.env.PATH ?? ""}`,
 		FEYNMAN_VERSION: options.feynmanVersion,
 		FEYNMAN_NODE_EXECUTABLE: process.execPath,

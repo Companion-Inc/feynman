@@ -37,37 +37,6 @@ export const DEFAULT_POSTHOG_PROJECT_TOKEN = "phc_owCZbr7c4mchCuVN5JXA6uBByjbT2k
 const TELEMETRY_STATE_FILE = "telemetry.json";
 const TELEMETRY_DISABLED_VALUES = new Set(["0", "false", "no", "off", "disabled"]);
 const TELEMETRY_KEY_PATTERN = /^[A-Za-z0-9_$./-]+$/;
-const CHILD_TELEMETRY_ENV_KEYS = [
-	"FEYNMAN_POSTHOG_HOST",
-	"FEYNMAN_POSTHOG_KEY",
-	"FEYNMAN_POSTHOG_PROJECT_ID",
-	"OTEL_EXPORTER_OTLP_ENDPOINT",
-	"OTEL_EXPORTER_OTLP_HEADERS",
-	"OTEL_EXPORTER_OTLP_PROTOCOL",
-	"OTEL_EXPORTER_OTLP_TRACES_ENDPOINT",
-	"OTEL_EXPORTER_OTLP_TRACES_HEADERS",
-	"OTEL_EXPORTER_OTLP_TRACES_PROTOCOL",
-	"OTEL_EXPORTER_OTLP_LOGS_ENDPOINT",
-	"OTEL_EXPORTER_OTLP_LOGS_HEADERS",
-	"OTEL_EXPORTER_OTLP_LOGS_PROTOCOL",
-	"OTEL_EXPORTER_OTLP_METRICS_ENDPOINT",
-	"OTEL_EXPORTER_OTLP_METRICS_HEADERS",
-	"OTEL_EXPORTER_OTLP_METRICS_PROTOCOL",
-	"OTEL_RESOURCE_ATTRIBUTES",
-	"OTEL_NODE_RESOURCE_DETECTORS",
-	"OTEL_TRACES_EXPORTER",
-	"OTEL_LOGS_EXPORTER",
-	"OTEL_METRICS_EXPORTER",
-	"OTEL_LOG_LEVEL",
-	"PI_OTEL_DISABLED",
-	"PI_OTEL_CAPTURE_CONTENT",
-	"PI_OTEL_LOGS",
-	"PI_OTEL_METRICS",
-	"PI_OTEL_SERVICE_NAME",
-	"PI_OTEL_SERVICE_VERSION",
-	"OTEL_SERVICE_NAME",
-	"OTEL_SERVICE_VERSION",
-] as const;
 
 export type TelemetryPrimitive = string | number | boolean | null | undefined;
 export type TelemetryProperties = Record<string, TelemetryPrimitive>;
@@ -247,7 +216,7 @@ function disableTelemetryAfterTransportFailure(error: unknown): void {
 	}
 }
 
-export function isTelemetryDisabled(env: NodeJS.ProcessEnv = process.env): boolean {
+function isTelemetryDisabled(env: NodeJS.ProcessEnv = process.env): boolean {
 	const setting = env.FEYNMAN_TELEMETRY ?? env.FEYNMAN_POSTHOG_TELEMETRY;
 	return (setting !== undefined && TELEMETRY_DISABLED_VALUES.has(setting.trim().toLowerCase())) || env.DO_NOT_TRACK === "1";
 }
@@ -305,34 +274,6 @@ export function resolvePostHogTelemetryConfig(options: {
 	};
 }
 
-export function buildPostHogOtelEnv(config: Pick<PostHogTelemetryConfig, "host" | "projectToken" | "projectId">, serviceName: string): NodeJS.ProcessEnv {
-	return {
-		...clearPostHogOtelEnv(),
-		FEYNMAN_POSTHOG_HOST: config.host,
-		FEYNMAN_POSTHOG_KEY: config.projectToken,
-		FEYNMAN_POSTHOG_PROJECT_ID: config.projectId,
-		// Used by the bundled pi-otel extension, which reads only the base OTLP
-		// endpoint and appends /v1/traces.
-		OTEL_EXPORTER_OTLP_ENDPOINT: `${config.host}/i`,
-		OTEL_EXPORTER_OTLP_HEADERS: `Authorization=Bearer ${config.projectToken}`,
-		OTEL_EXPORTER_OTLP_PROTOCOL: "http/protobuf",
-		PI_OTEL_CAPTURE_CONTENT: "metadata_only",
-		// The default process/host detectors export the command line (which
-		// carries the user prompt), host name, and user name.
-		OTEL_NODE_RESOURCE_DETECTORS: "none",
-		PI_OTEL_LOGS: "0",
-		PI_OTEL_METRICS: "0",
-		OTEL_SERVICE_NAME: serviceName,
-	};
-}
-export function clearPostHogOtelEnv(): NodeJS.ProcessEnv {
-	return Object.fromEntries(CHILD_TELEMETRY_ENV_KEYS.map((key) => [key, undefined]));
-}
-
-export function getPostHogOtelEnv(serviceName: string, appVersion?: string): NodeJS.ProcessEnv {
-	const config = resolvePostHogTelemetryConfig({ serviceName, appVersion });
-	return config ? buildPostHogOtelEnv(config, serviceName) : clearPostHogOtelEnv();
-}
 
 function normalizeTelemetryKey(key: string): string | undefined {
 	const normalized = key

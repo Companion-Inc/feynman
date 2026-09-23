@@ -149,7 +149,7 @@ function packageSourceName(source: string): string | undefined {
 // entries for them are the pinned core list written by Feynman <= 0.4.0.
 export function reconcileFeynmanPackages(packages: unknown, appRoot: string): PackageSource[] {
 	const feynmanName = (JSON.parse(readFileSync(join(appRoot, "package.json"), "utf8")) as { name: string }).name;
-	const managedNames = new Set<string>([feynmanName, "@companion-ai/alpha-hub", ...BUNDLED_PI_PACKAGES]);
+	const managedNames = new Set<string>([feynmanName, "@companion-ai/alpha-hub", "pi-otel", ...BUNDLED_PI_PACKAGES]);
 	const configured = Array.isArray(packages) ? (packages as PackageSource[]) : [];
 	const userPackages = configured.filter((entry) => {
 		const source = typeof entry === "string" ? entry : entry.source;

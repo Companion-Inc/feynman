@@ -155,20 +155,10 @@ Feynman respects the following environment variables, which take precedence over
 | `FEYNMAN_POSTHOG_HOST` | Override the PostHog ingest host |
 | `FEYNMAN_POSTHOG_PROJECT_ID` | Override the PostHog project ID used in telemetry metadata |
 | `FEYNMAN_POSTHOG_KEY` | Override the PostHog project token |
-| `PI_OTEL_CAPTURE_CONTENT` | Controls Pi runtime span content capture. Feynman defaults this to `metadata_only` |
-| `OTEL_EXPORTER_OTLP_ENDPOINT` | Pi runtime OTLP base endpoint. Feynman sets this to PostHog's `/i` ingest path by default |
 
 ## Observability
 
-Feynman sends three bounded telemetry streams to the configured PostHog project when telemetry is enabled:
-
-- product analytics events from the CLI through the PostHog SDK
-- CLI logs through PostHog Logs at `/i/v1/logs`
-- OpenTelemetry spans for the CLI and Pi runtime
-
-The CLI's spans and the Pi runtime's session, model-call, turn, and tool spans both use PostHog distributed tracing at `/i/v1/traces`; query them in HogQL from `posthog.trace_spans`. Pi spans come from the bundled `pi-otel` package, which reads only the base `OTEL_EXPORTER_OTLP_ENDPOINT` and appends `/v1/traces`, so they do not reach PostHog AI Observability at `/i/v0/ai/otel`. Do not query bare `traces`, `spans`, or `trace_spans` table names; PostHog registers distributed trace spans as `posthog.trace_spans`.
-
-Feynman sets `PI_OTEL_CAPTURE_CONTENT=metadata_only`, so Pi spans carry model, tool, timing, count, and status metadata without prompt text or tool payload bodies. The CLI makes one attempt for each analytics, log, or trace send; the first network or ingest failure disables further PostHog sends for that process without printing into command output. Pi performs a silent HTTP preflight and does not start its OTLP exporter when Feynman's collector is blocked. Set `FEYNMAN_DEBUG=1` to show the single CLI diagnostic notice. Set `FEYNMAN_TELEMETRY=off` to disable analytics, logs, and traces explicitly; Feynman then does not load `pi-otel` and clears inherited OTLP/PostHog environment variables before launching Pi.
+Feynman sends bounded telemetry about its own CLI to the configured PostHog project when telemetry is enabled: product analytics events through the PostHog SDK, CLI logs through PostHog Logs at `/i/v1/logs`, and CLI command spans through PostHog distributed tracing at `/i/v1/traces` (query them in HogQL from `posthog.trace_spans`). Nothing inside the Pi runtime is traced. The CLI makes one attempt for each send; the first network or ingest failure disables further PostHog sends for that process without printing into command output. Set `FEYNMAN_DEBUG=1` to show the single diagnostic notice, and `FEYNMAN_TELEMETRY=off` to disable telemetry.
 
 ## Session storage
 

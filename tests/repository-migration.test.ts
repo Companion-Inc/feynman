@@ -7,7 +7,7 @@ const read = (path: string) => readFileSync(path, "utf8");
 
 test("npm uses the Companion package and repository", () => {
 	const manifest = JSON.parse(read("package.json"));
-	const lock = JSON.parse(read("npm-shrinkwrap.json"));
+	const lock = JSON.parse(read("package-lock.json"));
 	assert.equal(manifest.name, "@companion-ai/feynman");
 	assert.equal(manifest.publishConfig.access, "public");
 	assert.equal(manifest.bin.feynman, "bin/feynman.js");

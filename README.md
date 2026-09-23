@@ -188,7 +188,7 @@ Four bundled research agents, invoked by workflow prompts when decomposition hel
 - **[Hugging Face Hub](https://huggingface.co/docs/hub/api)** — dataset metadata, split/schema inspection, and small file reads from model, dataset, and Space repos
 - **Web research** — multi-provider search, explicit proxy routing, bounded GitHub issue/PR documents, raw or question-grounded page retrieval, direct images, external fetched-content caching, stored-page passage lookup, and auditable source text; tools, commands, images, PDFs, and browser cookies remain independently gated
 - **Session search** — indexed recall across prior research sessions
-- **Observability** — PostHog analytics, logs, and distributed traces for the CLI and the Pi runtime, carrying OpenTelemetry metadata only
+- **Observability** — opt-out PostHog analytics, logs, and traces for Feynman's own CLI commands
 - **Research execution options** — Docker, plus Modal or RunPod when their CLIs are installed, for explicitly chosen replication, benchmark, or dataset-heavy experiment runs; not service deployment or generic cloud administration
 
 ---

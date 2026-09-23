@@ -12,7 +12,7 @@ This page summarizes what changed in recent Feynman releases. GitHub releases us
 ### Stock Pi runtime
 
 - **Pi 0.87.1, unmodified.** Feynman now runs Pi's own CLI and no longer patches Pi or its packages on disk, renames Pi, or wraps its CLI. It also drops the sealed runtime workspace (the `.feynman/runtime-workspace.tgz` archive, its hashes, and its lock), which was re-verified on every launch. `feynman --help` and `feynman doctor` start in about a second instead of several.
-- **Newer Pi packages.** pi-subagents 0.71, pi-web-access 0.31, pi-btw 0.6, pi-docparser 4.0, and pi-otel 0.3 are now ordinary npm dependencies of Feynman. They load as Pi packages from Feynman's install directory, so subagents see the same tools as the main session. Feynman now publishes an `npm-shrinkwrap.json`, like Pi does, so npm installs get exactly the tested dependency tree.
+- **Newer Pi packages.** pi-subagents 0.71, pi-web-access 0.31, pi-btw 0.6, and pi-docparser 4.0 are now ordinary npm dependencies of Feynman, with their own dependency pins. They load as Pi packages from Feynman's install directory, so subagents see the same tools as the main session. pi-docparser's LiteParse pin (2.10.1) is used as shipped.
 - **Newest standard models recommended.** With Pi 0.87.1's catalog, setup and `feynman model` recommend Claude Opus 5.5 and, for OpenAI-only setups, GPT-5.6 Terra (OpenAI's standard tier, the same one pi-web-access picks). Premium tiers such as Claude Fable and Pro models are never picked automatically but stay available through `--model` and `/model`.
 - **Pi session flags pass through.** `--continue`/`-c`, `--resume`/`-r`, `--session <path|id>`, `--fork <path|id>`, `--no-session`, and `--export <session.jsonl> [out.html]` now reach Pi instead of being rejected.
 - **Settings are written once.** Feynman writes its defaults on first run and afterwards only adds missing keys. Package entries from older releases are replaced with the bundled packages, and other packages you added are kept.
@@ -22,7 +22,7 @@ This page summarizes what changed in recent Feynman releases. GitHub releases us
 - **Gemini Web cookie access** uses pi-web-access's own `allowBrowserCookies` and `browserCookies.profile` keys in `web-search.json`. The Feynman-only `geminiBrowser`, `allowBrowserAuth`, `browserAuth`, and `chromeProfile` keys are no longer read. Set `allowBrowserCookies` if you had enabled one of them.
 - **Web search config moved** to `~/.feynman/agent/web-search.json`, where pi-web-access reads it. An existing `~/.feynman/web-search.json` is moved there on first launch.
 - **Bundled agents, skills, and the theme** now load from the Feynman package instead of being copied into `~/.feynman/agent`. Copies left by older releases are deleted on first launch unless you edited them; edited copies keep overriding the bundled ones.
-- **Telemetry:** Pi runtime spans now go to PostHog distributed tracing (`/i/v1/traces`) through the standard `OTEL_EXPORTER_OTLP_ENDPOINT`, not to AI Observability. Stock pi-otel does not read per-signal endpoints. With `FEYNMAN_TELEMETRY=off`, pi-otel is not loaded at all.
+- **Telemetry:** pi-otel is no longer bundled, so the Pi runtime is not traced. Feynman still sends its own opt-out CLI command events, logs, and spans to PostHog.
 
 ## v0.4.0 - 2026-09-23
 

@@ -9,14 +9,11 @@ import {
 	DEFAULT_POSTHOG_HOST,
 	DEFAULT_POSTHOG_PROJECT_ID,
 	DEFAULT_POSTHOG_PROJECT_TOKEN,
-	buildPostHogOtelEnv,
-	clearPostHogOtelEnv,
 	captureTelemetryEventImmediate,
 	createTelemetryCircuitBreakerFetch,
 	createOneShotOtlpTransport,
 	createTelemetryTransportCircuitBreaker,
 	getCliTelemetryMetadata,
-	getPostHogOtelEnv,
 	initializePostHogTelemetry,
 	normalizeTelemetryProperties,
 	resolvePostHogTelemetryConfig,
@@ -50,68 +47,6 @@ test("resolvePostHogTelemetryConfig defaults to the Feynman PostHog project", ()
 test("resolvePostHogTelemetryConfig respects telemetry opt out", () => {
 	assert.equal(resolvePostHogTelemetryConfig({ env: { FEYNMAN_TELEMETRY: "off" } }), undefined);
 	assert.equal(resolvePostHogTelemetryConfig({ env: { DO_NOT_TRACK: "1" } }), undefined);
-});
-
-test("buildPostHogOtelEnv points traces and logs at PostHog with the project token", () => {
-	const env = buildPostHogOtelEnv(
-		{
-			host: "https://us.i.posthog.com",
-			projectId: "123",
-			projectToken: "phc_test",
-		},
-		"feynman-pi",
-	);
-
-	assert.equal(env.FEYNMAN_POSTHOG_HOST, "https://us.i.posthog.com");
-	assert.equal(env.FEYNMAN_POSTHOG_KEY, "phc_test");
-	assert.equal(env.FEYNMAN_POSTHOG_PROJECT_ID, "123");
-	assert.equal(env.PI_OTEL_CAPTURE_CONTENT, "metadata_only");
-	assert.equal(env.OTEL_NODE_RESOURCE_DETECTORS, "none");
-	assert.equal(env.PI_OTEL_LOGS, "0");
-	assert.equal(env.PI_OTEL_METRICS, "0");
-	assert.equal(env.OTEL_SERVICE_NAME, "feynman-pi");
-	assert.equal(env.OTEL_EXPORTER_OTLP_ENDPOINT, "https://us.i.posthog.com/i");
-	assert.equal(env.OTEL_EXPORTER_OTLP_HEADERS, "Authorization=Bearer phc_test");
-	assert.equal(env.OTEL_EXPORTER_OTLP_PROTOCOL, "http/protobuf");
-	for (const key of [
-		"OTEL_EXPORTER_OTLP_TRACES_ENDPOINT",
-		"OTEL_EXPORTER_OTLP_TRACES_HEADERS",
-		"OTEL_EXPORTER_OTLP_LOGS_ENDPOINT",
-		"OTEL_EXPORTER_OTLP_LOGS_HEADERS",
-		"OTEL_EXPORTER_OTLP_LOGS_PROTOCOL",
-		"OTEL_EXPORTER_OTLP_METRICS_ENDPOINT",
-		"OTEL_EXPORTER_OTLP_METRICS_HEADERS",
-		"OTEL_EXPORTER_OTLP_METRICS_PROTOCOL",
-		"OTEL_RESOURCE_ATTRIBUTES",
-		"OTEL_TRACES_EXPORTER",
-		"OTEL_LOGS_EXPORTER",
-		"OTEL_METRICS_EXPORTER",
-		"OTEL_LOG_LEVEL",
-		"PI_OTEL_DISABLED",
-		"PI_OTEL_SERVICE_NAME",
-		"PI_OTEL_SERVICE_VERSION",
-		"OTEL_SERVICE_VERSION",
-	]) {
-		assert.equal(env[key], undefined, key);
-	}
-});
-
-test("getPostHogOtelEnv clears inherited telemetry env when telemetry is disabled", () => {
-	const previousTelemetrySetting = process.env.FEYNMAN_TELEMETRY;
-	process.env.FEYNMAN_TELEMETRY = "off";
-	try {
-		const env = getPostHogOtelEnv("feynman-pi", "0.3.4");
-		const cleared = clearPostHogOtelEnv();
-		for (const key of Object.keys(cleared)) {
-			assert.equal(env[key], undefined, key);
-		}
-	} finally {
-		if (previousTelemetrySetting === undefined) {
-			delete process.env.FEYNMAN_TELEMETRY;
-		} else {
-			process.env.FEYNMAN_TELEMETRY = previousTelemetrySetting;
-		}
-	}
 });
 
 test("PostHog transport failures open a silent session circuit breaker", async () => {
@@ -224,101 +159,6 @@ test("OTLP transport makes one silent attempt and shares the open circuit with P
 	assert.equal(posthogAttempts, 0);
 	assert.equal(failures.length, 1);
 	assert.equal(circuit.isOpen(), true);
-});
-
-test("getPostHogOtelEnv clears inherited collectors before setting PostHog routes", () => {
-	const inheritedKeys = [
-		"OTEL_EXPORTER_OTLP_ENDPOINT",
-		"OTEL_EXPORTER_OTLP_HEADERS",
-		"OTEL_EXPORTER_OTLP_PROTOCOL",
-		"OTEL_EXPORTER_OTLP_TRACES_ENDPOINT",
-		"OTEL_EXPORTER_OTLP_TRACES_HEADERS",
-		"OTEL_EXPORTER_OTLP_TRACES_PROTOCOL",
-		"OTEL_EXPORTER_OTLP_LOGS_ENDPOINT",
-		"OTEL_EXPORTER_OTLP_LOGS_HEADERS",
-		"OTEL_EXPORTER_OTLP_LOGS_PROTOCOL",
-		"OTEL_EXPORTER_OTLP_METRICS_ENDPOINT",
-		"OTEL_EXPORTER_OTLP_METRICS_HEADERS",
-		"OTEL_EXPORTER_OTLP_METRICS_PROTOCOL",
-		"OTEL_RESOURCE_ATTRIBUTES",
-		"OTEL_TRACES_EXPORTER",
-		"OTEL_LOGS_EXPORTER",
-		"OTEL_METRICS_EXPORTER",
-		"OTEL_LOG_LEVEL",
-		"PI_OTEL_DISABLED",
-		"PI_OTEL_CAPTURE_CONTENT",
-		"PI_OTEL_LOGS",
-		"PI_OTEL_METRICS",
-		"PI_OTEL_SERVICE_NAME",
-		"PI_OTEL_SERVICE_VERSION",
-		"OTEL_SERVICE_NAME",
-		"OTEL_SERVICE_VERSION",
-	];
-	const savedEnvKeys = [
-		"FEYNMAN_TELEMETRY",
-		"FEYNMAN_TELEMETRY_DISTINCT_ID",
-		"FEYNMAN_POSTHOG_KEY",
-		"FEYNMAN_POSTHOG_HOST",
-		"FEYNMAN_POSTHOG_PROJECT_ID",
-		"DO_NOT_TRACK",
-		...inheritedKeys,
-	];
-	const savedEnv = Object.fromEntries(savedEnvKeys.map((key) => [key, process.env[key]]));
-
-	for (const key of inheritedKeys) {
-		process.env[key] = `private-${key.toLowerCase()}`;
-	}
-	process.env.FEYNMAN_TELEMETRY = "1";
-	process.env.FEYNMAN_TELEMETRY_DISTINCT_ID = "feynman_test";
-	delete process.env.FEYNMAN_POSTHOG_KEY;
-	delete process.env.FEYNMAN_POSTHOG_HOST;
-	delete process.env.FEYNMAN_POSTHOG_PROJECT_ID;
-	delete process.env.DO_NOT_TRACK;
-
-	try {
-		const env = getPostHogOtelEnv("feynman-pi", "0.3.4");
-
-		assert.equal(env.FEYNMAN_POSTHOG_HOST, DEFAULT_POSTHOG_HOST);
-		assert.equal(env.FEYNMAN_POSTHOG_KEY, DEFAULT_POSTHOG_PROJECT_TOKEN);
-		assert.equal(env.FEYNMAN_POSTHOG_PROJECT_ID, DEFAULT_POSTHOG_PROJECT_ID);
-		assert.equal(env.PI_OTEL_CAPTURE_CONTENT, "metadata_only");
-		assert.equal(env.PI_OTEL_LOGS, "0");
-		assert.equal(env.PI_OTEL_METRICS, "0");
-		assert.equal(env.OTEL_SERVICE_NAME, "feynman-pi");
-		assert.equal(env.OTEL_EXPORTER_OTLP_ENDPOINT, `${DEFAULT_POSTHOG_HOST}/i`);
-		assert.match(env.OTEL_EXPORTER_OTLP_HEADERS ?? "", /^Authorization=Bearer phc_/);
-		assert.equal(env.OTEL_EXPORTER_OTLP_PROTOCOL, "http/protobuf");
-		for (const key of [
-			"OTEL_EXPORTER_OTLP_TRACES_ENDPOINT",
-			"OTEL_EXPORTER_OTLP_TRACES_HEADERS",
-			"OTEL_EXPORTER_OTLP_TRACES_PROTOCOL",
-			"OTEL_EXPORTER_OTLP_LOGS_ENDPOINT",
-			"OTEL_EXPORTER_OTLP_LOGS_HEADERS",
-			"OTEL_EXPORTER_OTLP_LOGS_PROTOCOL",
-			"OTEL_EXPORTER_OTLP_METRICS_ENDPOINT",
-			"OTEL_EXPORTER_OTLP_METRICS_HEADERS",
-			"OTEL_EXPORTER_OTLP_METRICS_PROTOCOL",
-			"OTEL_RESOURCE_ATTRIBUTES",
-			"OTEL_TRACES_EXPORTER",
-			"OTEL_LOGS_EXPORTER",
-			"OTEL_METRICS_EXPORTER",
-			"OTEL_LOG_LEVEL",
-			"PI_OTEL_DISABLED",
-			"PI_OTEL_SERVICE_NAME",
-			"PI_OTEL_SERVICE_VERSION",
-			"OTEL_SERVICE_VERSION",
-		]) {
-			assert.equal(env[key], undefined, key);
-		}
-	} finally {
-		for (const [key, value] of Object.entries(savedEnv)) {
-			if (value === undefined) {
-				delete process.env[key];
-			} else {
-				process.env[key] = value;
-			}
-		}
-	}
 });
 
 test("getCliTelemetryMetadata does not record unknown commands or malformed flag values", () => {
