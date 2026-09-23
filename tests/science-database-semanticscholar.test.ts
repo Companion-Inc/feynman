@@ -13,6 +13,7 @@ type Tool = {
 type SemanticScholarDetails = {
 	source: string;
 	sort: string;
+	note?: string;
 	totalCount: number;
 	returned: number;
 	results: Array<{ paperId: string; title?: string; arxivId?: string; doi?: string; abstract?: string; openAccessPdf?: string; citationCount?: number; authors: string[] }>;
@@ -137,6 +138,48 @@ test("semanticscholar stops after one retry and explains how to get a key", asyn
 	await assert.rejects(
 		searchTool().execute("s2-429", { source: "semanticscholar", query: "sparse autoencoders" }),
 		/rate-limited \(HTTP 429\) after one retry\. Set SEMANTIC_SCHOLAR_API_KEY \(free key: https:\/\/www\.semanticscholar\.org\/product\/api#api-key-form\)/,
+	);
+	assert.equal(calls, 2);
+});
+
+test("anonymous semanticscholar relevance search falls back to citation-sorted bulk search after a 429", async () => {
+	delete process.env.SEMANTIC_SCHOLAR_API_KEY;
+	const paths: string[] = [];
+	globalThis.fetch = async (input) => {
+		const url = new URL(String(input));
+		paths.push(url.pathname);
+		if (url.pathname === "/graph/v1/paper/search") {
+			return jsonResponse({ message: "Too Many Requests.", code: "429" }, 429, { "retry-after": "0" });
+		}
+		return jsonResponse(bulkFixture);
+	};
+
+	const result = await searchTool().execute("s2-fallback", {
+		source: "semanticscholar",
+		query: "speculative decoding",
+		sort: "relevance",
+		limit: 2,
+	});
+	const details = result.details as SemanticScholarDetails;
+
+	assert.deepEqual(paths, ["/graph/v1/paper/search", "/graph/v1/paper/search", "/graph/v1/paper/search/bulk"]);
+	assert.equal(details.sort, "citationCount:desc");
+	assert.equal(details.returned, 2);
+	assert.match(details.note ?? "", /rate-limited \(HTTP 429\).*SEMANTIC_SCHOLAR_API_KEY/);
+	assert.equal(details.provenance.endpoints.length, 2);
+});
+
+test("keyed semanticscholar relevance search still fails after a 429", async () => {
+	process.env.SEMANTIC_SCHOLAR_API_KEY = "s2-test-key";
+	let calls = 0;
+	globalThis.fetch = async () => {
+		calls += 1;
+		return jsonResponse({ message: "Too Many Requests.", code: "429" }, 429, { "retry-after": "0" });
+	};
+
+	await assert.rejects(
+		searchTool().execute("s2-keyed-429", { source: "semanticscholar", query: "speculative decoding", sort: "relevance" }),
+		/rate-limited this API key \(HTTP 429\)/,
 	);
 	assert.equal(calls, 2);
 });

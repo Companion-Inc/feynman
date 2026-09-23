@@ -242,9 +242,9 @@ async function fetchSemanticScholar(url: URL): Promise<unknown> {
 		} catch (error) {
 			if (!(error instanceof ScienceDatabaseRequestError) || error.status !== 429) throw error;
 			if (attempt >= 1) {
-				throw new Error(apiKey
+				throw new ScienceDatabaseRequestError(apiKey
 					? "Semantic Scholar rate-limited this API key (HTTP 429) after one retry. Wait and retry, or search with source openalex."
-					: `Semantic Scholar's shared anonymous pool is rate-limited (HTTP 429) after one retry. Set SEMANTIC_SCHOLAR_API_KEY (free key: ${SEMANTIC_SCHOLAR_KEY_URL}) or search with source openalex.`);
+					: `Semantic Scholar's shared anonymous pool is rate-limited (HTTP 429) after one retry. Set SEMANTIC_SCHOLAR_API_KEY (free key: ${SEMANTIC_SCHOLAR_KEY_URL}) or search with source openalex.`, 429);
 			}
 			const waitMs = Math.min(error.retryAfterMs ?? SEMANTIC_SCHOLAR_DEFAULT_RETRY_MS, SEMANTIC_SCHOLAR_MAX_RETRY_MS);
 			await new Promise((resolve) => setTimeout(resolve, waitMs));
@@ -257,20 +257,37 @@ function truncateText(value: string | undefined, maxChars: number): string | und
 	return `${value.slice(0, maxChars).trimEnd()}…`;
 }
 
-// Bulk search sorted by citation count surfaces seminal papers that relevance
-// ranking misses; it returns up to 1,000 rows, so only the top `limit` are kept.
-async function searchSemanticScholar(params: ScienceDatabaseSearchParams): Promise<Record<string, unknown>> {
-	const query = cleanQuery(params.query);
-	const limit = safeLimit(params.limit);
-	const relevance = params.sort === "relevance";
-	const sort = relevance ? "relevance" : params.sort === "pub_date" ? "publicationDate:desc" : "citationCount:desc";
+function semanticScholarSearchUrl(query: string, limit: number, sort: string): URL {
+	const relevance = sort === "relevance";
 	const url = new URL(`${SEMANTIC_SCHOLAR_BASE}/paper/search${relevance ? "" : "/bulk"}`);
 	url.search = new URLSearchParams({
 		query,
 		fields: SEMANTIC_SCHOLAR_FIELDS,
 		...(relevance ? { limit: String(limit) } : { sort }),
 	}).toString();
-	const payload = recordValue(await fetchSemanticScholar(url));
+	return url;
+}
+
+// Bulk search sorted by citation count surfaces seminal papers that relevance
+// ranking misses; it returns up to 1,000 rows, so only the top `limit` are kept.
+async function searchSemanticScholar(params: ScienceDatabaseSearchParams): Promise<Record<string, unknown>> {
+	const query = cleanQuery(params.query);
+	const limit = safeLimit(params.limit);
+	let sort = params.sort === "relevance" ? "relevance" : params.sort === "pub_date" ? "publicationDate:desc" : "citationCount:desc";
+	const endpoints = [semanticScholarSearchUrl(query, limit, sort)];
+	let note: string | undefined;
+	let payload: Record<string, unknown>;
+	try {
+		payload = recordValue(await fetchSemanticScholar(endpoints[0]!));
+	} catch (error) {
+		// The anonymous pool rate-limits relevance search far more often than bulk search.
+		const anonymous = !process.env.SEMANTIC_SCHOLAR_API_KEY?.trim();
+		if (sort !== "relevance" || !anonymous || !(error instanceof ScienceDatabaseRequestError) || error.status !== 429) throw error;
+		sort = "citationCount:desc";
+		endpoints.push(semanticScholarSearchUrl(query, limit, sort));
+		note = `Relevance search was rate-limited (HTTP 429) on Semantic Scholar's shared anonymous pool, so these are citation-sorted bulk results. A free SEMANTIC_SCHOLAR_API_KEY avoids this: ${SEMANTIC_SCHOLAR_KEY_URL}`;
+		payload = recordValue(await fetchSemanticScholar(endpoints[1]!));
+	}
 	const results = arrayValue(payload.data).slice(0, limit).flatMap((item) => {
 		const record = recordValue(item);
 		const paperId = stringValue(record.paperId);
@@ -298,13 +315,14 @@ async function searchSemanticScholar(params: ScienceDatabaseSearchParams): Promi
 		source: "semanticscholar",
 		query,
 		sort,
+		...(note ? { note } : {}),
 		totalCount: numberValue(payload.total) ?? results.length,
 		returned: results.length,
 		results,
 		provenance: {
 			docs: "https://api.semanticscholar.org/api-docs/graph",
 			license: "https://www.semanticscholar.org/product/api/license",
-			endpoints: [url.toString()],
+			endpoints: endpoints.map((endpoint) => endpoint.toString()),
 		},
 	};
 }
@@ -334,7 +352,7 @@ export function registerScienceDatabaseTools(pi: ExtensionAPI): void {
 			"Search read-only scholarly literature databases: Semantic Scholar (citation-sorted by default), OpenAlex, arXiv ID lookup, PubMed (search, metadata, ID conversion, related articles, citation matching, copyright, PMC full-text routing), Europe PMC (metadata and open-access full-text sections), bioRxiv/medRxiv preprints, and Crossref DOI metadata. Returns stable identifiers, bounded section snippets when requested, source URLs, and endpoint provenance.",
 		promptSnippet: "Search Semantic Scholar, OpenAlex, PubMed, Europe PMC metadata and open-access full-text sections, bioRxiv/medRxiv, or Crossref, or look up arXiv IDs, for source-backed literature evidence.",
 		promptGuidelines: [
-			"Use feynman_science_database_search to find and pin down papers before making source-backed claims: Semantic Scholar for general discovery (default sort is citation count, which surfaces seminal work; sort=relevance or pub_date for newer work); OpenAlex for cross-discipline works (prefix the query with `semantic:` for embedding search that finds conceptual and recent matches keyword search misses), citation graphs, authors, venues, and OA status; arXiv only to look up known arXiv IDs (it has no topic search); PubMed for biomedical search, PMID metadata, PMID/PMCID/DOI conversion, related articles, citation matching, and copyright checks; Europe PMC for open-access full-text section snippets; bioRxiv/medRxiv for preprint DOI lookup, date/category windows, and published-preprint links; Crossref for DOI metadata.",
+			"Use feynman_science_database_search to find and pin down papers before making source-backed claims: Semantic Scholar for general discovery (prefer the default citation-count sort, which surfaces seminal work and is the least rate-limited; use sort=pub_date only when recency matters); OpenAlex for cross-discipline works (prefix the query with `semantic:` for embedding search that finds conceptual and recent matches keyword search misses), citation graphs, authors, venues, and OA status; arXiv only to look up known arXiv IDs (it has no topic search); PubMed for biomedical search, PMID metadata, PMID/PMCID/DOI conversion, related articles, citation matching, and copyright checks; Europe PMC for open-access full-text section snippets; bioRxiv/medRxiv for preprint DOI lookup, date/category windows, and published-preprint links; Crossref for DOI metadata.",
 			"Exact literature modes: `openalex_search_works`, `openalex_get_work`, `openalex_citations`, `openalex_references`, `openalex_search_authors`, `openalex_get_author`, `openalex_venue_info`, and `arxiv_get_papers` (the arxiv source also accepts bare IDs such as 2309.08600). PubMed accepts `pmid:`, `convert:`, `related:`, `fulltext:`, `copyright:`, and `citation` prefixes; Europe PMC accepts `fulltext:`/`sections:` with a PMCID or PMID.",
 			"Preserve returned PMIDs, PMCIDs, DOIs, arXiv IDs, Semantic Scholar paper IDs, preprint DOIs, OpenAlex W/A/S IDs, author ORCIDs, citation/reference counts, OA status, Europe PMC full-text statuses and section inventories, source URLs, and endpoint provenance in research artifacts and answers.",
 			"Treat database summaries as retrieval evidence, then verify decisive claims against the full paper when needed.",
@@ -349,7 +367,7 @@ export function registerScienceDatabaseTools(pi: ExtensionAPI): void {
 			sort: Type.Optional(Type.Union([
 				Type.Literal("relevance"),
 				Type.Literal("pub_date"),
-			], { description: "PubMed sort order. For semanticscholar, relevance uses relevance search and pub_date sorts newest first; the default sorts by citation count. Ignored for other sources." })),
+			], { description: "PubMed sort order. For semanticscholar, prefer the default citation-count sort; use pub_date (newest first) only when recency matters. relevance falls back to the default when the anonymous pool is rate-limited. Ignored for other sources." })),
 		}),
 		async execute(_toolCallId, params) {
 			const result = await scienceDatabaseSearch(params as ScienceDatabaseSearchParams);
