@@ -106,7 +106,9 @@ export function patchPiBraceExpansionTree(nodeModulesPath, fallbackSafePackagePa
 			const temporaryPath = `${nestedPackagePath}.feynman-safe-${process.pid}`;
 			rmSync(temporaryPath, { recursive: true, force: true });
 			mkdirSync(dirname(temporaryPath), { recursive: true });
-			cpSync(safePackagePath, temporaryPath, { recursive: true });
+			// Copy real files: recreating a junction/symlink fails with EPERM on
+			// non-elevated Windows, as in the undici proxy patch.
+			cpSync(safePackagePath, temporaryPath, { dereference: true, recursive: true });
 			rmSync(nestedPackagePath, { recursive: true, force: true });
 			renameSync(temporaryPath, nestedPackagePath);
 			changed = true;
