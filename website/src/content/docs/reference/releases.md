@@ -16,6 +16,10 @@ This page summarizes what changed in recent Feynman releases. GitHub releases us
 - Feynman is back at `Companion-Inc/feynman` on GitHub and `@companion-ai/feynman` on npm. Installers, skills downloads, self-update checks, package metadata, research-source request identities, and docs use the Companion locations directly.
 - `@companion-ai/feynman` 0.3.47 installs now see this update through `feynman`'s normal update notice. If you installed the interim `@advaitpaliwal/feynman` 0.3.48 package, migrate once with `npm uninstall -g @advaitpaliwal/feynman`, then `npm install -g @companion-ai/feynman`. The command remains `feynman`, and native install commands are unchanged.
 
+### Telemetry privacy
+
+- Research-runtime traces no longer include OpenTelemetry's automatic process and host attributes, which carried the command line (including the system prompt and any prompt passed as an argument), host name, and user name. Telemetry now goes to the new Feynman PostHog project; `FEYNMAN_TELEMETRY=off` or `DO_NOT_TRACK=1` still disables it.
+
 ### Startup and Windows reliability
 
 - `feynman --version` answers immediately instead of first verifying the whole bundled research runtime, and healthy launches skip one redundant full runtime validation pass.

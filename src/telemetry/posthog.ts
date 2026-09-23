@@ -54,6 +54,7 @@ const CHILD_TELEMETRY_ENV_KEYS = [
 	"OTEL_EXPORTER_OTLP_METRICS_HEADERS",
 	"OTEL_EXPORTER_OTLP_METRICS_PROTOCOL",
 	"OTEL_RESOURCE_ATTRIBUTES",
+	"OTEL_NODE_RESOURCE_DETECTORS",
 	"OTEL_TRACES_EXPORTER",
 	"OTEL_LOGS_EXPORTER",
 	"OTEL_METRICS_EXPORTER",
@@ -317,6 +318,9 @@ export function buildPostHogOtelEnv(config: Pick<PostHogTelemetryConfig, "host" 
 		OTEL_EXPORTER_OTLP_TRACES_HEADERS: `Authorization=Bearer ${config.projectToken}`,
 		OTEL_EXPORTER_OTLP_TRACES_PROTOCOL: "http/protobuf",
 		PI_OTEL_CAPTURE_CONTENT: "metadata_only",
+		// The default process/host detectors export the command line (which
+		// carries the system prompt and user prompt), host name, and user name.
+		OTEL_NODE_RESOURCE_DETECTORS: "none",
 		PI_OTEL_LOGS: "0",
 		PI_OTEL_METRICS: "0",
 		OTEL_SERVICE_NAME: serviceName,

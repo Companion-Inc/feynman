@@ -66,6 +66,7 @@ test("buildPostHogOtelEnv points traces and logs at PostHog with the project tok
 	assert.equal(env.FEYNMAN_POSTHOG_KEY, "phc_test");
 	assert.equal(env.FEYNMAN_POSTHOG_PROJECT_ID, "123");
 	assert.equal(env.PI_OTEL_CAPTURE_CONTENT, "metadata_only");
+	assert.equal(env.OTEL_NODE_RESOURCE_DETECTORS, "none");
 	assert.equal(env.PI_OTEL_LOGS, "0");
 	assert.equal(env.PI_OTEL_METRICS, "0");
 	assert.equal(env.OTEL_SERVICE_NAME, "feynman-pi");
