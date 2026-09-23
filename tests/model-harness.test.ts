@@ -14,7 +14,7 @@ import {
 	resolveThinkingConfig,
 	shouldRunInteractiveSetup,
 } from "../src/cli.js";
-import { buildModelStatusSnapshotFromRecords, chooseRecommendedModel, getAvailableModelRecords, isProClassModelSpec } from "../src/model/catalog.js";
+import { buildModelStatusSnapshotFromRecords, choosePreferredModelRecord, chooseRecommendedModel, getAvailableModelRecords, isProClassModelSpec } from "../src/model/catalog.js";
 import { isLocalModelProvider, resolveModelProviderForCommand, setDefaultModelSpec } from "../src/model/commands.js";
 import { createModelRegistry } from "../src/model/registry.js";
 import { supportsNativePackageSources } from "../src/pi/packages.js";
@@ -71,6 +71,32 @@ function asModelSpec(model: { provider: string; id: string }): string {
 	return `${model.provider}/${model.id}`;
 }
 
+test("choosePreferredModelRecord picks the newest release and flagship tier", () => {
+	const record = (spec: string, cost: number) => {
+		const [provider, id] = spec.split("/") as [string, string];
+		return { provider, id, cost };
+	};
+	const pick = (models: ReturnType<typeof record>[]) => {
+		const chosen = choosePreferredModelRecord(models);
+		return chosen && `${chosen.provider}/${chosen.id}`;
+	};
+	const catalog = [
+		record("openai/gpt-5.5", 5),
+		record("openai/gpt-6-sol", 2),
+		record("anthropic/claude-opus-4-8", 5),
+		record("anthropic/claude-opus-5-5", 4),
+		record("anthropic/claude-fable-5-1", 10),
+	];
+
+	assert.equal(pick(catalog), "anthropic/claude-fable-5-1");
+	assert.equal(pick(catalog.filter((model) => model.id !== "claude-fable-5-1")), "anthropic/claude-opus-5-5");
+	assert.equal(pick(catalog.filter((model) => model.provider === "openai")), "openai/gpt-6-sol");
+	assert.equal(
+		pick([record("openai/gpt-6-luna", 0.1), record("openai/gpt-6-sol", 2), record("openai/gpt-6-astra", 10), record("openai/gpt-5.5-pro", 30)]),
+		"openai/gpt-6-astra",
+	);
+});
+
 test("chooseRecommendedModel prefers the strongest authenticated research model", async () => {
 	const authPath = createAuthPath({
 		openai: { type: "api_key", key: "openai-test-key" },
@@ -79,7 +105,7 @@ test("chooseRecommendedModel prefers the strongest authenticated research model"
 
 	const recommendation = await chooseRecommendedModel(authPath);
 
-	assert.equal(recommendation?.spec, "anthropic/claude-opus-5-5");
+	assert.equal(recommendation?.spec, "anthropic/claude-fable-5-1");
 });
 
 test("chooseRecommendedModel prefers the newest OpenAI GPT exposed by Pi", async () => {
@@ -89,7 +115,8 @@ test("chooseRecommendedModel prefers the newest OpenAI GPT exposed by Pi", async
 
 	const recommendation = await chooseRecommendedModel(authPath);
 
-	assert.match(recommendation?.spec ?? "", /^openai\/gpt-\d/);
+	// Pi 0.87.1 catalogs GPT-6 Astra, Sol, and Luna; Astra is the flagship tier.
+	assert.equal(recommendation?.spec, "openai/gpt-6-astra");
 	assert.match(recommendation?.reason ?? "", /newest authenticated OpenAI GPT model/);
 });
 
@@ -234,7 +261,7 @@ test("chooseRecommendedModel prefers OpenCode Zen Claude when OpenCode is the au
 
 		const recommendation = await chooseRecommendedModel(authPath);
 
-		assert.equal(recommendation?.spec, "opencode/claude-opus-5-5");
+		assert.equal(recommendation?.spec, "opencode/claude-fable-5-1");
 	});
 });
 

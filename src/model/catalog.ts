@@ -8,6 +8,8 @@ type ModelRecord = {
 	provider: string;
 	id: string;
 	name?: string;
+	// Pi catalog input price per million tokens; ranks tiers of one release.
+	cost?: number;
 };
 
 const PRO_CLASS_MODEL_PATTERN = /(?:^|[-_.:/])pro(?:$|[-_.:/])/i;
@@ -81,6 +83,10 @@ function exactResearchModel(spec: string, reason: string): ResearchModelPreferen
 
 const RESEARCH_MODEL_FAMILY_PREFERENCES: ResearchModelPreference[] = [
 	{
+		matches: (model) => model.provider === "anthropic" && /^claude-fable-\d+(?:-\d+)*$/i.test(model.id),
+		reason: "newest authenticated Claude Fable model for source-heavy research work",
+	},
+	{
 		matches: (model) => model.provider === "anthropic" && /^claude-opus-\d+(?:-\d+)*$/i.test(model.id),
 		reason: "newest authenticated Claude Opus model for source-heavy research work",
 	},
@@ -95,6 +101,10 @@ const RESEARCH_MODEL_FAMILY_PREFERENCES: ResearchModelPreference[] = [
 	{
 		matches: (model) => model.provider === "openai-codex" && /^gpt-\d+(?:\.\d+)*(?:-.+)?$/i.test(model.id),
 		reason: "newest authenticated GPT model exposed through OpenAI Codex",
+	},
+	{
+		matches: (model) => model.provider === "opencode" && /^claude-fable-\d+(?:-\d+)*$/i.test(model.id),
+		reason: "newest OpenCode Zen Claude Fable model for source-heavy research work",
 	},
 	{
 		matches: (model) => model.provider === "opencode" && /^claude-opus-\d+(?:-\d+)*$/i.test(model.id),
@@ -230,20 +240,26 @@ function compareCurrentModelFamily(left: ModelRecord, right: ModelRecord): numbe
 		return 0;
 	}
 
+	// Newest release first; within one release, the untagged flagship before
+	// chat/codex/mini variants, then the pricier tier (GPT-6 Astra > Sol > Luna).
+	const versionComparison = compareVersionDesc(leftPreference.version, rightPreference.version);
+	if (versionComparison !== 0) {
+		return versionComparison;
+	}
+
 	if (leftPreference.qualityRank !== rightPreference.qualityRank) {
 		return leftPreference.qualityRank - rightPreference.qualityRank;
 	}
 
-	const versionComparison = compareVersionDesc(leftPreference.version, rightPreference.version);
-	if (versionComparison !== 0) {
-		return versionComparison;
+	if ((left.cost ?? 0) !== (right.cost ?? 0)) {
+		return (right.cost ?? 0) - (left.cost ?? 0);
 	}
 
 	return modelSpec(left).localeCompare(modelSpec(right));
 }
 
 function currentFamilyPreference(model: ModelRecord): CurrentFamilyPreference | undefined {
-	const anthropic = /^claude-(opus|sonnet)-(\d+(?:-\d+)*)$/i.exec(model.id);
+	const anthropic = /^claude-(fable|opus|sonnet)-(\d+(?:-\d+)*)$/i.exec(model.id);
 	if (anthropic) {
 		const family = anthropic[1]!.toLowerCase();
 		const parsedVersion = parseClaudeVersion(anthropic[2]!);
@@ -251,9 +267,9 @@ function currentFamilyPreference(model: ModelRecord): CurrentFamilyPreference | 
 			family: `${model.provider}/claude-${family}`,
 			version: parsedVersion.version,
 			qualityRank: parsedVersion.qualityRank,
-			reason: family === "opus"
-				? "newest authenticated Claude Opus model for source-heavy research work"
-				: "newest authenticated Claude Sonnet model for iterative research work",
+			reason: family === "sonnet"
+				? "newest authenticated Claude Sonnet model for iterative research work"
+				: `newest authenticated Claude ${family === "fable" ? "Fable" : "Opus"} model for source-heavy research work`,
 		};
 	}
 
@@ -367,7 +383,7 @@ export async function getAuthenticatedModelRecords(authPath: string): Promise<Mo
 	const modelRuntime = await createModelRuntime(authPath);
 	return (await modelRuntime.getAvailable())
 		.filter((model) => !expiredOAuthProviders.has(model.provider))
-		.map((model) => ({ provider: model.provider, id: model.id, name: model.name }));
+		.map((model) => ({ provider: model.provider, id: model.id, name: model.name, cost: model.cost?.input }));
 }
 
 export async function getAvailableModelRecords(authPath: string): Promise<ModelRecord[]> {
@@ -378,7 +394,7 @@ export async function getSupportedModelRecords(authPath: string): Promise<ModelR
 	const modelRuntime = await createModelRuntime(authPath);
 	return modelRuntime
 		.getModels()
-		.map((model) => ({ provider: model.provider, id: model.id, name: model.name }));
+		.map((model) => ({ provider: model.provider, id: model.id, name: model.name, cost: model.cost?.input }));
 }
 
 function readExpiredOAuthProviders(authPath: string): Set<string> {
