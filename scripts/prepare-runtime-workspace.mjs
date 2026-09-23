@@ -1065,16 +1065,17 @@ if (patchExistingWorkspace) {
 			"Existing runtime workspace does not match Feynman's exact package contract",
 		);
 	}
+	// Preflight the Pi parser before any write, then collect again after the
+	// legacy aliases exist: on Windows they are copies and need the patch too.
+	collectBundledPiCliArgsCandidates();
 	linkLegacyPiRuntimeAliases();
-	// Collect CLI-args candidates only after the legacy aliases exist so the
-	// patch also covers a Windows fallback copy, not just the canonical scope.
-	const piCliArgsCandidates = collectBundledPiCliArgsCandidates();
-	patchBundledRuntime(piCliArgsCandidates);
+	patchBundledRuntime(collectBundledPiCliArgsCandidates());
 	writeManifest(packageSpecs);
 	process.exit(0);
 }
 
 if (!refreshRuntimeLock && !rebuildWorkspace && workspaceIsCurrent(packageSpecs)) {
+	collectBundledPiCliArgsCandidates();
 	patchRootRuntimeDependencies();
 	console.log("[feynman] vendored runtime workspace already up to date");
 	linkLegacyPiRuntimeAliases();
@@ -1093,6 +1094,7 @@ if (!refreshRuntimeLock && !rebuildWorkspace && workspaceIsCurrent(packageSpecs)
 
 console.log("[feynman] preparing vendored runtime workspace...");
 prepareWorkspace(packageSpecs, refreshRuntimeLock);
+collectBundledPiCliArgsCandidates();
 patchRootRuntimeDependencies();
 // npm restores Pi's published bundled files before local repairs. Normalize
 // their exact compiler metadata/binaries before validating the pruning graph.
@@ -1101,8 +1103,6 @@ patchPiEsbuildPackageTree(
 );
 pruneWorkspace();
 linkLegacyPiRuntimeAliases();
-// Collect CLI-args candidates only after the legacy aliases exist so the
-// patch also covers a Windows fallback copy, not just the canonical scope.
 patchBundledRuntime(collectBundledPiCliArgsCandidates());
 if (refreshRuntimeLock) {
 	cpSync(resolve(workspaceDir, "package-lock.json"), runtimePackageLockPath);

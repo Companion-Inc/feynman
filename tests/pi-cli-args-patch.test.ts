@@ -575,6 +575,6 @@ test("production and preparation scripts preflight Pi parsers before patch write
 	);
 	assert.match(
 		preparation,
-		/const piCliArgsCandidates = collectBundledPiCliArgsCandidates\(\);\s*linkLegacyPiRuntimeAliases\(\);\s*patchBundledRuntime\(piCliArgsCandidates\)/,
+		/collectBundledPiCliArgsCandidates\(\);\s*linkLegacyPiRuntimeAliases\(\);\s*patchBundledRuntime\(collectBundledPiCliArgsCandidates\(\)\)/,
 	);
 });
