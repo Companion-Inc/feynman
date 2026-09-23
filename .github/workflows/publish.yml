@@ -8,8 +8,10 @@ on:
     branches: [main]
   workflow_dispatch:
 
+# Manual reconcile runs get their own queue: in a shared single-pending slot a
+# dispatch could replace a pending push run, whose npm publish would then never run.
 concurrency:
-  group: publish-${{ github.repository }}-${{ github.ref }}
+  group: publish-${{ github.repository }}-${{ github.ref }}-${{ github.event_name }}
   cancel-in-progress: false
 
 jobs:
@@ -584,6 +586,11 @@ jobs:
         needs.version-check.outputs.should_publish_npm == 'false' ||
         needs.publish-npm.result == 'success'
       )
+    # Push and manual runs no longer share a workflow queue, so serialize the
+    # draft/upload/verify/publish sequence on the shared GitHub release.
+    concurrency:
+      group: release-github-${{ github.repository }}
+      cancel-in-progress: false
     runs-on: ubuntu-latest
     permissions:
       contents: write
