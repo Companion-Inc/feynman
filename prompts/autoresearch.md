@@ -38,8 +38,8 @@ Ask the user where to run:
 - **New git branch** — create a branch so main stays clean
 - **Virtual environment** — create an isolated venv/conda env first
 - **Docker** — run experiment code inside an isolated Docker container
-- **Modal** — run on Modal's serverless GPU infrastructure. Write Modal-decorated scripts and execute with `modal run`. Best for GPU-heavy benchmarks with no persistent state between iterations. Requires `modal` CLI.
-- **RunPod** — provision a GPU pod via `runpodctl` and run iterations there over SSH. Best for experiments needing persistent state, large datasets, or SSH access between iterations. Requires `runpodctl` CLI.
+- **Modal** — only if the user has the `modal` CLI installed and set up: write Modal-decorated scripts and execute with `modal run`. Best for GPU-heavy benchmarks with no persistent state between iterations.
+- **RunPod** — only if the user has the `runpodctl` CLI installed and `RUNPOD_API_KEY` set: provision a GPU pod and run iterations there over SSH. Best for experiments needing persistent state, large datasets, or SSH access between iterations.
 
 Do not proceed without a clear answer.
 
