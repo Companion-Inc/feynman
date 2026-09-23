@@ -96,16 +96,15 @@ test("buildPostHogOtelEnv points traces and logs at PostHog with the project tok
 	}
 });
 
-test("getPostHogOtelEnv clears inherited telemetry env and disables pi-otel when telemetry is disabled", () => {
+test("getPostHogOtelEnv clears inherited telemetry env when telemetry is disabled", () => {
 	const previousTelemetrySetting = process.env.FEYNMAN_TELEMETRY;
 	process.env.FEYNMAN_TELEMETRY = "off";
 	try {
 		const env = getPostHogOtelEnv("feynman-pi", "0.3.4");
 		const cleared = clearPostHogOtelEnv();
-		for (const key of Object.keys(cleared).filter((key) => key !== "PI_OTEL_DISABLED")) {
+		for (const key of Object.keys(cleared)) {
 			assert.equal(env[key], undefined, key);
 		}
-		assert.equal(env.PI_OTEL_DISABLED, "1");
 	} finally {
 		if (previousTelemetrySetting === undefined) {
 			delete process.env.FEYNMAN_TELEMETRY;

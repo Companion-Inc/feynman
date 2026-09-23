@@ -247,7 +247,7 @@ function disableTelemetryAfterTransportFailure(error: unknown): void {
 	}
 }
 
-function isTelemetryDisabled(env: NodeJS.ProcessEnv = process.env): boolean {
+export function isTelemetryDisabled(env: NodeJS.ProcessEnv = process.env): boolean {
 	const setting = env.FEYNMAN_TELEMETRY ?? env.FEYNMAN_POSTHOG_TELEMETRY;
 	return (setting !== undefined && TELEMETRY_DISABLED_VALUES.has(setting.trim().toLowerCase())) || env.DO_NOT_TRACK === "1";
 }
@@ -331,8 +331,7 @@ export function clearPostHogOtelEnv(): NodeJS.ProcessEnv {
 
 export function getPostHogOtelEnv(serviceName: string, appVersion?: string): NodeJS.ProcessEnv {
 	const config = resolvePostHogTelemetryConfig({ serviceName, appVersion });
-	// Without Feynman telemetry, pi-otel would otherwise probe a local collector.
-	return config ? buildPostHogOtelEnv(config, serviceName) : { ...clearPostHogOtelEnv(), PI_OTEL_DISABLED: "1" };
+	return config ? buildPostHogOtelEnv(config, serviceName) : clearPostHogOtelEnv();
 }
 
 function normalizeTelemetryKey(key: string): string | undefined {

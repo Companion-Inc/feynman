@@ -96,7 +96,7 @@ Example:
 }
 ```
 
-Gemini Web browser-cookie access is disabled by default. To opt into it, set `"geminiBrowser": true` in `web-search.json`. On Windows, this can read Chrome or Edge `v10` cookies through current-user DPAPI; Chromium `v20` app-bound cookies are unsupported and fail closed. API-backed search is recommended for `/deepresearch`.
+Gemini Web browser-cookie access is disabled by default. To opt into it, set `"allowBrowserCookies": true` in `web-search.json`. On Windows, this can read Chrome or Edge `v10` cookies through current-user DPAPI; Chromium `v20` app-bound cookies are unsupported and fail closed. API-backed search is recommended for `/deepresearch`.
 
 PDF extraction uses Datalab when its key is present, then Gemini, then local PDF.js. The local parser remains available without a key. `pdf.maxPages` bounds every tier and defaults to `100`.
 
@@ -118,20 +118,9 @@ The subagent runtime has a separate config at `~/.feynman/agent/extensions/subag
 }
 ```
 
-Existing custom values and unrelated settings are preserved. Malformed JSON, a non-object config, or invalid types for these defaults stop normalization without replacing the config. Automatic mission creation and Fleet UI therefore remain off for a fresh research setup; background delegation stays on. This does not change researcher `subagentOnlyExtensions` wiring or prove native background tool availability.
+Existing custom values and unrelated settings are preserved. Malformed JSON, a non-object config, or invalid types for these defaults stop normalization without replacing the config. Automatic mission creation and Fleet UI therefore remain off for a fresh research setup; background delegation stays on.
 
-Feynman's bundled subagents inherit the main approved research model unless you override them explicitly. Inside the REPL, run:
-
-```bash
-/feynman-model
-```
-
-This opens an interactive picker where you can either:
-
-- change the main approved research model for the session environment
-- assign a different approved model to a specific bundled subagent such as `researcher`, `reviewer`, `writer`, or `verifier`
-
-Per-subagent overrides are persisted in the synced agent files under `~/.feynman/agent/agents/` with a `model:` frontmatter field. Removing that field makes the subagent inherit the main approved research model again.
+Feynman's bundled subagents inherit the main research model. Change the main model with Pi's `/model`. To pin one subagent to another model, use pi-subagents' `/subagents` or set `subagents.agentOverrides.<name>.model` in `~/.feynman/agent/settings.json`; remove it to inherit again. Feynman also sets `subagents.agentExcludeDirs` to `["~/.agents"]` so agent files there cannot silently replace the bundled `researcher`, `reviewer`, `writer`, and `verifier`.
 
 ## Thinking levels
 
@@ -179,7 +168,7 @@ Feynman sends three bounded telemetry streams to the configured PostHog project 
 
 The CLI's spans and the Pi runtime's session, model-call, turn, and tool spans both use PostHog distributed tracing at `/i/v1/traces`; query them in HogQL from `posthog.trace_spans`. Pi spans come from the bundled `pi-otel` package, which reads only the base `OTEL_EXPORTER_OTLP_ENDPOINT` and appends `/v1/traces`, so they do not reach PostHog AI Observability at `/i/v0/ai/otel`. Do not query bare `traces`, `spans`, or `trace_spans` table names; PostHog registers distributed trace spans as `posthog.trace_spans`.
 
-Feynman sets `PI_OTEL_CAPTURE_CONTENT=metadata_only`, so Pi spans carry model, tool, timing, count, and status metadata without prompt text or tool payload bodies. The CLI makes one attempt for each analytics, log, or trace send; the first network or ingest failure disables further PostHog sends for that process without printing into command output. Pi performs a silent HTTP preflight and does not start its OTLP exporter when Feynman's collector is blocked. Set `FEYNMAN_DEBUG=1` to show the single CLI diagnostic notice. Set `FEYNMAN_TELEMETRY=off` to disable analytics, logs, and traces explicitly; Feynman also clears inherited OTLP/PostHog environment variables and sets `PI_OTEL_DISABLED=1` before launching Pi in that mode.
+Feynman sets `PI_OTEL_CAPTURE_CONTENT=metadata_only`, so Pi spans carry model, tool, timing, count, and status metadata without prompt text or tool payload bodies. The CLI makes one attempt for each analytics, log, or trace send; the first network or ingest failure disables further PostHog sends for that process without printing into command output. Pi performs a silent HTTP preflight and does not start its OTLP exporter when Feynman's collector is blocked. Set `FEYNMAN_DEBUG=1` to show the single CLI diagnostic notice. Set `FEYNMAN_TELEMETRY=off` to disable analytics, logs, and traces explicitly; Feynman then does not load `pi-otel` and clears inherited OTLP/PostHog environment variables before launching Pi.
 
 ## Session storage
 

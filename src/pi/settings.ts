@@ -190,6 +190,11 @@ export async function ensureFeynmanSettings(
 	}
 	settings.packages = reconcileFeynmanPackages(settings.packages, appRoot);
 	removeLegacyResearcherExtension(settings);
+	// A ~/.agents/<name>.md would otherwise silently replace Feynman's agents.
+	if (settings.subagents === undefined) settings.subagents = {};
+	if (isRecord(settings.subagents) && settings.subagents.agentExcludeDirs === undefined) {
+		settings.subagents.agentExcludeDirs = ["~/.agents"];
+	}
 
 	if (!settings.defaultProvider || !settings.defaultModel) {
 		const preferredModel = choosePreferredModelRecord(await getAvailableModelRecords(authPath));

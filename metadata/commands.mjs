@@ -36,7 +36,6 @@ export function readPromptSpecs(appRoot) {
 
 export const extensionCommandSpecs = [
 	{ name: "help", args: "", section: "Project & Session", description: "Show grouped Feynman commands and prefill the editor with a selected command.", publicDocs: true },
-	{ name: "feynman-model", args: "", section: "Project & Session", description: "Open Feynman's approved research model menu (main + per-subagent overrides).", publicDocs: true },
 	{ name: "init", args: "", section: "Project & Session", description: "Bootstrap AGENTS.md and session-log folders for a research project.", publicDocs: true },
 	{ name: "outputs", args: "", section: "Project & Session", description: "Browse all research artifacts (papers, outputs, experiments, notes).", publicDocs: true },
 	{ name: "service-tier", args: "", section: "Project & Session", description: "View or set the provider service tier override for supported models.", publicDocs: true },

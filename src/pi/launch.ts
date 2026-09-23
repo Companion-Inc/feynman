@@ -16,14 +16,19 @@ export function exitCodeFromSignal(signal: NodeJS.Signals): number {
 	return typeof signalNumber === "number" ? 128 + signalNumber : 1;
 }
 
-export async function runPi(options: PiRuntimeOptions, args: string[], env: NodeJS.ProcessEnv): Promise<number> {
+export async function runPi(
+	options: PiRuntimeOptions,
+	args: string[],
+	env: NodeJS.ProcessEnv,
+	stdin: "inherit" | "ignore" = "inherit",
+): Promise<number> {
 	const piCliPath = resolvePiCliPath(options.appRoot);
 	if (!piCliPath) {
 		throw new Error("Pi CLI not found. Reinstall Feynman.");
 	}
 	const child = spawn(process.execPath, [piCliPath, ...args], {
 		cwd: options.workingDir,
-		stdio: "inherit",
+		stdio: [stdin, "inherit", "inherit"],
 		env,
 	});
 
@@ -52,5 +57,10 @@ export async function launchPiChat(options: PiRuntimeOptions): Promise<void> {
 	const executables = await resolveAllExecutables();
 	ensureFeynmanCommandShim(options.appRoot, options.feynmanAgentDir);
 	ensureFeynmanWorkspaceScaffold(options.workingDir);
-	process.exitCode = await runPi(options, buildPiArgs(options), buildPiEnv(options, executables));
+	// Outside RPC mode Pi reads piped stdin until EOF and prepends it to the
+	// prompt, so an open but idle stdin from a non-TTY parent would hang an
+	// explicit prompt forever.
+	const explicitPrompt = Boolean(options.oneShotPrompt || options.initialPrompt);
+	const stdin = explicitPrompt && options.mode !== "rpc" && !process.stdin.isTTY ? "ignore" : "inherit";
+	process.exitCode = await runPi(options, buildPiArgs(options), buildPiEnv(options, executables), stdin);
 }

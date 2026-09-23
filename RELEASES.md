@@ -13,9 +13,12 @@ GitHub release notes are generated from the matching `## vX.Y.Z` section in this
 - **Pi session flags pass through.** `--continue`/`-c`, `--resume`/`-r`, `--session <path|id>`, `--fork <path|id>`, `--no-session`, and `--export <session.jsonl> [out.html]` now reach Pi instead of being rejected.
 - **Settings are written once.** Feynman writes its defaults on first run and afterwards only adds missing keys. Package entries from older releases are replaced with the bundled packages, and other packages you added are kept.
 - **`feynman update` and `feynman packages install`** now go through Pi's own `pi update --extensions` and `pi install`. Optional packages install into `~/.feynman/agent/npm`. Pi and the core packages update when you upgrade Feynman.
+- **Explicit prompts never wait on stdin.** `feynman --prompt` and workflow commands started from a non-interactive parent no longer hang on an idle stdin pipe. Pipe text without `--prompt` to use it as the prompt.
+- **`/feynman-model` is gone.** Use Pi's `/model` for the main model and pi-subagents' `/subagents` or `subagents.agentOverrides.<name>.model` for one subagent. Feynman now sets `subagents.agentExcludeDirs` to `["~/.agents"]`, so agent files there no longer silently replace Feynman's bundled agents.
+- **Gemini Web cookie access** uses pi-web-access's own `allowBrowserCookies` and `browserCookies.profile` keys in `web-search.json`. The Feynman-only `geminiBrowser`, `allowBrowserAuth`, `browserAuth`, and `chromeProfile` keys are no longer read. Set `allowBrowserCookies` if you had enabled one of them.
 - **Web search config moved** to `~/.feynman/agent/web-search.json`, where pi-web-access reads it. An existing `~/.feynman/web-search.json` is moved there on first launch.
 - **Bundled agents, skills, and the theme** now load from the Feynman package instead of being copied into `~/.feynman/agent`. Copies left by older releases are deleted on first launch unless you edited them; edited copies keep overriding the bundled ones.
-- **Telemetry:** Pi runtime spans now go to PostHog distributed tracing (`/i/v1/traces`) through the standard `OTEL_EXPORTER_OTLP_ENDPOINT`, not to AI Observability. Stock pi-otel does not read per-signal endpoints. With `FEYNMAN_TELEMETRY=off`, pi-otel is now disabled.
+- **Telemetry:** Pi runtime spans now go to PostHog distributed tracing (`/i/v1/traces`) through the standard `OTEL_EXPORTER_OTLP_ENDPOINT`, not to AI Observability. Stock pi-otel does not read per-signal endpoints. With `FEYNMAN_TELEMETRY=off`, pi-otel is not loaded at all.
 
 ## v0.4.0 - 2026-09-23
 
@@ -207,7 +210,6 @@ Everything removed is preserved in the repository at the `archive/pre-deslop-0.3
 
 ### Runtime reliability
 
-- An opt-in `FEYNMAN_PI_STREAM_EVENT_IDLE_TIMEOUT_MS` watchdog can terminate a provider stream that stops producing Pi events, even when the provider's iterator cleanup never settles. It remains disabled by default for local and private models that legitimately spend time in silent prefills.
 
 ### Validation
 

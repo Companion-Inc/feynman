@@ -9,7 +9,7 @@ import {
 	resolveExecutable,
 	type ResolvedExecutables,
 } from "../system/executables.js";
-import { getPostHogOtelEnv } from "../telemetry/posthog.js";
+import { getPostHogOtelEnv, isTelemetryDisabled } from "../telemetry/posthog.js";
 
 // Pi packages shipped as Feynman dependencies and loaded from their install
 // paths through settings.json `packages` (Pi's documented local-path source).
@@ -46,9 +46,12 @@ export function resolvePiCliPath(appRoot: string): string | undefined {
 }
 
 export function getFeynmanPackageSources(appRoot: string): string[] {
+	// pi-otel only carries Feynman telemetry; without its PostHog env it would
+	// probe a local collector and warn on stderr.
+	const packageNames = isTelemetryDisabled() ? BUNDLED_PI_PACKAGES.filter((name) => name !== "pi-otel") : BUNDLED_PI_PACKAGES;
 	return [
 		appRoot,
-		...BUNDLED_PI_PACKAGES.map((packageName) => resolvePackageRoot(appRoot, packageName))
+		...packageNames.map((packageName) => resolvePackageRoot(appRoot, packageName))
 			.filter((packageRoot): packageRoot is string => Boolean(packageRoot)),
 	];
 }

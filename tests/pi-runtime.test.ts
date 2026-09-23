@@ -359,6 +359,7 @@ test("buildPiEnv clears inherited telemetry collectors when Feynman telemetry is
 				"OTEL_LOGS_EXPORTER",
 				"OTEL_METRICS_EXPORTER",
 				"OTEL_LOG_LEVEL",
+				"PI_OTEL_DISABLED",
 				"PI_OTEL_CAPTURE_CONTENT",
 				"PI_OTEL_LOGS",
 				"PI_OTEL_METRICS",
@@ -370,7 +371,6 @@ test("buildPiEnv clears inherited telemetry collectors when Feynman telemetry is
 			assert.equal(env[key], undefined, key);
 		}
 		assert.equal(env.FEYNMAN_TELEMETRY, "off");
-		assert.equal(env.PI_OTEL_DISABLED, "1");
 	} finally {
 		for (const [key, value] of Object.entries(savedEnv)) {
 			if (value === undefined) {
@@ -450,6 +450,8 @@ test("buildPiEnv uses pre-resolved executable paths when provided", () => {
 });
 
 test("stock Pi and every bundled Pi package resolve from the installed dependency tree", () => {
+	delete process.env.FEYNMAN_TELEMETRY;
+	delete process.env.DO_NOT_TRACK;
 	const cliPath = resolvePiCliPath(process.cwd());
 	assert.ok(cliPath && existsSync(cliPath));
 	assert.deepEqual(validatePiInstallation(process.cwd()), []);
@@ -457,6 +459,19 @@ test("stock Pi and every bundled Pi package resolve from the installed dependenc
 		process.cwd(),
 		...BUNDLED_PI_PACKAGES.map((name) => join(process.cwd(), "node_modules", name)),
 	]);
+});
+
+test("pi-otel is loaded only when Feynman telemetry is on", () => {
+	const previous = process.env.FEYNMAN_TELEMETRY;
+	try {
+		process.env.FEYNMAN_TELEMETRY = "off";
+		assert.ok(!getFeynmanPackageSources(process.cwd()).some((source) => source.endsWith("pi-otel")));
+		process.env.FEYNMAN_TELEMETRY = "1";
+		assert.ok(getFeynmanPackageSources(process.cwd()).some((source) => source.endsWith("pi-otel")));
+	} finally {
+		if (previous === undefined) delete process.env.FEYNMAN_TELEMETRY;
+		else process.env.FEYNMAN_TELEMETRY = previous;
+	}
 });
 
 test("resolvePackageRoot follows Node lookup for hoisted installs", () => {

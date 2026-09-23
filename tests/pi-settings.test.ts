@@ -101,6 +101,19 @@ test("pinned core packages from older releases become the bundled packages; cust
 	]);
 });
 
+test("user-level ~/.agents definitions cannot replace Feynman's agents unless the user opts in", async (t) => {
+	const root = mkdtempSync(join(tmpdir(), "feynman-settings-agent-dirs-"));
+	t.after(() => rmSync(root, { recursive: true, force: true }));
+	const settingsPath = join(root, "settings.json");
+	writeFileSync(join(root, "auth.json"), "{}\n");
+	await ensureFeynmanSettings(settingsPath, bundledSettingsPath, appRoot, "medium", join(root, "auth.json"));
+	assert.deepEqual(JSON.parse(readFileSync(settingsPath, "utf8")).subagents, { agentExcludeDirs: ["~/.agents"] });
+
+	writeFileSync(settingsPath, JSON.stringify({ subagents: { agentExcludeDirs: [], agentOverrides: { writer: { model: "x/y" } } } }));
+	await ensureFeynmanSettings(settingsPath, bundledSettingsPath, appRoot, "medium", join(root, "auth.json"));
+	assert.deepEqual(JSON.parse(readFileSync(settingsPath, "utf8")).subagents, { agentExcludeDirs: [], agentOverrides: { writer: { model: "x/y" } } });
+});
+
 test("the researcher child extension path managed by older releases is removed", async (t) => {
 	const root = mkdtempSync(join(tmpdir(), "feynman-settings-researcher-"));
 	t.after(() => rmSync(root, { recursive: true, force: true }));

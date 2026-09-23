@@ -109,6 +109,8 @@ These are equivalent to launching the REPL and typing the corresponding slash co
 | `--doctor` | Alias for `feynman doctor` |
 | `--setup-preview` | Alias for `feynman setup preview` |
 
+When stdin is not a terminal, `--prompt` and workflow commands do not read it, so an idle pipe from a parent process cannot stall the run. Pipe text without `--prompt` to send it as the prompt, for example `git diff | feynman --no-session`.
+
 Use the standard `--` delimiter before an interactive prompt that starts with
 a dash, so Pi treats it as research text rather than another option:
 
