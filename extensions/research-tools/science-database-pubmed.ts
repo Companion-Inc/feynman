@@ -106,7 +106,7 @@ async function send<T>(url: URL, accept: string, read: (response: Response) => P
 			const response = await fetch(url, {
 				headers: {
 					accept,
-					"user-agent": "feynman-pubmed-tools/1.0 (https://github.com/advaitpaliwal/feynman)",
+					"user-agent": "feynman-pubmed-tools/1.0 (https://github.com/Companion-Inc/feynman)",
 				},
 				signal: controller.signal,
 			});

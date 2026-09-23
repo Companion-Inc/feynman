@@ -71,7 +71,7 @@ async function fetchBytes(url: URL): Promise<Buffer> {
 		const response = await fetch(url, {
 			headers: {
 				accept: "application/gzip,application/octet-stream",
-				"user-agent": "feynman-science-database-search/1.0 (https://github.com/advaitpaliwal/feynman)",
+				"user-agent": "feynman-science-database-search/1.0 (https://github.com/Companion-Inc/feynman)",
 			},
 			signal: controller.signal,
 		});

@@ -562,19 +562,19 @@ export function patchPiRuntimeNodeModules(
 			patchMcpSdkPackageJsonSource,
 		) || changed;
 		changed = patchFileIfPresent(
-			resolve(nodeModulesPath, "@advaitpaliwal", "alpha-hub", "node_modules", "@modelcontextprotocol", "sdk", "package.json"),
+			resolve(nodeModulesPath, "@companion-ai", "alpha-hub", "node_modules", "@modelcontextprotocol", "sdk", "package.json"),
 			patchMcpSdkPackageJsonSource,
 		) || changed;
 		changed = patchFileIfPresent(
-			resolve(nodeModulesPath, "@advaitpaliwal", "alpha-hub", "src", "lib", "auth.js"),
+			resolve(nodeModulesPath, "@companion-ai", "alpha-hub", "src", "lib", "auth.js"),
 			(source) => patchAlphaHubAuthSource(source, { version: "0.1.4" }),
 		) || changed;
 		changed = patchFileIfPresent(
-			resolve(nodeModulesPath, "@advaitpaliwal", "alpha-hub", "src", "lib", "alphaxiv.js"),
+			resolve(nodeModulesPath, "@companion-ai", "alpha-hub", "src", "lib", "alphaxiv.js"),
 			(source) => patchAlphaHubSearchSource(source, { version: "0.1.4" }),
 		) || changed;
 		changed = patchFileIfPresent(
-			resolve(nodeModulesPath, "@advaitpaliwal", "alpha-hub", "src", "lib", "index.js"),
+			resolve(nodeModulesPath, "@companion-ai", "alpha-hub", "src", "lib", "index.js"),
 			(source) => patchAlphaHubSearchResultsSource(source, { version: "0.1.4" }),
 		) || changed;
 		changed = patchPiWebAccessPackageFiles(nodeModulesPath, appRoot) || changed;

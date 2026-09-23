@@ -17,7 +17,7 @@ These are installed by default with every Feynman installation. They provide the
 
 | Package | Purpose |
 | --- | --- |
-| `@advaitpaliwal/alpha-hub` | Direct alphaXiv tools for paper and author workflows |
+| `@companion-ai/alpha-hub` | Direct alphaXiv tools for paper and author workflows |
 | `pi-subagents` | Parallel agent spawning for literature gathering and task decomposition. Powers the multi-agent workflows |
 | `pi-btw` | Side conversations while the main research agent is busy, including `/btw` follow-ups, custom-provider continuity, and handoff back into the main thread |
 | `pi-docparser` | Parse PDFs, Office documents, spreadsheets, and images through bounded, isolated native workers |

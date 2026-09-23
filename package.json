@@ -1,5 +1,5 @@
 {
-  "name": "@advaitpaliwal/feynman",
+  "name": "@companion-ai/feynman",
   "version": "0.3.49",
   "description": "Research-first CLI agent built on Pi and alphaXiv",
   "license": "MIT",
@@ -57,7 +57,7 @@
     ".env.example"
   ],
   "bundleDependencies": [
-    "@advaitpaliwal/alpha-hub",
+    "@companion-ai/alpha-hub",
     "@earendil-works/pi-agent-core",
     "@earendil-works/pi-ai",
     "@earendil-works/pi-coding-agent",
@@ -136,7 +136,7 @@
     "tidytree": "^0.7.0",
     "typebox": "1.3.27",
     "undici": "8.10.2",
-    "@advaitpaliwal/alpha-hub": "0.1.4",
+    "@companion-ai/alpha-hub": "0.1.4",
     "@earendil-works/pi-client": "0.85.1",
     "@earendil-works/pi-server": "0.85.1",
     "esbuild": "0.28.2"
@@ -192,11 +192,11 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/advaitpaliwal/feynman.git"
+    "url": "git+https://github.com/Companion-Inc/feynman.git"
   },
-  "homepage": "https://github.com/advaitpaliwal/feynman#readme",
+  "homepage": "https://github.com/Companion-Inc/feynman#readme",
   "bugs": {
-    "url": "https://github.com/advaitpaliwal/feynman/issues"
+    "url": "https://github.com/Companion-Inc/feynman/issues"
   },
   "main": "index.js",
   "directories": {

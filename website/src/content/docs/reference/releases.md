@@ -9,7 +9,12 @@ This page summarizes what changed in recent Feynman releases. GitHub releases us
 
 ## Unreleased
 
-## v0.3.49 - 2026-09-06
+## v0.3.49 - 2026-09-23
+
+### Repository and package home
+
+- Feynman is back at `Companion-Inc/feynman` on GitHub and `@companion-ai/feynman` on npm. Installers, skills downloads, self-update checks, package metadata, research-source request identities, and docs use the Companion locations directly.
+- `@companion-ai/feynman` 0.3.47 installs now see this update through `feynman`'s normal update notice. If you installed the interim `@advaitpaliwal/feynman` 0.3.48 package, migrate once with `npm uninstall -g @advaitpaliwal/feynman`, then `npm install -g @companion-ai/feynman`. The command remains `feynman`, and native install commands are unchanged.
 
 ### Research runtime refresh
 
@@ -17,7 +22,7 @@ This page summarizes what changed in recent Feynman releases. GitHub releases us
 - Updated native bundles to Node 24.20.0 and the research runtime compiler to esbuild 0.28.2. Kept portable npm installs within the existing package budget by removing redundant compiler binaries and dependency source maps, not platform support.
 - Updated web research to pi-web-access 0.28.0 with bounded batch searches, retrievable response IDs, citation preservation, and session-scoped page-answer models. Browser cookies and new paid providers remain opt-in.
 - Updated pi-subagents to 0.65.1. Research delegation now uses async workflow scripts with `runs.run` / `runs.all`; obsolete top-level `tasks` / `chain` parameters and `/chain` / `/parallel` commands are replaced by the documented workflow interface. Existing user settings are preserved; fresh installs disable automatic missions and Fleet UI.
-- Moved the bundled paper tools to `@advaitpaliwal/alpha-hub@0.1.4`, including the current alphaXiv OAuth/MCP API and result parser. Updated LiteParse to 2.14.3 while retaining document integrity checks.
+- Moved the bundled paper tools to `@companion-ai/alpha-hub@0.1.4`, including the current alphaXiv OAuth/MCP API and result parser. Updated LiteParse to 2.14.3 while retaining document integrity checks.
 - Refreshed the CLI, scientific viewers, telemetry, and website dependencies. The CLI builds with TypeScript 7; the website retains TypeScript 6 because its current Astro/ESLint integrations require the older compiler API. Preserved supported dependency majors and upstream-required pins rather than forcing incompatible upgrades.
 
 ## v0.3.48 - 2026-09-06

@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 
-// @advaitpaliwal/alpha-hub@0.1.4, published source 9ec42ba0d499284552220315247b3f2a811e6607.
+// @companion-ai/alpha-hub@0.1.4, published source 9ec42ba0d499284552220315247b3f2a811e6607.
 // OAuth endpoints/openid/state are already fixed upstream. Only the existing
 // Feynman Windows/WSL browser and URL-log adaptations remain necessary.
 export const ALPHA_HUB_AUTH_014_SOURCE_CONTRACT = Object.freeze({

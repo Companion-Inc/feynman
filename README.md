@@ -6,7 +6,7 @@
 <p align="center">The open source AI research agent.</p>
 <p align="center">
   <a href="https://feynman.is/docs"><img alt="Docs" src="https://img.shields.io/badge/docs-feynman.is-0d9668?style=flat-square" /></a>
-  <a href="https://github.com/advaitpaliwal/feynman/blob/main/LICENSE"><img alt="License" src="https://img.shields.io/github/license/advaitpaliwal/feynman?style=flat-square" /></a>
+  <a href="https://github.com/Companion-Inc/feynman/blob/main/LICENSE"><img alt="License" src="https://img.shields.io/github/license/Companion-Inc/feynman?style=flat-square" /></a>
 </p>
 
 ---
@@ -36,16 +36,16 @@ To uninstall the standalone app, remove the launcher and runtime bundle, then op
 **npm alternative** (uses your local Node.js runtime):
 
 ```bash
-npm install -g @advaitpaliwal/feynman
+npm install -g @companion-ai/feynman
 ```
 
-To update an npm installation, run `npm install -g @advaitpaliwal/feynman@latest`.
+To update an npm installation, run `npm install -g @companion-ai/feynman@latest`.
 
-If you installed the old scoped package, migrate once:
+If you installed the interim `@advaitpaliwal/feynman` package (0.3.48), migrate once:
 
 ```bash
-npm uninstall -g @companion-ai/feynman
-npm install -g @advaitpaliwal/feynman
+npm uninstall -g @advaitpaliwal/feynman
+npm install -g @companion-ai/feynman
 ```
 
 The command remains `feynman`; the native install commands above are unchanged. See the [installation guide](https://feynman.is/docs/getting-started/installation) for Node.js requirements and uninstall instructions.
@@ -232,11 +232,11 @@ Built on [Pi](https://github.com/badlogic/pi-mono) for the agent runtime, [alpha
 
 ### Star History
 
-<a href="https://www.star-history.com/?repos=advaitpaliwal%2Ffeynman&type=date&legend=top-left">
+<a href="https://www.star-history.com/?repos=Companion-Inc%2Ffeynman&type=date&legend=top-left">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=advaitpaliwal/feynman&type=date&theme=dark&legend=top-left" />
-    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=advaitpaliwal/feynman&type=date&legend=top-left" />
-    <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=advaitpaliwal/feynman&type=date&legend=top-left" />
+    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=Companion-Inc/feynman&type=date&theme=dark&legend=top-left" />
+    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=Companion-Inc/feynman&type=date&legend=top-left" />
+    <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=Companion-Inc/feynman&type=date&legend=top-left" />
   </picture>
 </a>
 
@@ -249,7 +249,7 @@ The bundled research runtime is updated as a coordinated set, including Pi, Alph
 See [CONTRIBUTING.md](CONTRIBUTING.md) for the full contributor guide.
 
 ```bash
-git clone https://github.com/advaitpaliwal/feynman.git
+git clone https://github.com/Companion-Inc/feynman.git
 cd feynman
 nvm use || nvm install
 npm install

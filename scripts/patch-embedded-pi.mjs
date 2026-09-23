@@ -986,9 +986,9 @@ for (const modules of [resolve(appRoot, "node_modules"), workspaceRoot]) {
 }
 for (const nodeModulesRoot of [
 	resolve(appRoot, "node_modules"),
-	resolve(appRoot, "node_modules", "@advaitpaliwal", "alpha-hub", "node_modules"),
+	resolve(appRoot, "node_modules", "@companion-ai", "alpha-hub", "node_modules"),
 	workspaceRoot,
-	resolve(workspaceRoot, "@advaitpaliwal", "alpha-hub", "node_modules"),
+	resolve(workspaceRoot, "@companion-ai", "alpha-hub", "node_modules"),
 ]) {
 	patchMcpSdkManifest(nodeModulesRoot);
 }
@@ -1122,14 +1122,14 @@ if (oauthPagePath && existsSync(oauthPagePath)) {
 	if (changed) writeFileSync(oauthPagePath, source, "utf8");
 }
 
-const alphaHubAuthPath = findPackageRoot("@advaitpaliwal/alpha-hub")
-	? resolve(findPackageRoot("@advaitpaliwal/alpha-hub"), "src", "lib", "auth.js")
+const alphaHubAuthPath = findPackageRoot("@companion-ai/alpha-hub")
+	? resolve(findPackageRoot("@companion-ai/alpha-hub"), "src", "lib", "auth.js")
 	: null;
-const alphaHubSearchPath = findPackageRoot("@advaitpaliwal/alpha-hub")
-	? resolve(findPackageRoot("@advaitpaliwal/alpha-hub"), "src", "lib", "alphaxiv.js")
+const alphaHubSearchPath = findPackageRoot("@companion-ai/alpha-hub")
+	? resolve(findPackageRoot("@companion-ai/alpha-hub"), "src", "lib", "alphaxiv.js")
 	: null;
-const alphaHubIndexPath = findPackageRoot("@advaitpaliwal/alpha-hub")
-	? resolve(findPackageRoot("@advaitpaliwal/alpha-hub"), "src", "lib", "index.js")
+const alphaHubIndexPath = findPackageRoot("@companion-ai/alpha-hub")
+	? resolve(findPackageRoot("@companion-ai/alpha-hub"), "src", "lib", "index.js")
 	: null;
 
 if (alphaHubAuthPath && existsSync(alphaHubAuthPath)) {
@@ -1156,7 +1156,7 @@ if (alphaHubIndexPath && existsSync(alphaHubIndexPath)) {
 
 // The bundled workspace carries its own alpha-hub copy; patch it the same way
 // so search fixes apply regardless of which copy resolves at runtime.
-const workspaceAlphaHubLib = resolve(workspaceRoot, "@advaitpaliwal", "alpha-hub", "src", "lib");
+const workspaceAlphaHubLib = resolve(workspaceRoot, "@companion-ai", "alpha-hub", "src", "lib");
 for (const [fileName, patchFn] of [
 	["auth.js", patchAlphaHubAuthSource],
 	["alphaxiv.js", patchAlphaHubSearchSource],

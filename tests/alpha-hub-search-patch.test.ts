@@ -210,10 +210,10 @@ test("runtime rebuilds and package verification preserve the structured alphaXiv
 		packageVerifierSource,
 		/\["index\.js", assertAlphaHubSearchResultsSource\]/,
 	);
-	assert.match(packageVerifierSource, /`npm\/node_modules\/@advaitpaliwal\/alpha-hub\/src\/lib\/\$\{fileName\}`/);
+	assert.match(packageVerifierSource, /`npm\/node_modules\/@companion-ai\/alpha-hub\/src\/lib\/\$\{fileName\}`/);
 });
 
-// Exact source fixtures from the integrity-verified @advaitpaliwal/alpha-hub@0.1.4 tarball.
+// Exact source fixtures from the integrity-verified @companion-ai/alpha-hub@0.1.4 tarball.
 // Published gitHead: 9ec42ba0d499284552220315247b3f2a811e6607. Gzip keeps tests self-contained.
 const PERSONAL_SEARCH = gunzipSync(Buffer.from(
 	"H4sIAAAAAAAC/61YW3PTRhR+z684zHQqeTByUvpkSNNAKbSFNiWGdiZk7I20treRtOruKsYN/u89Zy+SfIkD0/IA8u65X75zFlFUUhm4hee54KWBFUyVLCD6" +

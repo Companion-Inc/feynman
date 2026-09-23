@@ -4,10 +4,10 @@ Feynman is a research-first CLI built on Pi and alphaXiv. This guide is for huma
 
 ## Quick Links
 
-- GitHub: https://github.com/advaitpaliwal/feynman
+- GitHub: https://github.com/Companion-Inc/feynman
 - Docs: https://feynman.is/docs
 - Repo agent contract: [AGENTS.md](AGENTS.md)
-- Issues: https://github.com/advaitpaliwal/feynman/issues
+- Issues: https://github.com/Companion-Inc/feynman/issues
 
 ## What Goes Where
 
@@ -95,7 +95,7 @@ Pages project `feynman` (`feynman-bpr.pages.dev`) uses
 canonical installer scripts into the site.
 
 `.github/workflows/deploy-website.yml` deploys only after a successful **Publish and
-Release** run triggered by a `main` push in `advaitpaliwal/feynman`, or a manual
+Release** run triggered by a `main` push in `Companion-Inc/feynman`, or a manual
 **Deploy website** dispatch on `main`. Forks, pull requests, unsuccessful releases,
 and non-main manual runs are excluded. Both automatic and manual runs validate
 their initiating SHA, then **reconcile current `main`**, not that initiating SHA.
@@ -107,7 +107,7 @@ API errors fail closed; an unqualified main skips every remaining step. Manual
 dispatch does not bypass publisher success.
 
 The qualified SHA is checked out exactly, its root manifest's
-`@advaitpaliwal/feynman` version must exist on the public npm registry, and website
+`@companion-ai/feynman` version must exist on the public npm registry, and website
 `npm ci`, lint, typecheck, and build must pass. Production runs remain serialized
 without interrupting active uploads. GitHub can replace a pending run with a
 delayed older event; that surviving run now reconciles qualified current main,
@@ -118,7 +118,7 @@ for its successful publisher event or dispatch again after that proof exists.
 
 Hosting and canonical secrets remain in the existing **Companion** organization:
 Infisical project **feynman**, environment **prod**, mirrored to GitHub repository
-secrets. GitHub and npm use the personal `advaitpaliwal` account. The existing
+secrets. GitHub uses `Companion-Inc/feynman` and npm publishes `@companion-ai/feynman`. The existing
 `CLOUDFLARE_API_TOKEN` secret is passed only to the upload step, after Wrangler
 `4.107.0` is installed; no new credential is required. Cloudflare account ID
 `2164ee7d134223511b4621d9b163a5ac` is a nonsecret workflow constant.

@@ -225,7 +225,9 @@ function installAppDependencies(appDir, stagingRoot) {
 		cwd: appRoot,
 	});
 
-	cpSync(resolve(depsDir, "node_modules"), resolve(appDir, "node_modules"), { recursive: true });
+	// Keep npm's relative .bin links; cpSync otherwise rewrites them to absolute
+	// staging paths that dangle once the bundle is unpacked elsewhere.
+	cpSync(resolve(depsDir, "node_modules"), resolve(appDir, "node_modules"), { recursive: true, verbatimSymlinks: true });
 }
 
 function extractTarball(archivePath, destination, compressionFlag) {

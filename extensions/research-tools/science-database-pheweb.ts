@@ -101,7 +101,7 @@ async function fetchJson(url: URL): Promise<unknown> {
 		const response = await fetch(url, {
 			headers: {
 				accept: "application/json",
-				"user-agent": "feynman-pheweb/1.0 (https://github.com/advaitpaliwal/feynman)",
+				"user-agent": "feynman-pheweb/1.0 (https://github.com/Companion-Inc/feynman)",
 			},
 			signal: controller.signal,
 		});

@@ -13,7 +13,7 @@ const workflow = parse(workflowText);
 const job = workflow.jobs.deploy;
 const steps = job.steps;
 const step = (name: string) => steps.find((entry: { name?: string }) => entry.name === name);
-const repository = "advaitpaliwal/feynman";
+const repository = "Companion-Inc/feynman";
 const publisherPath = ".github/workflows/publish.yml";
 const sha = "a".repeat(40);
 const newerSha = "b".repeat(40);
@@ -67,7 +67,7 @@ function runStep(name: string, env: Record<string, string | undefined> = {}) {
 		const bin = join(root, "bin");
 		mkdirSync(bin);
 		writeFileSync(join(root, "package.json"), JSON.stringify({
-			name: env.PACKAGE_NAME ?? "@advaitpaliwal/feynman",
+			name: env.PACKAGE_NAME ?? "@companion-ai/feynman",
 			version: "0.3.48",
 		}));
 		writeFileSync(join(bin, "npm"), `#!/bin/bash
@@ -78,7 +78,7 @@ exit "\${MOCK_EXIT:-0}"
 		writeFileSync(join(bin, "git"), `#!/bin/bash
 case "$*" in
   "rev-parse HEAD") printf '%s\\n' "$MOCK_HEAD" ;;
-  "ls-remote https://github.com/advaitpaliwal/feynman.git refs/heads/main")
+  "ls-remote https://github.com/Companion-Inc/feynman.git refs/heads/main")
     printf '%s\\trefs/heads/main\\n' "$MOCK_MAIN"
     exit "\${MOCK_EXIT:-0}" ;;
   *) exit 99 ;;
@@ -89,7 +89,7 @@ const { appendFileSync } = require("node:fs");
 const args = process.argv.slice(2);
 appendFileSync(process.env.MOCK_API_ARGS, JSON.stringify(args) + "\\n");
 if (args[0] !== "api" || args[1] !== "--hostname" || args[2] !== "github.com") process.exit(99);
-const endpoint = args[3].replace(/^repos\\/advaitpaliwal\\/feynman\\//, "");
+const endpoint = args[3].replace(/^repos\\/Companion-Inc\\/feynman\\//, "");
 if (endpoint === args[3]) process.exit(99);
 if (endpoint === process.env.MOCK_API_FAIL_ENDPOINT) process.exit(1);
 let result;
@@ -342,14 +342,14 @@ test("delayed A replaces pending B but the surviving serialized invocation deplo
 });
 
 test("npm gate requires the exact personal manifest version and fails closed", deploymentShell, () => {
-	const name = "Require the personal npm release";
+	const name = "Require the published npm release";
 	const result = runStep(name);
 	assert.equal(result.status, 0);
-	assert.equal(result.args, "view\n@advaitpaliwal/feynman@0.3.48\nversion\n--registry=https://registry.npmjs.org\n");
+	assert.equal(result.args, "view\n@companion-ai/feynman@0.3.48\nversion\n--registry=https://registry.npmjs.org\n");
 	for (const env of [
 		{ MOCK_PUBLISHED: "" }, { MOCK_PUBLISHED: "0.3.47" },
 		{ MOCK_PUBLISHED: "0.3.48", MOCK_EXIT: "1" },
-		{ PACKAGE_NAME: "@companion-ai/feynman" },
+		{ PACKAGE_NAME: "@advaitpaliwal/feynman" },
 	]) {
 		assert.notEqual(runStep(name, env).status, 0, JSON.stringify(env));
 	}
