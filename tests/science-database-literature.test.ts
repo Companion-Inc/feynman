@@ -226,3 +226,19 @@ test("arxiv source rejects topic search and points to the discovery sources", as
 		/arXiv topic search was removed/,
 	);
 });
+
+test("arxiv source never expands external XML entities from the feed", async () => {
+	globalThis.fetch = async () => new Response(`<?xml version="1.0"?>
+<!DOCTYPE feed [<!ENTITY local_file SYSTEM "file:///etc/passwd">]>
+<feed xmlns="http://www.w3.org/2005/Atom">
+	<entry><id>http://arxiv.org/abs/2309.08600v1</id><title>&local_file;</title></entry>
+</feed>`, { status: 200, headers: { "content-type": "application/atom+xml" } });
+	const tool = registerTools().get("feynman_science_database_search");
+	assert.ok(tool);
+
+	const outcome = await tool.execute("arxiv-xxe", { source: "arxiv", query: "2309.08600" }).then(
+		(result) => result.content.map((part) => part.text).join("\n"),
+		(error: unknown) => String(error),
+	);
+	assert.doesNotMatch(outcome, /root:/);
+});
