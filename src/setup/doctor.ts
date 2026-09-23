@@ -1,7 +1,9 @@
 import { getUserName as getAlphaUserName, isLoggedIn as isAlphaLoggedIn } from "@companion-ai/alpha-hub/lib";
+import { getValidToken as getValidAlphaToken } from "@companion-ai/alpha-hub/lib/auth";
 
 import { readFileSync } from "node:fs";
 
+import { verifyAlphaAuthStatus } from "../alpha-auth-status.js";
 import { formatPiWebAccessDoctorLines, getPiWebAccessStatus } from "../pi/web-access.js";
 import { BROWSER_FALLBACK_PATHS, PANDOC_FALLBACK_PATHS, resolveExecutable } from "../system/executables.js";
 import { readJson } from "../pi/settings.js";
@@ -146,12 +148,20 @@ export async function runDoctor(options: DoctorOptions): Promise<void> {
 	console.log(`working dir: ${options.workingDir}`);
 	console.log(`session dir: ${options.sessionDir}`);
 	console.log("");
-	console.log(`alphaXiv auth: ${isAlphaLoggedIn() ? "ok" : "missing"}`);
-	if (isAlphaLoggedIn()) {
-		const name = getAlphaUserName();
+	// Same online check as `feynman alpha status`: a stored token can be expired.
+	const alphaStatus = await verifyAlphaAuthStatus({ getValidToken: getValidAlphaToken }).catch(
+		(error: unknown) => ({ authenticated: false, error: error instanceof Error ? error.message : String(error) }),
+	);
+	if (alphaStatus.authenticated) {
+		console.log("alphaXiv auth: ok");
+		const name = ("name" in alphaStatus ? alphaStatus.name : undefined) ?? getAlphaUserName();
 		if (name) {
 			console.log(`  user: ${name}`);
 		}
+	} else if ("error" in alphaStatus) {
+		console.log(`alphaXiv auth: unverified (${alphaStatus.error})`);
+	} else {
+		console.log(`alphaXiv auth: ${isAlphaLoggedIn() ? "expired, run feynman alpha login" : "missing"}`);
 	}
 	console.log(`supported models: ${supportedModels.length}`);
 	if (modelStatus.availableModels.length > 0) {
