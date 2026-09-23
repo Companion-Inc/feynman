@@ -65,7 +65,6 @@ export const RUNTIME_INPUT_FILES = Object.freeze([
 	"scripts/lib/mcp-sdk-package-patch.mjs",
 	"scripts/lib/package-root-patch-utils.mjs",
 	"scripts/lib/npm-command.mjs",
-	"scripts/lib/temporary-tree-cleanup.mjs",
 	"scripts/lib/deterministic-archive.mjs",
 	"scripts/lib/runtime-workspace-integrity.mjs",
 	"scripts/lib/runtime-workspace-install.mjs",
@@ -569,16 +568,7 @@ export function packagedWorkspaceExtractionSucceeded(
 }
 
 function isAllowedMissingWindowsRuntimeSymlink(label) {
-	// npm .bin command shims and the legacy @mariozechner/* package aliases
-	// are symlinks that Windows tar cannot create without privilege. Accept a
-	// missing link only when the caller has verified the target exists in the
-	// extracted tree (see runtimeArchiveExtractionMatches).
-	return (
-		/(?:^|\/)node_modules\/\.bin\/[^/]+$/.test(label) ||
-		/(?:^|\/)node_modules\/@mariozechner\/(?:pi-agent-core|pi-ai|pi-coding-agent|pi-tui)$/.test(
-			label,
-		)
-	);
+	return /(?:^|\/)node_modules\/\.bin\/[^/]+$/.test(label);
 }
 
 function archiveSymlinkTargetPath(workspacePath, entry) {

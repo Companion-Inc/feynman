@@ -2,8 +2,6 @@ import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, write
 import { dirname, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 
-import { resolveAdjacentNpmCommand } from "./lib/npm-command.mjs";
-
 import { patchPiAgentCoreSource } from "./lib/pi-agent-core-patch.mjs";
 import {
 	assertPiCliArgsVersion,
@@ -315,26 +313,12 @@ function childNpmInstallEnv() {
 }
 
 function runWorkspaceNpm(args) {
-	// Windows cannot spawn `npm`/`npm.cmd` without a shell. Prefer the
-	// npm-cli.js entry point next to the running Node executable so runtime
-	// workspace installs work on every platform.
-	const invocation = process.env.npm_execpath
-		? { command: process.execPath, args: [process.env.npm_execpath] }
-		: resolveAdjacentNpmCommand() ??
-			(process.platform === "win32" ? undefined : { command: "npm", args: [] });
-	if (!invocation) {
-		throw new Error(
-			"npm is required to install the vendored runtime workspace.",
-		);
-	}
 	const result = spawnSync(
-		invocation.command,
-		[...invocation.args, ...args],
-		{
-			stdio: "inherit",
-			env: childNpmInstallEnv(),
-			...(invocation.shell ? { shell: true } : {}),
-		},
+		process.env.npm_execpath ? process.execPath : "npm",
+		process.env.npm_execpath
+			? [process.env.npm_execpath, ...args]
+			: args,
+		{ stdio: "inherit", env: childNpmInstallEnv() },
 	);
 	if (result.status !== 0) {
 		process.exit(result.status ?? 1);
@@ -1065,21 +1049,19 @@ if (patchExistingWorkspace) {
 			"Existing runtime workspace does not match Feynman's exact package contract",
 		);
 	}
-	// Preflight the Pi parser before any write, then collect again after the
-	// legacy aliases exist: on Windows they are copies and need the patch too.
-	collectBundledPiCliArgsCandidates();
+	const piCliArgsCandidates = collectBundledPiCliArgsCandidates();
 	linkLegacyPiRuntimeAliases();
-	patchBundledRuntime(collectBundledPiCliArgsCandidates());
+	patchBundledRuntime(piCliArgsCandidates);
 	writeManifest(packageSpecs);
 	process.exit(0);
 }
 
 if (!refreshRuntimeLock && !rebuildWorkspace && workspaceIsCurrent(packageSpecs)) {
-	collectBundledPiCliArgsCandidates();
+	const piCliArgsCandidates = collectBundledPiCliArgsCandidates();
 	patchRootRuntimeDependencies();
 	console.log("[feynman] vendored runtime workspace already up to date");
 	linkLegacyPiRuntimeAliases();
-	if (patchBundledRuntime(collectBundledPiCliArgsCandidates())) {
+	if (patchBundledRuntime(piCliArgsCandidates)) {
 		writeManifest(packageSpecs);
 		console.log("[feynman] patched bundled Pi runtime");
 	}
@@ -1094,7 +1076,7 @@ if (!refreshRuntimeLock && !rebuildWorkspace && workspaceIsCurrent(packageSpecs)
 
 console.log("[feynman] preparing vendored runtime workspace...");
 prepareWorkspace(packageSpecs, refreshRuntimeLock);
-collectBundledPiCliArgsCandidates();
+const piCliArgsCandidates = collectBundledPiCliArgsCandidates();
 patchRootRuntimeDependencies();
 // npm restores Pi's published bundled files before local repairs. Normalize
 // their exact compiler metadata/binaries before validating the pruning graph.
@@ -1103,7 +1085,7 @@ patchPiEsbuildPackageTree(
 );
 pruneWorkspace();
 linkLegacyPiRuntimeAliases();
-patchBundledRuntime(collectBundledPiCliArgsCandidates());
+patchBundledRuntime(piCliArgsCandidates);
 if (refreshRuntimeLock) {
 	cpSync(resolve(workspaceDir, "package-lock.json"), runtimePackageLockPath);
 	console.log("[feynman] refreshed committed runtime lock");
