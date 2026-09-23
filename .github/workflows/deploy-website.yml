@@ -6,10 +6,10 @@ on:
     types: [completed]
     branches: [main]
   workflow_dispatch:
-  # Hourly reconcile deploys current qualified main even if a workflow_run
+  # Daily reconcile deploys current qualified main even if a workflow_run
   # event was dropped or its pending run was replaced in the concurrency slot.
   schedule:
-    - cron: "17 * * * *"
+    - cron: "17 6 * * *"
 
 permissions:
   contents: read

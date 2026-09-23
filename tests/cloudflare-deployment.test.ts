@@ -155,7 +155,7 @@ test("only successful same-repository main pushes, main manual dispatches, or th
 	assert.deepEqual(workflow.on, {
 		workflow_run: { workflows: ["Publish and Release"], types: ["completed"], branches: ["main"] },
 		workflow_dispatch: null,
-		schedule: [{ cron: "17 * * * *" }],
+		schedule: [{ cron: "17 6 * * *" }],
 	});
 	assert.equal(allowed(trustedEvent()), true);
 	assert.equal(allowed({ ...trustedEvent(), event_name: "workflow_dispatch", event: {} }), true);
@@ -301,7 +301,7 @@ test("delayed A replaces pending B but the surviving serialized invocation deplo
 	assert.equal(activeGuard.status, 0);
 	assert.equal(activeGuard.output, "");
 
-	// The surviving automatic invocation, a manual recovery, and the hourly schedule all reconcile B.
+	// The surviving automatic invocation, a manual recovery, and the daily schedule all reconcile B.
 	for (const event of [pending.event, "workflow_dispatch", "schedule"]) {
 		assert.equal(allowed({ ...trustedEvent(), event_name: event }), true);
 		const initiating = runStep("Validate initiating event SHA", {
