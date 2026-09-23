@@ -91,6 +91,8 @@ import {
 } from "../metadata/commands.mjs";
 
 const TOP_LEVEL_COMMANDS = new Set(topLevelCommandNames);
+// Removed commands fail instead of falling through to a chat prompt.
+const REMOVED_COMMANDS = new Set(["jobs", "paper", "rank", "serve", "watch"]);
 const ALPHA_HUB_PACKAGE_PATH = ["@companion-ai", "alpha-hub"] as const;
 
 function printHelpLine(usage: string, description: string): void {
@@ -740,6 +742,12 @@ async function runMain(input: { here: string; appRoot: string; feynmanVersion: s
 	}
 
 	const [command, ...rest] = positionals;
+	if (command && REMOVED_COMMANDS.has(command)) {
+		console.error(`\`feynman ${command}\` was removed after 0.3.49. Install @companion-ai/feynman@0.3.49 to keep it.`);
+		process.exitCode = 1;
+		return;
+	}
+
 	if (command === "help") {
 		printHelp(appRoot);
 		return;
