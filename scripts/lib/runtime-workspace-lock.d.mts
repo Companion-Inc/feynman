@@ -5,6 +5,7 @@ export declare function acquireRuntimeWorkspaceSetupLock(
 	options?: {
 		staleMs?: number;
 		readOwnerProcessStartedAt?: (pid: number) => number | undefined;
+		waitTimeoutMs?: number;
 	},
 ): string;
 export declare function releaseRuntimeWorkspaceSetupLock(

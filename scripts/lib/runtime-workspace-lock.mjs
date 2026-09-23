@@ -22,6 +22,7 @@ export const RUNTIME_WORKSPACE_SETUP_LOCK_STALE_MS = 300000;
 // is treated as a reused PID or a hung process.
 const SETUP_LOCK_PID_REUSE_CEILING_MS = 2 * RUNTIME_WORKSPACE_PACKAGE_INSTALL_TIMEOUT_MS;
 const SETUP_LOCK_BREAK_STALE_MS = 30_000;
+const SETUP_LOCK_WAIT_NOTICE_MS = 2_000;
 
 const heldRuntimeWorkspaceSetupLocks = new Map();
 
@@ -183,7 +184,8 @@ function breakableSetupLockIdentity(lockDir, { staleMs, readOwnerProcessStartedA
 			: stat.mtimeMs;
 	const heartbeatAge = Date.now() - heartbeatAt;
 	const breakable =
-		(ownerAlive !== true && heartbeatAge > staleMs) ||
+		ownerAlive === false ||
+		(ownerAlive === undefined && heartbeatAge > staleMs) ||
 		heartbeatAge > SETUP_LOCK_PID_REUSE_CEILING_MS;
 	return breakable && directoryIdentityMatches(lockDir, identity)
 		? identity
@@ -235,6 +237,9 @@ export function acquireRuntimeWorkspaceSetupLock(
 	{
 		staleMs = RUNTIME_WORKSPACE_SETUP_LOCK_STALE_MS,
 		readOwnerProcessStartedAt = readProcessStartedAt,
+		// Outlast the PID-reuse ceiling so a concurrent relaunch waits for a live
+		// owner's package install instead of failing while it works.
+		waitTimeoutMs = SETUP_LOCK_PID_REUSE_CEILING_MS + staleMs,
 	} = {},
 ) {
 	mkdirSync(dirname(lockDir), { recursive: true });
@@ -244,6 +249,7 @@ export function acquireRuntimeWorkspaceSetupLock(
 	const ownerId = randomUUID();
 	const processStartedAt = currentProcessStartedAt();
 	const ownerHostname = hostname();
+	let waitNoticeShown = false;
 	while (true) {
 		try {
 			mkdirSync(lockDir);
@@ -290,9 +296,16 @@ export function acquireRuntimeWorkspaceSetupLock(
 					continue;
 				}
 			} catch {}
-			if (Date.now() - startedAt > staleMs) {
+			const waitedMs = Date.now() - startedAt;
+			if (waitedMs > waitTimeoutMs) {
 				throw new Error(
 					"Timed out waiting for another Feynman process to finish package setup.",
+				);
+			}
+			if (!waitNoticeShown && waitedMs > SETUP_LOCK_WAIT_NOTICE_MS) {
+				waitNoticeShown = true;
+				process.stderr.write(
+					`[feynman] waiting for another Feynman process to finish runtime setup (${lockDir})\n`,
 				);
 			}
 			sleepSync(100);

@@ -176,7 +176,7 @@ test("workspace setup locks preserve active owners and release only matching tok
 		assert.equal(heartbeatOwner.token, token);
 		assert.equal(heartbeatOwner.heartbeatAt >= initialOwner.heartbeatAt, true);
 		assert.throws(
-			() => acquireRuntimeWorkspaceSetupLock(lockDir, { staleMs: 25 }),
+			() => acquireRuntimeWorkspaceSetupLock(lockDir, { staleMs: 25, waitTimeoutMs: 25 }),
 			/Timed out waiting/,
 		);
 		assert.equal(existsSync(lockDir), true);
@@ -323,6 +323,7 @@ test("setup lock heartbeats preserve a live owner when process-start lookup is u
 						// allowing a loaded CI host to schedule the separate heartbeat
 						// process before stale ownership is evaluated.
 						staleMs: 1_000,
+						waitTimeoutMs: 1_000,
 						readOwnerProcessStartedAt: () => undefined,
 					}),
 			/Timed out waiting/,

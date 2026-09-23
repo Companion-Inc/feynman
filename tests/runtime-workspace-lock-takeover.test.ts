@@ -42,7 +42,7 @@ test("a live owner whose start time cannot be read keeps the lock until the PID-
 		// This process is alive, but the stubbed `ps` lookup fails, as on slim images.
 		writeOwner(lockDir, { token: "slow-owner", createdAt: Date.now() - 60_000, heartbeatAt: Date.now() - 60_000 });
 		assert.throws(
-			() => acquireRuntimeWorkspaceSetupLock(lockDir, { staleMs: 50, readOwnerProcessStartedAt: () => undefined }),
+			() => acquireRuntimeWorkspaceSetupLock(lockDir, { staleMs: 50, waitTimeoutMs: 50, readOwnerProcessStartedAt: () => undefined }),
 			/Timed out waiting/,
 		);
 		assert.equal(JSON.parse(readFileSync(join(lockDir, "owner.json"), "utf8")).token, "slow-owner");
@@ -63,7 +63,7 @@ test("stale-lock takeover is serialized by a break mutex", () => {
 		writeOwner(lockDir, { pid: 2_147_483_647, token: "dead-owner", createdAt: 0, heartbeatAt: 0 });
 		mkdirSync(breakDir);
 		// Another waiter holds the break mutex, so this one keeps waiting.
-		assert.throws(() => acquireRuntimeWorkspaceSetupLock(lockDir, { staleMs: 50 }), /Timed out waiting/);
+		assert.throws(() => acquireRuntimeWorkspaceSetupLock(lockDir, { staleMs: 50, waitTimeoutMs: 50 }), /Timed out waiting/);
 		assert.equal(JSON.parse(readFileSync(join(lockDir, "owner.json"), "utf8")).token, "dead-owner");
 
 		// A break mutex abandoned for more than 30 seconds is cleared.
@@ -72,6 +72,38 @@ test("stale-lock takeover is serialized by a break mutex", () => {
 		const token = acquireRuntimeWorkspaceSetupLock(lockDir, { staleMs: 50 });
 		assert.notEqual(token, "dead-owner");
 		assert.equal(existsSync(breakDir), false);
+		releaseRuntimeWorkspaceSetupLock(lockDir, token);
+		assert.equal(existsSync(lockDir), false);
+	});
+});
+
+test("a provably dead or replaced owner loses the lock without waiting for staleness", () => {
+	withLockDir((lockDir) => {
+		const fresh = Date.now();
+		// No process has this PID, so the fresh heartbeat does not matter.
+		writeOwner(lockDir, { pid: 2_147_483_647, token: "crashed-owner", createdAt: fresh, heartbeatAt: fresh });
+		const startedAt = Date.now();
+		const token = acquireRuntimeWorkspaceSetupLock(lockDir, { waitTimeoutMs: 0 });
+		assert.notEqual(token, "crashed-owner");
+		assert.ok(Date.now() - startedAt < 5_000);
+		releaseRuntimeWorkspaceSetupLock(lockDir, token);
+
+		// This PID is alive but started at a different time: it was reused.
+		writeOwner(lockDir, { token: "reused-owner", createdAt: fresh, heartbeatAt: fresh, processStartedAt: 1 });
+		const replacement = acquireRuntimeWorkspaceSetupLock(lockDir, { waitTimeoutMs: 0 });
+		assert.notEqual(replacement, "reused-owner");
+		releaseRuntimeWorkspaceSetupLock(lockDir, replacement);
+		assert.equal(existsSync(lockDir), false);
+	});
+});
+
+test("waiting for a live owner outlasts a package install instead of the stale window", () => {
+	withLockDir((lockDir) => {
+		const token = acquireRuntimeWorkspaceSetupLock(lockDir, { staleMs: 25 });
+		const startedAt = Date.now();
+		// The live owner is past staleMs, yet the waiter keeps waiting until its own deadline.
+		assert.throws(() => acquireRuntimeWorkspaceSetupLock(lockDir, { staleMs: 25, waitTimeoutMs: 300 }), /Timed out waiting/);
+		assert.ok(Date.now() - startedAt >= 300);
 		releaseRuntimeWorkspaceSetupLock(lockDir, token);
 		assert.equal(existsSync(lockDir), false);
 	});
