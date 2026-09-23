@@ -6,6 +6,11 @@ export declare function acquireRuntimeWorkspaceSetupLock(
 		staleMs?: number;
 		readOwnerProcessStartedAt?: (pid: number) => number | undefined;
 		waitTimeoutMs?: number;
+		writeOwner?: (
+			lockDir: string,
+			owner: Record<string, unknown>,
+			identity: { dev: string; ino: string },
+		) => boolean;
 	},
 ): string;
 export declare function releaseRuntimeWorkspaceSetupLock(

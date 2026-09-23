@@ -100,6 +100,22 @@ function writeSetupLockOwner(lockDir, owner, expectedIdentity) {
 	}
 }
 
+// Moves a lock directory this process created but could not claim out of the
+// way, so it does not block other launches until it goes stale.
+function discardUnclaimedSetupLock(lockDir, identity) {
+	try {
+		if (!directoryIdentityMatches(lockDir, identity)) return;
+		const discardedPath =
+			`${lockDir}.released-${process.pid}-${Date.now()}-${randomUUID()}`;
+		renameSync(lockDir, discardedPath);
+		if (!directoryIdentityMatches(discardedPath, identity)) {
+			if (!existsSync(lockDir)) renameSync(discardedPath, lockDir);
+			return;
+		}
+		rmSync(discardedPath, { recursive: true, force: true });
+	} catch {}
+}
+
 function setupLockOwnerSource(owner) {
 	return `${JSON.stringify(owner)}\n`;
 }
@@ -243,6 +259,7 @@ export function acquireRuntimeWorkspaceSetupLock(
 		// Outlast the PID-reuse ceiling so a concurrent relaunch waits for a live
 		// owner's package install instead of failing while it works.
 		waitTimeoutMs = SETUP_LOCK_PID_REUSE_CEILING_MS + staleMs,
+		writeOwner = writeSetupLockOwner,
 	} = {},
 ) {
 	mkdirSync(dirname(lockDir), { recursive: true });
@@ -268,7 +285,13 @@ export function acquireRuntimeWorkspaceSetupLock(
 				heartbeatAt: createdAt,
 				processStartedAt,
 			};
-			if (!writeSetupLockOwner(lockDir, owner, identity)) {
+			let claimed = false;
+			try {
+				claimed = writeOwner(lockDir, owner, identity);
+			} finally {
+				if (!claimed) discardUnclaimedSetupLock(lockDir, identity);
+			}
+			if (!claimed) {
 				throw new Error("Feynman setup lock changed while it was acquired");
 			}
 			heldRuntimeWorkspaceSetupLocks.set(token, {

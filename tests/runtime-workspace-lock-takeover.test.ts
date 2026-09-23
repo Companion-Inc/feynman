@@ -149,3 +149,24 @@ test("a lock that cannot be renamed away drops its owner record so waiters fall 
 		assert.equal(existsSync(lockDir), true);
 	});
 });
+
+test("a lock directory that could not be claimed is removed instead of blocking others", () => {
+	withLockDir((lockDir) => {
+		assert.throws(
+			() => acquireRuntimeWorkspaceSetupLock(lockDir, { writeOwner: () => false }),
+			/changed while it was acquired/,
+		);
+		assert.equal(existsSync(lockDir), false);
+		assert.throws(
+			() => acquireRuntimeWorkspaceSetupLock(lockDir, {
+				writeOwner: () => {
+					throw Object.assign(new Error("ENOSPC: no space left on device"), { code: "ENOSPC" });
+				},
+			}),
+			/ENOSPC/,
+		);
+		assert.equal(existsSync(lockDir), false);
+		const token = acquireRuntimeWorkspaceSetupLock(lockDir, { waitTimeoutMs: 0 });
+		releaseRuntimeWorkspaceSetupLock(lockDir, token);
+	});
+});
