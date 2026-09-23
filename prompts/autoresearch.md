@@ -64,6 +64,8 @@ Initialize the session: create `autoresearch.md`, `autoresearch.jsonl`, `autores
 Each iteration: edit -> run the benchmark -> log the benchmark result, evidence, and decision -> compare against the baseline -> keep the change, revert it, or record the failed hypothesis -> repeat. Do not stop unless interrupted or `maxIterations` is reached.
 After the baseline and after meaningful iteration milestones, append a concise entry to `CHANGELOG.md` summarizing what changed, what metric result was observed, what failed, and the next step.
 
+When reporting results, include every configuration tried from `autoresearch.jsonl` (kept, reverted, and failed) with its metric. Do not claim an effect from the single most favorable setting; state how the result varies across all tried settings and seeds.
+
 ## Optional tools
 
 Use these only when they are visible in the current tool set:
