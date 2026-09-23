@@ -1,4 +1,4 @@
-import { chmodSync, cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { chmodSync, cpSync, existsSync, globSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { tmpdir } from "node:os";
 import { basename, dirname, join, resolve } from "node:path";
@@ -191,7 +191,17 @@ function copyPackageFiles(appDir) {
 	}
 }
 
-function installAppDependencies(appDir, stagingRoot) {
+// Pi's npm-shrinkwrap makes npm install esbuild binaries for every platform
+// (~280 MB); a single-platform bundle keeps only its own.
+function pruneForeignEsbuildBinaries(depsDir, target) {
+	for (const scopeDir of globSync("**/node_modules/@esbuild", { cwd: depsDir })) {
+		for (const name of readdirSync(resolve(depsDir, scopeDir))) {
+			if (name !== target.id) rmSync(resolve(depsDir, scopeDir, name), { recursive: true, force: true });
+		}
+	}
+}
+
+function installAppDependencies(appDir, stagingRoot, target) {
 	logStep("installing production dependencies...");
 	const depsDir = resolve(stagingRoot, "prod-deps");
 	rmSync(depsDir, { recursive: true, force: true });
@@ -203,6 +213,7 @@ function installAppDependencies(appDir, stagingRoot) {
 	run("npm", ["ci", "--omit=dev", "--ignore-scripts", "--no-audit", "--no-fund", "--loglevel", "error"], {
 		cwd: depsDir,
 	});
+	pruneForeignEsbuildBinaries(depsDir, target);
 
 	// Keep npm's relative .bin links; cpSync otherwise rewrites them to absolute
 	// staging paths that dangle once the bundle is unpacked elsewhere.
@@ -393,7 +404,7 @@ async function main() {
 		mkdirSync(appDir, { recursive: true });
 
 		copyPackageFiles(appDir);
-		installAppDependencies(appDir, stagingRoot);
+		installAppDependencies(appDir, stagingRoot, target);
 		installBundledNode(bundleRoot, target, stagingRoot);
 		run("npm", ["audit", "--omit=dev", "--no-fund"], { cwd: appDir });
 
