@@ -9,6 +9,8 @@ This page summarizes what changed in recent Feynman releases. GitHub releases us
 
 ## Unreleased
 
+## v0.5.1 - 2026-09-23
+
 ### Telemetry
 
 - **Research runs are now visible in telemetry, without content.** The research extension inside Pi sends `feynman_session_started`, `feynman_workflow_started` and `feynman_workflow_completed` (workflow name such as `deepresearch` or `chat`, status, tool and subagent call counts, whether anything under `outputs/` or `papers/` was written, duration), `feynman_tool_used` (tool name and error flag), and one PostHog LLM analytics `$ai_generation` event per model response (model, provider, token counts, latency, HTTP status, stop reason; the trace ID is the Pi session ID). Prompts, model output, paper content, file paths, and tool arguments are never sent.
