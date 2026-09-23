@@ -260,9 +260,16 @@ function getAnonymousDistinctId(home = getFeynmanHome()): string {
 /**
  * Returns the first-run telemetry notice once per Feynman home, and again for
  * the rest of this process so a launch that clears the screen can reprint it.
+ * Only interactive terminals get it: scripts and CI (where Windows PowerShell
+ * treats any stderr as an error) never see it, and it stays pending for the
+ * first interactive run.
  */
-export function telemetryFirstRunNotice(home = getFeynmanHome()): string | undefined {
+export function telemetryFirstRunNotice(
+	home = getFeynmanHome(),
+	interactive = process.stderr.isTTY === true,
+): string | undefined {
 	if (telemetryNoticeThisProcess || !activeConfig) return telemetryNoticeThisProcess;
+	if (!interactive) return undefined;
 	const statePath = resolve(getFeynmanStateDir(home), TELEMETRY_STATE_FILE);
 	const state = readTelemetryState(statePath);
 	if (state.noticeShown) return undefined;

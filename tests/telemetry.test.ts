@@ -63,22 +63,24 @@ test("first-run notice says what is sent and how to opt out, once per Feynman ho
 		assert.match(TELEMETRY_NOTICE, /FEYNMAN_TELEMETRY=off/);
 
 		initializePostHogTelemetry({ home, posthogFetch: async () => new Response(null, { status: 204 }), otlpFetch: async () => new Response(null, { status: 204 }) });
-		assert.equal(telemetryFirstRunNotice(home), TELEMETRY_NOTICE);
+		// Scripts and CI never see it, and it stays pending for the first interactive run.
+		assert.equal(telemetryFirstRunNotice(home, false), undefined);
+		assert.equal(telemetryFirstRunNotice(home, true), TELEMETRY_NOTICE);
 		// Repeats within the process so a launch that clears the screen can reprint it.
-		assert.equal(telemetryFirstRunNotice(home), TELEMETRY_NOTICE);
+		assert.equal(telemetryFirstRunNotice(home, true), TELEMETRY_NOTICE);
 		const state = JSON.parse(readFileSync(join(home, ".state", "telemetry.json"), "utf8")) as { noticeShown?: boolean; anonymousId?: string };
 		assert.equal(state.noticeShown, true);
 		assert.match(state.anonymousId ?? "", /^feynman_/);
 		await shutdownPostHogTelemetry();
 
 		initializePostHogTelemetry({ home, posthogFetch: async () => new Response(null, { status: 204 }), otlpFetch: async () => new Response(null, { status: 204 }) });
-		assert.equal(telemetryFirstRunNotice(home), undefined);
+		assert.equal(telemetryFirstRunNotice(home, true), undefined);
 		await shutdownPostHogTelemetry();
 
 		const optedOutHome = mkdtempSync(join(tmpdir(), "feynman-telemetry-notice-off-"));
 		process.env.FEYNMAN_TELEMETRY = "off";
 		initializePostHogTelemetry({ home: optedOutHome });
-		assert.equal(telemetryFirstRunNotice(optedOutHome), undefined);
+		assert.equal(telemetryFirstRunNotice(optedOutHome, true), undefined);
 		assert.deepEqual(getPostHogChildEnv(), {});
 		rmSync(optedOutHome, { recursive: true, force: true });
 	} finally {
