@@ -16,3 +16,6 @@ notes/*
 experiments/*
 !experiments/.gitkeep
 .astro/
+
+# Local agent lab notebook (see AGENTS.md); not tracked.
+/CHANGELOG.md

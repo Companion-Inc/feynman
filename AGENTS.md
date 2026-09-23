@@ -84,7 +84,7 @@ Never use generic names like `research.md`, `draft.md`, `brief.md`, or `summary.
 
 ## Workspace changelog
 
-- `CHANGELOG.md` is a lab notebook, not release notes.
+- `CHANGELOG.md` is a local, untracked lab notebook (ignored by git), not release notes. Release notes live in `RELEASES.md`.
 - Read `CHANGELOG.md` before resuming substantial work when it exists.
 - Append concise entries after meaningful progress, failed approaches, major verification results, or new blockers.
 - Each entry should identify the active slug or objective and end with the next recommended step.
