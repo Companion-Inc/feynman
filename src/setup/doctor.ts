@@ -8,6 +8,7 @@ import { formatPiWebAccessDoctorLines, getPiWebAccessStatus } from "../pi/web-ac
 import { BROWSER_FALLBACK_PATHS, PANDOC_FALLBACK_PATHS, resolveExecutable } from "../system/executables.js";
 import { readJson } from "../pi/settings.js";
 import { validatePiInstallation } from "../pi/runtime.js";
+import { isTelemetryDisabled } from "../telemetry/posthog.js";
 import { printInfo, printPanel, printSection } from "../ui/terminal.js";
 import { getCurrentModelSpec } from "../model/commands.js";
 import { buildModelStatusSnapshotFromRecords, getAvailableModelRecords, getSupportedModelRecords } from "../model/catalog.js";
@@ -112,6 +113,7 @@ export async function runStatus(options: DoctorOptions): Promise<void> {
 	printInfo(`Web access: pi-web-access (${snapshot.webRouteLabel})`);
 	printInfo(`Service tier: ${getConfiguredServiceTier(options.settingsPath) ?? "not set"}`);
 	printInfo(`Preview: ${snapshot.previewConfigured ? "configured" : "not configured"}`);
+	printInfo(`Telemetry: ${isTelemetryDisabled() ? "off" : "on (anonymous usage metadata; set FEYNMAN_TELEMETRY=off to disable)"}`);
 
 	printSection("Paths");
 	printInfo(`Sessions: ${snapshot.sessionDir}`);

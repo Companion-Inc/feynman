@@ -72,6 +72,7 @@ import {
 	shutdownPostHogTelemetry,
 	startTelemetrySpan,
 	telemetryErrorProperties,
+	telemetryFirstRunNotice,
 } from "./telemetry/posthog.js";
 import { ASH, printAsciiHeader, printInfo, printPanel, printSection, RESET, SAGE } from "./ui/terminal.js";
 import { createModelRuntime } from "./model/registry.js";
@@ -511,6 +512,8 @@ export async function main(): Promise<void> {
 	const appRoot = resolve(here, "..");
 	const feynmanVersion = loadPackageVersion(appRoot).version;
 	initializePostHogTelemetry({ appVersion: feynmanVersion, serviceName: "feynman-cli" });
+	const telemetryNotice = telemetryFirstRunNotice();
+	if (telemetryNotice) process.stderr.write(`${telemetryNotice}\n`);
 	const commandTelemetry = getCliTelemetryMetadata(process.argv.slice(2), { knownCommands: getTelemetryCommandNames(appRoot) });
 	const commandStartedAt = Date.now();
 	const commandSpan = startTelemetrySpan("feynman.cli.command", commandTelemetry);
