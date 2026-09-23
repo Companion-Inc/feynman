@@ -3,7 +3,6 @@ import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { registerAlphaTools } from "./research-tools/alpha.js";
 import { registerCurrentDateResearchContext } from "./research-tools/current-date.js";
 import { registerDiscoveryCommands } from "./research-tools/discovery.js";
-import { registerFeynmanModelCommand } from "./research-tools/feynman-model.js";
 import { installFeynmanHeader } from "./research-tools/header.js";
 import { registerHelpCommand } from "./research-tools/help.js";
 import { registerHuggingFaceTools } from "./research-tools/huggingface.js";
@@ -23,7 +22,6 @@ export default function researchTools(pi: ExtensionAPI): void {
 	registerCurrentDateResearchContext(pi);
 	registerHuggingFaceTools(pi);
 	registerDiscoveryCommands(pi);
-	registerFeynmanModelCommand(pi);
 	registerHelpCommand(pi);
 	registerInitCommand(pi);
 	registerOutputsCommand(pi);
