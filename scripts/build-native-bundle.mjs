@@ -189,6 +189,8 @@ function copyPackageFiles(appDir) {
 			filter: (path) => path !== releaseDir && !path.startsWith(`${releaseDir}/`),
 		});
 	}
+
+	cpSync(packageLockPath, resolve(appDir, "package-lock.json"));
 }
 
 // Pi's npm-shrinkwrap makes npm install esbuild binaries for every platform
