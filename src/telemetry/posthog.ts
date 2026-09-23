@@ -250,6 +250,16 @@ function getAnonymousDistinctId(home = getFeynmanHome()): string {
 	return anonymousId;
 }
 
+/** Env the Pi child needs for the research extension to send under the same install id. */
+export function getPostHogChildEnv(): Record<string, string> {
+	if (!activeConfig) return {};
+	return {
+		FEYNMAN_POSTHOG_KEY: activeConfig.projectToken,
+		FEYNMAN_POSTHOG_HOST: activeConfig.host,
+		FEYNMAN_TELEMETRY_DISTINCT_ID: activeConfig.distinctId,
+	};
+}
+
 export function resolvePostHogTelemetryConfig(options: {
 	appVersion?: string;
 	serviceName?: string;

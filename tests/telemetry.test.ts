@@ -14,6 +14,7 @@ import {
 	createOneShotOtlpTransport,
 	createTelemetryTransportCircuitBreaker,
 	getCliTelemetryMetadata,
+	getPostHogChildEnv,
 	initializePostHogTelemetry,
 	normalizeTelemetryProperties,
 	resolvePostHogTelemetryConfig,
@@ -47,6 +48,28 @@ test("resolvePostHogTelemetryConfig defaults to the Feynman PostHog project", ()
 test("resolvePostHogTelemetryConfig respects telemetry opt out", () => {
 	assert.equal(resolvePostHogTelemetryConfig({ env: { FEYNMAN_TELEMETRY: "off" } }), undefined);
 	assert.equal(resolvePostHogTelemetryConfig({ env: { DO_NOT_TRACK: "1" } }), undefined);
+});
+
+test("Pi child env carries the CLI's PostHog project and install id only while telemetry is active", async () => {
+	const home = mkdtempSync(join(tmpdir(), "feynman-telemetry-child-env-"));
+	const previous = process.env.FEYNMAN_TELEMETRY;
+	delete process.env.FEYNMAN_TELEMETRY;
+	try {
+		assert.deepEqual(getPostHogChildEnv(), {});
+		const config = initializePostHogTelemetry({ home, posthogFetch: async () => new Response(null, { status: 204 }), otlpFetch: async () => new Response(null, { status: 204 }) });
+		assert.deepEqual(getPostHogChildEnv(), {
+			FEYNMAN_POSTHOG_KEY: DEFAULT_POSTHOG_PROJECT_TOKEN,
+			FEYNMAN_POSTHOG_HOST: DEFAULT_POSTHOG_HOST,
+			FEYNMAN_TELEMETRY_DISTINCT_ID: config?.distinctId,
+		});
+		await shutdownPostHogTelemetry();
+		assert.deepEqual(getPostHogChildEnv(), {});
+	} finally {
+		await shutdownPostHogTelemetry();
+		if (previous === undefined) delete process.env.FEYNMAN_TELEMETRY;
+		else process.env.FEYNMAN_TELEMETRY = previous;
+		rmSync(home, { recursive: true, force: true });
+	}
 });
 
 test("PostHog transport failures open a silent session circuit breaker", async () => {
