@@ -17,7 +17,7 @@ GitHub release notes are generated from the matching `## vX.Y.Z` section in this
 
 - `feynman --version` answers immediately instead of first verifying the whole bundled research runtime, and healthy launches skip one redundant full runtime validation pass.
 - Fixed macOS and Linux standalone bundles whose `node_modules/.bin` command links pointed at the build machine, which also blocked this release.
-- Windows: patching the bundled proxy runtime copies real files instead of recreating symlinks, so commands no longer fail with EPERM on non-elevated accounts; runtime workspace setup finds npm without a shell; transient antivirus locks on freshly written esbuild binaries are retried.
+- Windows: patching the bundled Undici proxy runtime copies real files instead of recreating symlinks, so commands no longer fail with EPERM on non-elevated accounts; runtime workspace setup finds npm without a shell; transient antivirus locks on freshly written esbuild binaries are retried.
 - Removed Feynman's own `/thinking` command; Pi's built-in `/thinking` now handles thinking levels without a startup conflict warning.
 
 ### Research runtime refresh
