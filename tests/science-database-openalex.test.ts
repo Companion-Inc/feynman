@@ -181,7 +181,7 @@ test("science database tool exposes OpenAlex works, graph, authors, sources, and
 	const sourceDetailDetails = sourceDetail?.details as { mode: string; results: Array<{ sourceId: string; issnL: string }> };
 	const rateLimitDetails = rateLimit?.details as { error: string; mode: string; returned: number; results: Array<Record<string, unknown>> };
 
-	assert.equal(searchDetails.credentialStatus, "OPENALEX_API_KEY missing; OpenAlex anonymous/demo budget may reject or throttle requests");
+	assert.match(searchDetails.credentialStatus, /^OPENALEX_API_KEY missing\. Get a free OpenAlex API key at https:\/\/openalex\.org\/settings\/api/);
 	assert.match(searchDetails.anonymousBudgetWarning ?? "", /OPENALEX_API_KEY/);
 	assert.equal(searchDetails.results[0]?.openalexId, "W2064815984");
 	assert.equal(searchDetails.results[0]?.source.sourceId, "S106963461");
@@ -225,4 +225,48 @@ test("science database tool exposes OpenAlex works, graph, authors, sources, and
 	assert.equal(requests.at(-1)?.includes("api_key=secret-key"), true);
 	assert.equal(keyedRateLimitDetails.provenance.endpoints[0]?.includes("secret-key"), false);
 	assert.deepEqual(keyedRateLimitDetails.results[0]?.rate_limit, { daily_remaining_usd: 0.95 });
+});
+
+test("OpenAlex semantic mode sends search.semantic without a sort and keeps the key out of provenance", async () => {
+	process.env.OPENALEX_API_KEY = "secret-key";
+	const requests: URL[] = [];
+	globalThis.fetch = async (input) => {
+		const url = new URL(String(input));
+		requests.push(url);
+		return jsonResponse({
+			meta: { count: 50 },
+			results: [work({ id: "https://openalex.org/W4406492615", title: "Scaling LLM Test-Time Compute Optimally can be More Effective than Scaling Model Parameters" })],
+		});
+	};
+
+	const result = await registerTools().get("feynman_science_database_search")?.execute("call-openalex-semantic", {
+		source: "openalex",
+		query: "semantic: spending more inference compute instead of a bigger model year_from=2024",
+		limit: 3,
+	});
+	const details = result?.details as { mode: string; sort: string; results: Array<{ openalexId?: string }>; provenance: { endpoints: string[] } };
+
+	assert.equal(requests[0]?.searchParams.get("search.semantic"), "spending more inference compute instead of a bigger model");
+	assert.equal(requests[0]?.searchParams.has("search"), false);
+	assert.equal(requests[0]?.searchParams.has("sort"), false);
+	assert.equal(requests[0]?.searchParams.get("filter"), "publication_year:>2023");
+	assert.equal(requests[0]?.searchParams.get("api_key"), "secret-key");
+	assert.equal(details.mode, "work-semantic-search");
+	assert.equal(details.sort, "semantic");
+	assert.equal(details.results[0]?.openalexId, "W4406492615");
+	assert.equal(details.provenance.endpoints[0]?.includes("secret-key"), false);
+});
+
+test("OpenAlex failures without a key explain how to get a free key", async () => {
+	delete process.env.OPENALEX_API_KEY;
+	globalThis.fetch = async () => new Response("Anonymous search is temporarily rate-limited", { status: 429, statusText: "Too Many Requests" });
+
+	await assert.rejects(
+		registerTools().get("feynman_science_database_search")!.execute("call-openalex-429", { source: "openalex", query: "sparse autoencoders" }),
+		/429 Too Many Requests\. Anonymous search is temporarily rate-limited Get a free OpenAlex API key at https:\/\/openalex\.org\/settings\/api and set OPENALEX_API_KEY/,
+	);
+	await assert.rejects(
+		registerTools().get("feynman_science_database_search")!.execute("call-openalex-exact-429", { source: "openalex", query: "openalex_search_works:sparse autoencoders" }),
+		/openalex\.org\/settings\/api/,
+	);
 });

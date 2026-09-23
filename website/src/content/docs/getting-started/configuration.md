@@ -161,6 +161,7 @@ Feynman respects the following environment variables, which take precedence over
 | `AWS_PROFILE` | Preferred AWS profile for Amazon Bedrock |
 | `TAVILY_API_KEY` | Tavily web search API key |
 | `SERPER_API_KEY` | Serper web search API key |
+| `OPENALEX_API_KEY` | Free OpenAlex key ([create one](https://openalex.org/settings/api)); sent as the `api_key` query parameter. OpenAlex has required keys for regular use since February 2026, and anonymous requests share a small daily budget |
 | `SEMANTIC_SCHOLAR_API_KEY` | Optional free Semantic Scholar key ([request one](https://www.semanticscholar.org/product/api#api-key-form)); sent as `x-api-key` so literature searches use your own rate limit instead of the shared anonymous pool |
 | `NCBI_API_KEY` | Optional NCBI E-utilities key; raises the paced request budget from 3 to 10 requests per second |
 | `NCBI_MIN_REQUEST_GAP_MS` | Override the minimum delay between NCBI request starts; defaults to 500 ms anonymously and 125 ms with a key |

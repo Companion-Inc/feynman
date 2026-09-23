@@ -1,4 +1,4 @@
-import { searchExactOpenAlex } from "./science-database-openalex-exact.js";
+import { OPENALEX_API_KEY_HINT, openAlexRequestFailure, searchExactOpenAlex } from "./science-database-openalex-exact.js";
 
 export type OpenAlexScienceDatabaseSource = "openalex";
 
@@ -77,7 +77,7 @@ function addAuth(url: URL): { credentialStatus: string; usingApiKey: boolean } {
 		url.searchParams.set("api_key", key);
 		return { credentialStatus: "OPENALEX_API_KEY present", usingApiKey: true };
 	}
-	return { credentialStatus: "OPENALEX_API_KEY missing; OpenAlex anonymous/demo budget may reject or throttle requests", usingApiKey: false };
+	return { credentialStatus: `OPENALEX_API_KEY missing. ${OPENALEX_API_KEY_HINT}`, usingApiKey: false };
 }
 
 function scrubOpenAlexEndpoint(url: URL): string {
@@ -111,7 +111,7 @@ async function fetchJson(url: URL): Promise<{ credentialStatus: string; endpoint
 		});
 		if (!response.ok) {
 			const snippet = scrubOpenAlexText((await response.text()).slice(0, 4096), url).slice(0, 240);
-			throw new Error(`OpenAlex request failed: ${response.status} ${response.statusText}. ${snippet}`);
+			throw openAlexRequestFailure(response.status, response.statusText, snippet, auth.usingApiKey);
 		}
 		return { ...auth, endpoint, payload: await response.json() };
 	} finally {
@@ -360,12 +360,12 @@ export async function searchOpenAlex(params: SearchParams): Promise<Record<strin
 		if (!openAlexApiKey()) {
 			return withMeta({
 				error: "openalex_key_required",
-				message: "Set OPENALEX_API_KEY to check OpenAlex rate-limit and usage status.",
+				message: `Set OPENALEX_API_KEY to check OpenAlex rate-limit and usage status. ${OPENALEX_API_KEY_HINT}`,
 				totalCount: 0,
 				returned: 0,
 				results: [],
 				anonymousBudgetWarning: "OpenAlex rate-limit diagnostics require OPENALEX_API_KEY.",
-			}, "rate-limit", query, [], "OPENALEX_API_KEY missing; OpenAlex anonymous/demo budget may reject or throttle requests");
+			}, "rate-limit", query, [], `OPENALEX_API_KEY missing. ${OPENALEX_API_KEY_HINT}`);
 		}
 		const url = endpointPath("/rate-limit");
 		const result = await fetchJson(url);
@@ -509,9 +509,12 @@ export async function searchOpenAlex(params: SearchParams): Promise<Record<strin
 			}],
 		}, "work-detail", query, resolved?.endpoints ?? (result ? [result.endpoint] : []), resolved?.credentialStatus ?? result?.credentialStatus ?? "");
 	}
-	const parsed = parseKeyValueQuery(stripModePrefix(query, /^search(?::|\s+)/i));
+	// search.semantic is OpenAlex's embedding search: it finds conceptual matches
+	// keyword search misses, returns at most 50 rows, and takes no sort.
+	const semantic = /^semantic(?::|\s+)/i.test(query);
+	const parsed = parseKeyValueQuery(stripModePrefix(query, semantic ? /^semantic(?::|\s+)/i : /^search(?::|\s+)/i));
 	const url = endpointPath("/works");
-	if (parsed.text) url.searchParams.set("search", parsed.text);
+	if (parsed.text) url.searchParams.set(semantic ? "search.semantic" : "search", parsed.text);
 	const filters: string[] = [];
 	if (parsed.flags.year_from && parsed.flags.year_to) filters.push(`publication_year:${parsed.flags.year_from}-${parsed.flags.year_to}`);
 	else if (parsed.flags.year_from) filters.push(`publication_year:>${Number(parsed.flags.year_from) - 1}`);
@@ -520,7 +523,8 @@ export async function searchOpenAlex(params: SearchParams): Promise<Record<strin
 	if (booleanValue(parsed.flags.oa ?? parsed.flags.open_access) === true) filters.push("open_access.is_oa:true");
 	if (parsed.flags.source) filters.push(`primary_location.source.id:${normalizeEntityId(parsed.flags.source, "S")}`);
 	if (filters.length) url.searchParams.set("filter", filters.join(","));
-	const sort = sortParam(parsed.flags.sort ?? "relevance", Boolean(parsed.text));
+	if (semantic && !parsed.text) throw new Error("OpenAlex semantic search requires query text.");
+	const sort = semantic ? undefined : sortParam(parsed.flags.sort ?? "relevance", Boolean(parsed.text));
 	if (sort) url.searchParams.set("sort", sort);
 	if (!parsed.text && !filters.length) throw new Error("OpenAlex work search requires text or filters.");
 	url.searchParams.set("per-page", String(limit));
@@ -530,11 +534,11 @@ export async function searchOpenAlex(params: SearchParams): Promise<Record<strin
 	return withMeta({
 		search: parsed.text,
 		filters,
-		sort: parsed.flags.sort ?? "relevance",
+		sort: semantic ? "semantic" : parsed.flags.sort ?? "relevance",
 		totalCount: numberValue(recordValue(payload.meta).count) ?? rows.length,
 		returned: rows.length,
 		recordsTruncated: (numberValue(recordValue(payload.meta).count) ?? rows.length) > rows.length,
-		anonymousBudgetWarning: openAlexApiKey() ? undefined : "Set OPENALEX_API_KEY for real OpenAlex usage; anonymous/demo calls are limited by OpenAlex.",
+		anonymousBudgetWarning: openAlexApiKey() ? undefined : OPENALEX_API_KEY_HINT,
 		results: rows,
-	}, "work-search", query, [result.endpoint], result.credentialStatus);
+	}, semantic ? "work-semantic-search" : "work-search", query, [result.endpoint], result.credentialStatus);
 }

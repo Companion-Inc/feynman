@@ -25,6 +25,7 @@ Everything removed is preserved in the repository at the `archive/pre-deslop-0.3
 ### Paper search
 
 - **Semantic Scholar source:** `feynman_science_database_search` gains `source: "semanticscholar"`. By default it runs a bulk search sorted by citation count and keeps the top results (up to 20), which found 7 of 9 seminal papers in the search benchmark versus 2 for OpenAlex keyword search. `sort: "relevance"` uses relevance search and `sort: "pub_date"` returns newest first. Set `SEMANTIC_SCHOLAR_API_KEY` (free on request) to use your own rate limit; without it, a 429 from the shared anonymous pool is retried once and then reported with instructions.
+- **OpenAlex semantic search and key guidance:** prefix an `openalex` query with `semantic:` to use OpenAlex's embedding search (`search.semantic`), which found the test-time-compute paper at rank 1 where keyword search missed it. `OPENALEX_API_KEY` is still sent as the `api_key` parameter when set; when it is missing, results and 401/403/429 errors now say how to get a free key.
 
 ## v0.3.49 - 2026-09-23
 
