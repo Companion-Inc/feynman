@@ -23,6 +23,7 @@
     "prompts/",
     "logo.mjs",
     "logo.d.mts",
+    "npm-shrinkwrap.json",
     "scripts/check-node-version.mjs",
     "scripts/check-pi-rpc.mjs",
     "scripts/install/",

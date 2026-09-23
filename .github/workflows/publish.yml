@@ -280,7 +280,10 @@ jobs:
           mkdir -p "$consumer"
           (cd "$consumer" && npm init -y >/dev/null)
           npm install --prefix "$consumer" --omit=dev --no-audit "$tarball"
-          npm audit --omit=dev --prefix "$consumer"
+          # npm applies a package's npm-shrinkwrap.json only for registry installs;
+          # rebuild the candidate's shipped tree the way a registry install nests it.
+          npm ci --prefix "$consumer/node_modules/@companion-ai/feynman" --omit=dev --no-audit --no-fund
+          npm audit --omit=dev --prefix "$consumer/node_modules/@companion-ai/feynman"
           bin="$consumer/node_modules/.bin/feynman"
           test "$("$bin" --version | tail -1)" = "$(node -p "require('./package.json').version")"
           "$bin" --help >/dev/null
@@ -344,7 +347,10 @@ jobs:
           mkdir -p "$consumer"
           (cd "$consumer" && npm init -y >/dev/null)
           npm install --prefix "$consumer" --omit=dev --no-audit "$tarball"
-          npm audit --omit=dev --prefix "$consumer"
+          # npm applies a package's npm-shrinkwrap.json only for registry installs;
+          # rebuild the candidate's shipped tree the way a registry install nests it.
+          npm ci --prefix "$consumer/node_modules/@companion-ai/feynman" --omit=dev --no-audit --no-fund
+          npm audit --omit=dev --prefix "$consumer/node_modules/@companion-ai/feynman"
           bin="$consumer/node_modules/.bin/feynman"
           if command -v cygpath >/dev/null 2>&1; then
             bin="$consumer/node_modules/.bin/feynman.cmd"
@@ -368,6 +374,7 @@ jobs:
           if command -v cygpath >/dev/null 2>&1; then
             global_node_modules=$(cygpath -u "$global_node_modules")
           fi
+          npm ci --prefix "$global_node_modules/@companion-ai/feynman" --omit=dev --no-audit --no-fund
           node "$global_node_modules/@companion-ai/feynman/scripts/check-pi-rpc.mjs"
 
   publish-npm:

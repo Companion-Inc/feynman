@@ -37,9 +37,9 @@ test("package release budget is documented and accepts the measured candidate sh
 
 	const result = runBudget({
 		filename: "companion-ai-feynman-0.4.0.tgz",
-		size: 187_124,
-		unpackedSize: 696_241,
-		entryCount: 103,
+		size: 252_462,
+		unpackedSize: 999_085,
+		entryCount: 104,
 	});
 	assert.equal(result.status, 0, result.stderr);
 });
@@ -47,9 +47,9 @@ test("package release budget is documented and accepts the measured candidate sh
 test("package release budget accepts npm pack totalFiles metadata from older npm releases", () => {
 	const result = runBudget({
 		filename: "companion-ai-feynman-0.4.0.tgz",
-		size: 187_124,
-		unpackedSize: 696_241,
-		totalFiles: 103,
+		size: 252_462,
+		unpackedSize: 999_085,
+		totalFiles: 104,
 	});
 	assert.equal(result.status, 0, result.stderr);
 });
@@ -59,13 +59,13 @@ test("package release budget rejects compressed size and file-count regressions"
 		{
 			filename: "companion-ai-feynman-0.4.0.tgz",
 			size: 2_097_153,
-			unpackedSize: 696_241,
-			entryCount: 103,
+			unpackedSize: 999_085,
+			entryCount: 104,
 		},
 		{
 			filename: "companion-ai-feynman-0.4.0.tgz",
-			size: 187_124,
-			unpackedSize: 696_241,
+			size: 252_462,
+			unpackedSize: 999_085,
 			entryCount: 1_001,
 		},
 	]) {

@@ -1,14 +1,12 @@
 node_modules
 .wrangler/
 .env
-.feynman/npm
 .feynman/git
 .feynman/sessions
 .feynman/cache
 .feynman/schedule-prompts.json
 dist
 *.tgz
-.feynman/runtime-workspace.sha256
 outputs/*
 !outputs/.gitkeep
 papers/*

@@ -76,4 +76,4 @@ Pinned versions stay pinned. Core packages are skipped because they ship with Fe
 
 ## Runtime versions
 
-Feynman depends on Pi `^0.87.1`, pi-subagents `^0.71.0`, pi-web-access `^0.31.0`, pi-btw `^0.6.0`, pi-docparser `^4.0.0`, pi-otel `^0.3.0`, and Alpha Hub 0.1.6, and does not modify any of them on disk. LiteParse is held at 2.14.3 through an npm override. Every release is checked by booting the installed CLI in Pi RPC mode on Linux, macOS, and Windows.
+Feynman depends on Pi `^0.87.1`, pi-subagents `^0.71.0`, pi-web-access `^0.31.0`, pi-btw `^0.6.0`, pi-docparser `^4.0.0`, pi-otel `^0.3.0`, and Alpha Hub 0.1.6, and does not modify any of them on disk. LiteParse is held at 2.14.3 and pi-otel's OpenTelemetry dependencies at their patched releases through npm overrides. Feynman publishes an `npm-shrinkwrap.json`, the same way Pi does, so every npm install gets exactly the dependency tree that was tested. Every release is checked by booting the installed CLI in Pi RPC mode on Linux, macOS, and Windows.
