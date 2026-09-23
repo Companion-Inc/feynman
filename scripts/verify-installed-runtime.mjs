@@ -48,8 +48,6 @@ import {
 } from "./lib/pi-web-access-runtime-verifier.mjs";
 
 const EXPECTED_FEYNMAN_COMMANDS = Object.freeze([
-	"capabilities",
-	"commands",
 	"feynman-model",
 	"help",
 	"init",

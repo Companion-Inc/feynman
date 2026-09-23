@@ -262,7 +262,6 @@ test("watch and jobs copy does not promise unshipped scheduler or process packag
 	assert.match(slashDocs, /durable watch or experiment artifacts/i);
 	assert.match(slashDocs, /curated live command list/i);
 	assert.match(commandMetadata, /Live Package Commands/i);
-	assert.match(commandMetadata, /approved live runtime commands/i);
 	assert.match(commandMetadata, /public research tools/i);
 	assert.doesNotMatch(commandMetadata, /\/schedule-prompt|\/ps/i);
 	assert.doesNotMatch(commandMetadata, /all available slash commands|built-in and package commands/i);

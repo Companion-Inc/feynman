@@ -51,7 +51,6 @@ export declare const cliCommandSections: CliCommandSection[];
 export declare const legacyFlags: CliCommand[];
 export declare const topLevelCommandNames: string[];
 
-export declare function isPublicLivePackageCommandName(name: string): boolean;
 export declare function isPublicLivePackageToolName(name: string): boolean;
 export declare function formatSlashUsage(command: { name: string; args?: string }): string;
 export declare function formatCliWorkflowUsage(command: { name: string; args?: string }): string;

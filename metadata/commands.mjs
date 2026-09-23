@@ -35,8 +35,6 @@ export function readPromptSpecs(appRoot) {
 }
 
 export const extensionCommandSpecs = [
-	{ name: "capabilities", args: "", section: "Project & Session", description: "Show installed packages, discovery entrypoints, and runtime capability counts.", publicDocs: true },
-	{ name: "commands", args: "", section: "Project & Session", description: "Browse Feynman workflow, project, and approved live runtime commands.", publicDocs: true },
 	{ name: "help", args: "", section: "Project & Session", description: "Show grouped Feynman commands and prefill the editor with a selected command.", publicDocs: true },
 	{ name: "feynman-model", args: "", section: "Project & Session", description: "Open Feynman's approved research model menu (main + per-subagent overrides).", publicDocs: true },
 	{ name: "init", args: "", section: "Project & Session", description: "Bootstrap AGENTS.md and session-log folders for a research project.", publicDocs: true },
@@ -66,10 +64,6 @@ export const livePackageCommandGroups = [
 		],
 	},
 ];
-
-export function isPublicLivePackageCommandName(name) {
-	return livePackageCommandGroups.some((group) => group.commands.some((command) => command.name === name));
-}
 
 export const livePackageToolGroups = [
 	{
