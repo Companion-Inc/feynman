@@ -318,7 +318,10 @@ function runWorkspaceNpm(args) {
 	// Windows cannot spawn `npm`/`npm.cmd` without a shell. Prefer the
 	// npm-cli.js entry point next to the running Node executable so runtime
 	// workspace installs work on every platform.
-	const invocation = resolveAdjacentNpmCommand();
+	const invocation = process.env.npm_execpath
+		? { command: process.execPath, args: [process.env.npm_execpath] }
+		: resolveAdjacentNpmCommand() ??
+			(process.platform === "win32" ? undefined : { command: "npm", args: [] });
 	if (!invocation) {
 		throw new Error(
 			"npm is required to install the vendored runtime workspace.",
