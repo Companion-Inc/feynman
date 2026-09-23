@@ -11,17 +11,14 @@ Feynman stores user-level configuration and state under `~/.feynman/`. This dire
 
 ```
 ~/.feynman/
-├── agent/
+├── agent/              # Pi agent dir (PI_CODING_AGENT_DIR)
 │   ├── settings.json   # Core model and runtime configuration
 │   ├── auth.json       # Provider auth metadata and API-key references
-│   ├── agents/         # Synced bundled subagent prompts
-│   ├── skills/         # Synced bundled skills
-│   └── themes/         # Synced Feynman/Pi theme files
+│   ├── web-search.json # Web-search routing config
+│   ├── web-search-cache/ # Private one-hour fetched-page cache
+│   └── npm/            # Optional Pi packages installed with `feynman packages install`
 ├── sessions/           # Persisted conversation history
 ├── memory/             # Feynman memory storage
-├── web-search.json     # Web-search routing config
-├── web-search-cache/   # Private one-hour fetched-page cache
-├── npm-global/         # User-scope optional Pi packages
 ├── bin/                # Feynman command shim used by child agents
 └── .state/             # Bootstrap and telemetry state
 ```
@@ -73,7 +70,7 @@ The `model set` command accepts both `provider/model` and `provider:model` forma
 
 ## Web search configuration
 
-Research workflows use `~/.feynman/web-search.json` for web-search routing. The default `auto` route uses configured API-backed providers, including Exa, Jina, Perplexity, and Gemini API. It does not read Chromium or Chrome cookies, so it should not trigger a macOS Keychain prompt.
+Research workflows use `~/.feynman/agent/web-search.json` for web-search routing. The default `auto` route uses configured API-backed providers, including Exa, Jina, Perplexity, and Gemini API. It does not read Chromium or Chrome cookies, so it should not trigger a macOS Keychain prompt.
 
 Example:
 
@@ -105,7 +102,7 @@ PDF extraction uses Datalab when its key is present, then Gemini, then local PDF
 
 `openaiSearchProviders` sets the ordered Pi provider IDs considered for OpenAI-compatible `web_search`; it defaults to `["openai-codex", "openai"]`.
 
-Full fetched pages live in `~/.feynman/web-search-cache/` for one hour. Session files store bounded metadata and a cache reference, not page bodies. If `FEYNMAN_WEB_SEARCH_CONFIG` names another config file, Feynman places `web-search-cache/` beside that file.
+Full fetched pages live in `~/.feynman/agent/web-search-cache/` for one hour. Session files store bounded metadata and a cache reference, not page bodies.
 
 `tools`, `commands`, `image`, and `pdf` entries can disable individual web features. Feynman's stored-results command key is `web-results`, while `/search` remains research-session search. `summaryGenerationDeadlineMs` defaults to 30 seconds and caps one summary attempt at 10 minutes.
 
@@ -170,8 +167,7 @@ Feynman respects the following environment variables, which take precedence over
 | `FEYNMAN_POSTHOG_PROJECT_ID` | Override the PostHog project ID used in telemetry metadata |
 | `FEYNMAN_POSTHOG_KEY` | Override the PostHog project token |
 | `PI_OTEL_CAPTURE_CONTENT` | Controls Pi runtime span content capture. Feynman defaults this to `metadata_only` |
-| `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT` | Pi runtime trace endpoint. Feynman sets this to PostHog AI Observability by default |
-| `OTEL_EXPORTER_OTLP_LOGS_ENDPOINT` | Feynman CLI log endpoint. Feynman sets this to PostHog Logs by default |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | Pi runtime OTLP base endpoint. Feynman sets this to PostHog's `/i` ingest path by default |
 
 ## Observability
 
@@ -181,9 +177,9 @@ Feynman sends three bounded telemetry streams to the configured PostHog project 
 - CLI logs through PostHog Logs at `/i/v1/logs`
 - OpenTelemetry spans for the CLI and Pi runtime
 
-The CLI's generic spans use PostHog distributed tracing at `/i/v1/traces`; query them in HogQL from `posthog.trace_spans`. The Pi runtime's LLM/tool spans use PostHog AI Observability at `/i/v0/ai/otel`; inspect them in the AI Observability traces UI or query their metadata as `$ai_*` events in `events`. Large AI properties live in `posthog.ai_events` during PostHog's AI-event retention window. Do not query bare `traces`, `spans`, or `trace_spans` table names; PostHog registers distributed trace spans as `posthog.trace_spans`.
+The CLI's spans and the Pi runtime's session, model-call, turn, and tool spans both use PostHog distributed tracing at `/i/v1/traces`; query them in HogQL from `posthog.trace_spans`. Pi spans come from the bundled `pi-otel` package, which reads only the base `OTEL_EXPORTER_OTLP_ENDPOINT` and appends `/v1/traces`, so they do not reach PostHog AI Observability at `/i/v0/ai/otel`. Do not query bare `traces`, `spans`, or `trace_spans` table names; PostHog registers distributed trace spans as `posthog.trace_spans`.
 
-Feynman sets `PI_OTEL_CAPTURE_CONTENT=metadata_only`, so Pi spans carry model, tool, timing, count, and status metadata without prompt text or tool payload bodies. The CLI makes one attempt for each analytics, log, or trace send; the first network or ingest failure disables further PostHog sends for that process without printing into command output. Pi performs a silent HTTP preflight and does not start its OTLP exporter when Feynman's collector is blocked. Set `FEYNMAN_DEBUG=1` to show the single CLI diagnostic notice. Set `FEYNMAN_TELEMETRY=off` to disable analytics, logs, and traces explicitly; Feynman also clears inherited OTLP/PostHog environment variables before launching Pi in that mode.
+Feynman sets `PI_OTEL_CAPTURE_CONTENT=metadata_only`, so Pi spans carry model, tool, timing, count, and status metadata without prompt text or tool payload bodies. The CLI makes one attempt for each analytics, log, or trace send; the first network or ingest failure disables further PostHog sends for that process without printing into command output. Pi performs a silent HTTP preflight and does not start its OTLP exporter when Feynman's collector is blocked. Set `FEYNMAN_DEBUG=1` to show the single CLI diagnostic notice. Set `FEYNMAN_TELEMETRY=off` to disable analytics, logs, and traces explicitly; Feynman also clears inherited OTLP/PostHog environment variables and sets `PI_OTEL_DISABLED=1` before launching Pi in that mode.
 
 ## Session storage
 
@@ -191,6 +187,16 @@ Each conversation is persisted as a JSON file in `~/.feynman/sessions/`. To star
 
 ```bash
 feynman --new-session
+```
+
+An interactive `feynman` launch continues the most recent session for the current project. Pi's own session flags pass through unchanged:
+
+```bash
+feynman --resume                      # pick a previous session
+feynman --session <path|id>           # open a specific session
+feynman --fork <path|id>              # fork a session into a new one
+feynman --no-session                  # in-memory session, not persisted
+feynman --export <session.jsonl> [out.html]   # export a session to HTML
 ```
 
 To point sessions at a different directory (useful for per-project session isolation):

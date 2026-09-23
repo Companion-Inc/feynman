@@ -33,7 +33,7 @@ The bundled `pi-web-access` package can choose one provider, follow a configured
 
 The default path does not read Chromium or Chrome cookies and does not request macOS Keychain access. With no explicit provider or custom `searchRouting`, `auto` tries configured SearXNG first. When the active model uses `openai-codex`, Codex-backed OpenAI search comes next; otherwise Exa comes before OpenAI. Brave, Parallel, TinyFish, Search1API, Searchinfinity, Querit, Tavily, Jina, SERPdive, Kagi, Bocha, Ollama, Perplexity, and Gemini remain later fallbacks.
 
-Configure an explicit API key for Exa, Perplexity, TinyFish, Jina, or Gemini in `~/.feynman/web-search.json` before running source-heavy workflows like `/deepresearch`. Exa's zero-config MCP fallback remains available without a key.
+Configure an explicit API key for Exa, Perplexity, TinyFish, Jina, or Gemini in `~/.feynman/agent/web-search.json` before running source-heavy workflows like `/deepresearch`. Exa's zero-config MCP fallback remains available without a key.
 
 ## Configuration
 
@@ -43,7 +43,7 @@ Check the current search configuration:
 feynman search status
 ```
 
-Edit `~/.feynman/web-search.json` to configure the backend:
+Edit `~/.feynman/agent/web-search.json` to configure the backend:
 
 ```json
 {
@@ -133,7 +133,7 @@ The web search tool supports several capabilities that the researcher agent leve
 - **Passage lookup** -- Use `get_search_content` with `findText` and exact, case-insensitive, or fuzzy `findMode` matching to locate a passage in stored content without paging through the entire page
 - **Clean continuation** -- Every single-page fetch reports its stored response ID, and long pages also report character, byte, line, and next-offset details
 
-Fetched page bodies live for one hour in `~/.feynman/web-search-cache/`, beside `web-search.json`. The cache keeps at most 128 entries and 128 MiB, evicting the oldest entries first. On macOS and Linux, Feynman keeps its directory at mode `0700` and files at `0600`. Session JSONL stores only bounded URL metadata and a private cache reference. Custom `FEYNMAN_WEB_SEARCH_CONFIG` paths move the cache beside that exact file.
+Fetched page bodies live for one hour in `~/.feynman/agent/web-search-cache/`, beside `web-search.json`. The cache keeps at most 128 entries and 128 MiB, evicting the oldest entries first. On macOS and Linux, Feynman keeps its directory at mode `0700` and files at `0600`. Session JSONL stores only bounded URL metadata and a private cache reference.
 
 For `get_search_content`, `offset` and `limit` are ignored when `findText` is supplied, which keeps bridge-injected pagination defaults from blocking passage lookup. `findMode` requires `findText`. Use one of `url`, `urlIndex`, `query`, or `queryIndex` to select stored content when the response contains multiple items.
 

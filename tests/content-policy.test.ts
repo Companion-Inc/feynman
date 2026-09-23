@@ -343,14 +343,13 @@ test("observability docs name the correct PostHog trace and AI event stores", ()
 	const websitePackage = readFileSync(join(repoRoot, "website", "package.json"), "utf8");
 	const combined = `${readme}\n${configurationDocs}\n${packageStack}\n${telemetrySource}\n${websiteLayout}\n${websitePackage}`;
 
-	assert.match(readme, /PostHog analytics, logs, distributed traces, and Pi AI runtime traces/i);
+	assert.match(readme, /PostHog analytics, logs, and distributed traces for the CLI and the Pi runtime/i);
 	assert.match(configurationDocs, /posthog\.trace_spans/);
-	assert.match(configurationDocs, /posthog\.ai_events/);
 	assert.match(configurationDocs, /Do not query bare `traces`, `spans`, or `trace_spans`/);
 	assert.match(configurationDocs, /\/i\/v1\/traces/);
 	assert.match(configurationDocs, /\/i\/v0\/ai\/otel/);
-	assert.match(packageStack, /`\$ai_\*` events/);
-	assert.match(telemetrySource, /gen_ai\.\* metadata/);
+	assert.match(packageStack, /posthog\.trace_spans/);
+	assert.match(telemetrySource, /reads only the base OTLP/);
 	assert.doesNotMatch(combined, /queryable from `(?:traces|spans|trace_spans)`/i);
 	assert.doesNotMatch(combined, /@vercel\/analytics|<Analytics/i);
 });

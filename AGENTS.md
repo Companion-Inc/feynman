@@ -49,7 +49,7 @@ Before adding a command, prompt, tool, extension, dashboard, document page, or r
 
 - Feynman wraps Pi. Before changing telemetry, tools, extensions, runtime package setup, model/prompt handoff, or child-process env, read the installed Pi package version, `node_modules/@earendil-works/pi-coding-agent/docs/`, and the matching runtime source.
 - Before writing a local Pi extension or tool shim, search Pi package docs plus npm/GitHub for an existing Pi extension or plugin; use the existing package, patch it, or record why it fails before adding a Feynman-owned implementation.
-- Treat parent CLI wiring as incomplete until the actual Pi launch path is verified: check `src/pi/launch.ts`, `scripts/prepare-runtime-workspace.mjs`, package `pi.extensions`, and every extension file the launch command passes.
+- Treat parent CLI wiring as incomplete until the actual Pi launch path is verified: check `src/pi/launch.ts`, `src/pi/runtime.ts`, the package `pi` manifest, the `packages` entries `ensureFeynmanSettings` writes, and every extension those packages load. `node scripts/check-pi-rpc.mjs` boots the CLI in RPC mode and checks what loaded.
 - For observability changes, verify session/agent/tool lifecycle coverage inside Pi itself and keep prompts, tool arguments, paper text, and file paths out of emitted telemetry.
 
 ## Docs parity

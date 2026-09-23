@@ -141,7 +141,7 @@ export const cliCommandSections = [
 			{ usage: "feynman search status", description: "Show Pi web-access status and config path." },
 			{ usage: "feynman search set <provider> [api-key]", description: "Set the web search provider and optionally save its API key." },
 			{ usage: "feynman search clear", description: "Reset web search provider to auto while preserving API keys." },
-			{ usage: "feynman update [package]", description: "Update installed packages, or one package. Extensions update with their packages; there is no separate --extensions flag." },
+			{ usage: "feynman update [package]", description: "Update optional Pi packages you installed, or one of them. Core packages update with Feynman." },
 		],
 	},
 ];
@@ -157,6 +157,12 @@ export const legacyFlags = [
 	{ usage: "--cwd <path>", description: "Set the working directory for tools." },
 	{ usage: "--session-dir <path>", description: "Set the session storage directory." },
 	{ usage: "--new-session", description: "Start a new persisted session." },
+	{ usage: "--continue, -c", description: "Continue the most recent session (default for an interactive launch)." },
+	{ usage: "--resume, -r", description: "Pick a previous session to resume." },
+	{ usage: "--session <path|id>", description: "Open a specific session." },
+	{ usage: "--fork <path|id>", description: "Fork a session into a new one." },
+	{ usage: "--no-session", description: "Use an in-memory session that is not persisted." },
+	{ usage: "--export <session.jsonl> [out.html]", description: "Export a session file to HTML and exit." },
 	{ usage: "--doctor", description: "Alias for `feynman doctor`." },
 	{ usage: "--setup-preview", description: "Alias for `feynman setup preview`." },
 ];

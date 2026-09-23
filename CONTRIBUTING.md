@@ -38,7 +38,10 @@ npm install
 npm test
 npm run typecheck
 npm run build
+node scripts/check-pi-rpc.mjs
 ```
+
+`check-pi-rpc.mjs` boots the built CLI in Pi RPC mode with a throwaway home and checks that stock Pi loaded Feynman's prompts, skills, and extension plus the bundled Pi packages with empty stderr. Feynman does not patch Pi or its packages; fix Feynman's own code, or report the upstream bug, instead of editing `node_modules`.
 
 5. If you changed the docs site, also validate the website:
 

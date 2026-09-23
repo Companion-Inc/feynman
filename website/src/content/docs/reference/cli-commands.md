@@ -43,7 +43,7 @@ These commands manage your model provider configuration. The `model set` command
 | `feynman alpha code <github-url> [path]` | Inspect a paper repository |
 | `feynman alpha annotate ...` | Read, write, list, or clear local paper notes |
 
-AlphaXiv authentication enables Feynman to search and retrieve papers, access discussion threads, and pull citation metadata. Use `feynman alpha ...` for shell access so Feynman runs its bundled patched alphaXiv client.
+AlphaXiv authentication enables Feynman to search and retrieve papers, access discussion threads, and pull citation metadata. Use `feynman alpha ...` for shell access so Feynman runs its bundled alphaXiv client.
 
 ## Package management
 
@@ -51,7 +51,7 @@ AlphaXiv authentication enables Feynman to search and retrieve papers, access di
 | --- | --- |
 | `feynman packages list` | List supported optional research packages and their install status |
 | `feynman packages install <preset>` | Install an optional package preset |
-| `feynman update [package]` | Update installed packages, or a specific package by name |
+| `feynman update [package]` | Update optional Pi packages you installed, or one of them; core packages update with Feynman |
 
 Use `feynman packages list` to see which optional research-continuity packages are available on your platform and which are already installed. The default install keeps only the research essentials in core, including `/btw` side conversations for steering while the main research agent is busy. Install optional presets one by one when they directly support an active research workflow.
 
@@ -97,6 +97,12 @@ These are equivalent to launching the REPL and typing the corresponding slash co
 | `--cwd <path>` | Set the working directory for all file operations |
 | `--session-dir <path>` | Set the session storage directory |
 | `--new-session` | Start a new persisted session |
+| `--continue`, `-c` | Continue the most recent session (the default for an interactive launch) |
+| `--resume`, `-r` | Pick a previous session to resume |
+| `--session <path\|id>` | Open a specific session |
+| `--fork <path\|id>` | Fork a session into a new one |
+| `--no-session` | Use an in-memory session that is not persisted |
+| `--export <session.jsonl> [out.html]` | Export a session file to HTML and exit |
 | `--alpha-login` | Sign in to alphaXiv and exit |
 | `--alpha-logout` | Clear alphaXiv auth and exit |
 | `--alpha-status` | Show alphaXiv auth status and exit |
