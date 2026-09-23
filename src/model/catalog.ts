@@ -8,8 +8,6 @@ type ModelRecord = {
 	provider: string;
 	id: string;
 	name?: string;
-	// Pi catalog input price per million tokens; ranks tiers of one release.
-	cost?: number;
 };
 
 const PRO_CLASS_MODEL_PATTERN = /(?:^|[-_.:/])pro(?:$|[-_.:/])/i;
@@ -83,10 +81,6 @@ function exactResearchModel(spec: string, reason: string): ResearchModelPreferen
 
 const RESEARCH_MODEL_FAMILY_PREFERENCES: ResearchModelPreference[] = [
 	{
-		matches: (model) => model.provider === "anthropic" && /^claude-fable-\d+(?:-\d+)*$/i.test(model.id),
-		reason: "newest authenticated Claude Fable model for source-heavy research work",
-	},
-	{
 		matches: (model) => model.provider === "anthropic" && /^claude-opus-\d+(?:-\d+)*$/i.test(model.id),
 		reason: "newest authenticated Claude Opus model for source-heavy research work",
 	},
@@ -101,10 +95,6 @@ const RESEARCH_MODEL_FAMILY_PREFERENCES: ResearchModelPreference[] = [
 	{
 		matches: (model) => model.provider === "openai-codex" && /^gpt-\d+(?:\.\d+)*(?:-.+)?$/i.test(model.id),
 		reason: "newest authenticated GPT model exposed through OpenAI Codex",
-	},
-	{
-		matches: (model) => model.provider === "opencode" && /^claude-fable-\d+(?:-\d+)*$/i.test(model.id),
-		reason: "newest OpenCode Zen Claude Fable model for source-heavy research work",
 	},
 	{
 		matches: (model) => model.provider === "opencode" && /^claude-opus-\d+(?:-\d+)*$/i.test(model.id),
@@ -165,8 +155,14 @@ function modelSpec(model: ModelRecord): string {
 	return `${model.provider}/${model.id}`;
 }
 
+// Premium tiers stay selectable with --model or /model but are never picked
+// automatically: Pro-class models and Claude Fable (priced above Opus).
+function isPremiumModel(model: ModelRecord): boolean {
+	return isProClassModel(model) || /^claude-fable-/i.test(model.id);
+}
+
 export function choosePreferredModelRecord<T extends ModelRecord>(available: T[]): T | undefined {
-	return available.filter((model) => !isProClassModel(model)).slice().sort(compareByResearchPreference)[0];
+	return available.filter((model) => !isPremiumModel(model)).slice().sort(compareByResearchPreference)[0];
 }
 
 function compareByResearchPreference(left: ModelRecord, right: ModelRecord): number {
@@ -240,26 +236,20 @@ function compareCurrentModelFamily(left: ModelRecord, right: ModelRecord): numbe
 		return 0;
 	}
 
-	// Newest release first; within one release, the untagged flagship before
-	// chat/codex/mini variants, then the pricier tier (GPT-6 Astra > Sol > Luna).
-	const versionComparison = compareVersionDesc(leftPreference.version, rightPreference.version);
-	if (versionComparison !== 0) {
-		return versionComparison;
-	}
-
 	if (leftPreference.qualityRank !== rightPreference.qualityRank) {
 		return leftPreference.qualityRank - rightPreference.qualityRank;
 	}
 
-	if ((left.cost ?? 0) !== (right.cost ?? 0)) {
-		return (right.cost ?? 0) - (left.cost ?? 0);
+	const versionComparison = compareVersionDesc(leftPreference.version, rightPreference.version);
+	if (versionComparison !== 0) {
+		return versionComparison;
 	}
 
 	return modelSpec(left).localeCompare(modelSpec(right));
 }
 
 function currentFamilyPreference(model: ModelRecord): CurrentFamilyPreference | undefined {
-	const anthropic = /^claude-(fable|opus|sonnet)-(\d+(?:-\d+)*)$/i.exec(model.id);
+	const anthropic = /^claude-(opus|sonnet)-(\d+(?:-\d+)*)$/i.exec(model.id);
 	if (anthropic) {
 		const family = anthropic[1]!.toLowerCase();
 		const parsedVersion = parseClaudeVersion(anthropic[2]!);
@@ -267,9 +257,9 @@ function currentFamilyPreference(model: ModelRecord): CurrentFamilyPreference | 
 			family: `${model.provider}/claude-${family}`,
 			version: parsedVersion.version,
 			qualityRank: parsedVersion.qualityRank,
-			reason: family === "sonnet"
-				? "newest authenticated Claude Sonnet model for iterative research work"
-				: `newest authenticated Claude ${family === "fable" ? "Fable" : "Opus"} model for source-heavy research work`,
+			reason: family === "opus"
+				? "newest authenticated Claude Opus model for source-heavy research work"
+				: "newest authenticated Claude Sonnet model for iterative research work",
 		};
 	}
 
@@ -324,7 +314,11 @@ function parseClaudeVersion(rawVersion: string): { version: number[]; qualityRan
 }
 
 function openAiGptQualityRank(suffix: string | undefined): number {
-	if (!suffix) return 0;
+	// Terra is OpenAI's standard tier (pi-web-access auto-selects the newest
+	// terra model too); Sol/Astra cost more and Luna is the small tier.
+	if (suffix === "terra") return 0;
+	if (!suffix) return 1;
+	if (suffix === "luna") return 9;
 	if (suffix === "chat-latest") return 2;
 	if (suffix === "codex-max") return 3;
 	if (suffix === "codex") return 4;
@@ -383,7 +377,7 @@ export async function getAuthenticatedModelRecords(authPath: string): Promise<Mo
 	const modelRuntime = await createModelRuntime(authPath);
 	return (await modelRuntime.getAvailable())
 		.filter((model) => !expiredOAuthProviders.has(model.provider))
-		.map((model) => ({ provider: model.provider, id: model.id, name: model.name, cost: model.cost?.input }));
+		.map((model) => ({ provider: model.provider, id: model.id, name: model.name }));
 }
 
 export async function getAvailableModelRecords(authPath: string): Promise<ModelRecord[]> {
@@ -394,7 +388,7 @@ export async function getSupportedModelRecords(authPath: string): Promise<ModelR
 	const modelRuntime = await createModelRuntime(authPath);
 	return modelRuntime
 		.getModels()
-		.map((model) => ({ provider: model.provider, id: model.id, name: model.name, cost: model.cost?.input }));
+		.map((model) => ({ provider: model.provider, id: model.id, name: model.name }));
 }
 
 function readExpiredOAuthProviders(authPath: string): Set<string> {

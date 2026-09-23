@@ -71,30 +71,24 @@ function asModelSpec(model: { provider: string; id: string }): string {
 	return `${model.provider}/${model.id}`;
 }
 
-test("choosePreferredModelRecord picks the newest release and flagship tier", () => {
-	const record = (spec: string, cost: number) => {
-		const [provider, id] = spec.split("/") as [string, string];
-		return { provider, id, cost };
-	};
-	const pick = (models: ReturnType<typeof record>[]) => {
-		const chosen = choosePreferredModelRecord(models);
+test("choosePreferredModelRecord picks newest Opus and the standard GPT tier, never premium tiers", () => {
+	const pick = (specs: string[]) => {
+		const chosen = choosePreferredModelRecord(specs.map((spec) => {
+			const [provider, id] = spec.split("/") as [string, string];
+			return { provider, id };
+		}));
 		return chosen && `${chosen.provider}/${chosen.id}`;
 	};
-	const catalog = [
-		record("openai/gpt-5.5", 5),
-		record("openai/gpt-6-sol", 2),
-		record("anthropic/claude-opus-4-8", 5),
-		record("anthropic/claude-opus-5-5", 4),
-		record("anthropic/claude-fable-5-1", 10),
-	];
 
-	assert.equal(pick(catalog), "anthropic/claude-fable-5-1");
-	assert.equal(pick(catalog.filter((model) => model.id !== "claude-fable-5-1")), "anthropic/claude-opus-5-5");
-	assert.equal(pick(catalog.filter((model) => model.provider === "openai")), "openai/gpt-6-sol");
 	assert.equal(
-		pick([record("openai/gpt-6-luna", 0.1), record("openai/gpt-6-sol", 2), record("openai/gpt-6-astra", 10), record("openai/gpt-5.5-pro", 30)]),
-		"openai/gpt-6-astra",
+		pick(["openai/gpt-5.5", "openai/gpt-6-sol", "anthropic/claude-opus-4-8", "anthropic/claude-opus-5-5", "anthropic/claude-fable-5-1"]),
+		"anthropic/claude-opus-5-5",
 	);
+	assert.equal(
+		pick(["openai/gpt-5.5", "openai/gpt-5.5-pro", "openai/gpt-5.6-luna", "openai/gpt-5.6-sol", "openai/gpt-5.6-terra", "openai/gpt-6-astra", "openai/gpt-6-sol", "openai/gpt-6-luna"]),
+		"openai/gpt-5.6-terra",
+	);
+	assert.equal(pick(["anthropic/claude-fable-5-1"]), undefined);
 });
 
 test("chooseRecommendedModel prefers the strongest authenticated research model", async () => {
@@ -105,7 +99,7 @@ test("chooseRecommendedModel prefers the strongest authenticated research model"
 
 	const recommendation = await chooseRecommendedModel(authPath);
 
-	assert.equal(recommendation?.spec, "anthropic/claude-fable-5-1");
+	assert.equal(recommendation?.spec, "anthropic/claude-opus-5-5");
 });
 
 test("chooseRecommendedModel prefers the newest OpenAI GPT exposed by Pi", async () => {
@@ -115,8 +109,8 @@ test("chooseRecommendedModel prefers the newest OpenAI GPT exposed by Pi", async
 
 	const recommendation = await chooseRecommendedModel(authPath);
 
-	// Pi 0.87.1 catalogs GPT-6 Astra, Sol, and Luna; Astra is the flagship tier.
-	assert.equal(recommendation?.spec, "openai/gpt-6-astra");
+	// Pi 0.87.1 catalogs GPT-5.6 and GPT-6 tiers; Terra is the standard one.
+	assert.equal(recommendation?.spec, "openai/gpt-5.6-terra");
 	assert.match(recommendation?.reason ?? "", /newest authenticated OpenAI GPT model/);
 });
 
@@ -261,7 +255,7 @@ test("chooseRecommendedModel prefers OpenCode Zen Claude when OpenCode is the au
 
 		const recommendation = await chooseRecommendedModel(authPath);
 
-		assert.equal(recommendation?.spec, "opencode/claude-fable-5-1");
+		assert.equal(recommendation?.spec, "opencode/claude-opus-5-5");
 	});
 });
 
