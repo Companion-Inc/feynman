@@ -151,13 +151,15 @@ test("Pages config is minimal and generated Wrangler state is ignored at either 
 	}
 });
 
-test("only successful same-repository main pushes or main manual dispatches qualify", () => {
+test("only successful same-repository main pushes, main manual dispatches, or the main schedule qualify", () => {
 	assert.deepEqual(workflow.on, {
 		workflow_run: { workflows: ["Publish and Release"], types: ["completed"], branches: ["main"] },
 		workflow_dispatch: null,
+		schedule: [{ cron: "17 * * * *" }],
 	});
 	assert.equal(allowed(trustedEvent()), true);
 	assert.equal(allowed({ ...trustedEvent(), event_name: "workflow_dispatch", event: {} }), true);
+	assert.equal(allowed({ ...trustedEvent(), event_name: "schedule", event: {} }), true);
 	for (const change of [
 		{ conclusion: "failure" }, { conclusion: "cancelled" }, { conclusion: null },
 		{ event: "pull_request" }, { event: "pull_request_target" }, { event: "workflow_dispatch" },
@@ -177,6 +179,7 @@ test("only successful same-repository main pushes or main manual dispatches qual
 		{ event_name: "pull_request_target" }, { event: {} },
 		{ event_name: "workflow_dispatch", ref: "refs/heads/feature" },
 		{ event_name: "workflow_dispatch", ref: "refs/tags/main" },
+		{ event_name: "schedule", ref: "refs/heads/feature" },
 	]) {
 		assert.equal(allowed({ ...trustedEvent(), ...change }), false, JSON.stringify(change));
 	}
@@ -186,6 +189,7 @@ test("initiating SHA is validated before API access without falling back to the 
 	const name = "Validate initiating event SHA";
 	assert.equal(runStep(name, { GITHUB_EVENT_NAME: "workflow_run", RELEASE_SHA: sha, MANUAL_SHA: newerSha }).output, `sha=${sha}\n`);
 	assert.equal(runStep(name, { GITHUB_EVENT_NAME: "workflow_dispatch", MANUAL_SHA: newerSha }).output, `sha=${newerSha}\n`);
+	assert.equal(runStep(name, { GITHUB_EVENT_NAME: "schedule", MANUAL_SHA: newerSha }).output, `sha=${newerSha}\n`);
 	for (const RELEASE_SHA of ["", "main", "a".repeat(39), `${sha}\nevil`]) {
 		assert.notEqual(runStep(name, { GITHUB_EVENT_NAME: "workflow_run", RELEASE_SHA, MANUAL_SHA: newerSha }).status, 0);
 	}
@@ -297,8 +301,8 @@ test("delayed A replaces pending B but the surviving serialized invocation deplo
 	assert.equal(activeGuard.status, 0);
 	assert.equal(activeGuard.output, "");
 
-	// Both the surviving automatic invocation and a manual recovery reconcile B.
-	for (const event of [pending.event, "workflow_dispatch"]) {
+	// The surviving automatic invocation, a manual recovery, and the hourly schedule all reconcile B.
+	for (const event of [pending.event, "workflow_dispatch", "schedule"]) {
 		assert.equal(allowed({ ...trustedEvent(), event_name: event }), true);
 		const initiating = runStep("Validate initiating event SHA", {
 			GITHUB_EVENT_NAME: event, RELEASE_SHA: pending.initiatingSha, MANUAL_SHA: sha,
