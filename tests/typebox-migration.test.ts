@@ -9,14 +9,15 @@ import { registerAlphaTools } from "../extensions/research-tools/alpha.js";
 
 test("Pi runtime validation omits null alpha_get_paper sections without losing optional arrays", () => {
 	const tools = new Map<string, Tool>();
-	registerAlphaTools({
-		registerTool(tool) {
-			tools.set(tool.name, tool);
+	const fakePi = {
+		registerTool(tool: Parameters<ExtensionAPI["registerTool"]>[0]) {
+			tools.set(tool.name, tool as unknown as Tool);
 		},
 		on() {
 			return () => {};
 		},
-	} as ExtensionAPI);
+	};
+	registerAlphaTools(fakePi as unknown as ExtensionAPI);
 
 	const tool = tools.get("alpha_get_paper");
 	assert.ok(tool);
