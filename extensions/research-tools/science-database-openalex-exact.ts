@@ -498,7 +498,6 @@ async function exactWorkSearch(query: string, commandQuery: string): Promise<Rec
 		n_records_returned: rows.length,
 		records_truncated: total > rows.length,
 		records: rows,
-		results: rows,
 	}, "openalex_search_works", query, [result.endpoint], result.credentialStatus);
 }
 
@@ -543,7 +542,6 @@ async function exactCitations(query: string, commandQuery: string): Promise<Reco
 		n_records_returned: rows.length,
 		records_truncated: total > rows.length,
 		records: rows,
-		results: rows,
 	}, "openalex_citations", query, [...resolved.endpoints, result.endpoint], result.credentialStatus);
 }
 
@@ -580,7 +578,6 @@ async function exactReferences(query: string, commandQuery: string): Promise<Rec
 		references_not_hydrated: selected.filter((id) => !got.has(id)),
 		reference_ids: referenceIds,
 		records: rows,
-		results: rows,
 	}, "openalex_references", query, endpoints, credentialStatus);
 }
 
@@ -601,7 +598,6 @@ async function exactSearchAuthors(query: string, commandQuery: string): Promise<
 		n_records_returned: rows.length,
 		records_truncated: total > rows.length,
 		records: rows,
-		results: rows,
 	}, "openalex_search_authors", query, [result.endpoint], result.credentialStatus);
 }
 
@@ -642,7 +638,6 @@ async function exactVenueInfo(query: string, commandQuery: string): Promise<Reco
 			...row,
 			n_records_returned: 1,
 			records: [row],
-			results: [row],
 		}, "openalex_venue_info", query, [result.endpoint], result.credentialStatus);
 	}
 	const maxRecords = safeExactLimit(numberValue(parsed.flags.max_records), 10);
@@ -659,7 +654,6 @@ async function exactVenueInfo(query: string, commandQuery: string): Promise<Reco
 		n_records_returned: rows.length,
 		records_truncated: total > rows.length,
 		records: rows,
-		results: rows,
 	}, "openalex_venue_info", query, [result.endpoint], result.credentialStatus);
 }
 
