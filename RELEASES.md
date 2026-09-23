@@ -13,6 +13,13 @@ GitHub release notes are generated from the matching `## vX.Y.Z` section in this
 - Feynman is back at `Companion-Inc/feynman` on GitHub and `@companion-ai/feynman` on npm. Installers, skills downloads, self-update checks, package metadata, research-source request identities, and docs use the Companion locations directly.
 - `@companion-ai/feynman` 0.3.47 installs now see this update through `feynman`'s normal update notice. If you installed the interim `@advaitpaliwal/feynman` 0.3.48 package, migrate once with `npm uninstall -g @advaitpaliwal/feynman`, then `npm install -g @companion-ai/feynman`. The command remains `feynman`, and native install commands are unchanged.
 
+### Startup and Windows reliability
+
+- `feynman --version` answers immediately instead of first verifying the whole bundled research runtime, and healthy launches skip one redundant full runtime validation pass.
+- Fixed macOS and Linux standalone bundles whose `node_modules/.bin` command links pointed at the build machine, which also blocked this release.
+- Windows: patching the bundled proxy runtime copies real files instead of recreating symlinks, so commands no longer fail with EPERM on non-elevated accounts; runtime workspace setup finds npm without a shell; transient antivirus locks on freshly written esbuild binaries are retried.
+- Removed Feynman's own `/thinking` command; Pi's built-in `/thinking` now handles thinking levels without a startup conflict warning.
+
 ### Research runtime refresh
 
 - Updated the coordinated Pi runtime to 0.85.1, retaining Feynman's provider identity checks, research-session continuity, bounded compaction, private state files, and tool/telemetry safeguards.
