@@ -232,11 +232,11 @@ export function registerScienceDatabaseTools(pi: ExtensionAPI): void {
 		name: "feynman_science_database_search",
 		label: "Science Database Search",
 		description:
-			"Search read-only scholarly literature databases: OpenAlex, arXiv, PubMed (search, metadata, ID conversion, related articles, citation matching, copyright, PMC full-text routing), Europe PMC (metadata and open-access full-text sections), bioRxiv/medRxiv preprints, and Crossref DOI metadata. Returns stable identifiers, bounded section snippets when requested, source URLs, and endpoint provenance.",
-		promptSnippet: "Search OpenAlex, arXiv, PubMed, Europe PMC metadata and open-access full-text sections, bioRxiv/medRxiv, or Crossref for source-backed literature evidence.",
+			"Search read-only scholarly literature databases: OpenAlex, arXiv ID lookup, PubMed (search, metadata, ID conversion, related articles, citation matching, copyright, PMC full-text routing), Europe PMC (metadata and open-access full-text sections), bioRxiv/medRxiv preprints, and Crossref DOI metadata. Returns stable identifiers, bounded section snippets when requested, source URLs, and endpoint provenance.",
+		promptSnippet: "Search OpenAlex, PubMed, Europe PMC metadata and open-access full-text sections, bioRxiv/medRxiv, or Crossref, or look up arXiv IDs, for source-backed literature evidence.",
 		promptGuidelines: [
-			"Use feynman_science_database_search to find and pin down papers before making source-backed claims: OpenAlex for cross-discipline works, citation graphs, authors, venues, and OA status; arXiv for e-print metadata; PubMed for biomedical search, PMID metadata, PMID/PMCID/DOI conversion, related articles, citation matching, and copyright checks; Europe PMC for open-access full-text section snippets; bioRxiv/medRxiv for preprint DOI lookup, date/category windows, and published-preprint links; Crossref for DOI metadata.",
-			"Exact literature modes: `openalex_search_works`, `openalex_get_work`, `openalex_citations`, `openalex_references`, `openalex_search_authors`, `openalex_get_author`, `openalex_venue_info`, `arxiv_search`, and `arxiv_get_papers`. PubMed accepts `pmid:`, `convert:`, `related:`, `fulltext:`, `copyright:`, and `citation` prefixes; Europe PMC accepts `fulltext:`/`sections:` with a PMCID or PMID.",
+			"Use feynman_science_database_search to find and pin down papers before making source-backed claims: OpenAlex for cross-discipline works, citation graphs, authors, venues, and OA status; arXiv only to look up known arXiv IDs (it has no topic search); PubMed for biomedical search, PMID metadata, PMID/PMCID/DOI conversion, related articles, citation matching, and copyright checks; Europe PMC for open-access full-text section snippets; bioRxiv/medRxiv for preprint DOI lookup, date/category windows, and published-preprint links; Crossref for DOI metadata.",
+			"Exact literature modes: `openalex_search_works`, `openalex_get_work`, `openalex_citations`, `openalex_references`, `openalex_search_authors`, `openalex_get_author`, `openalex_venue_info`, and `arxiv_get_papers` (the arxiv source also accepts bare IDs such as 2309.08600). PubMed accepts `pmid:`, `convert:`, `related:`, `fulltext:`, `copyright:`, and `citation` prefixes; Europe PMC accepts `fulltext:`/`sections:` with a PMCID or PMID.",
 			"Preserve returned PMIDs, PMCIDs, DOIs, arXiv IDs, preprint DOIs, OpenAlex W/A/S IDs, author ORCIDs, citation/reference counts, OA status, Europe PMC full-text statuses and section inventories, source URLs, and endpoint provenance in research artifacts and answers.",
 			"Treat database summaries as retrieval evidence, then verify decisive claims against the full paper when needed.",
 		],
@@ -244,13 +244,13 @@ export function registerScienceDatabaseTools(pi: ExtensionAPI): void {
 			source: SCIENCE_DATABASE_SOURCE_SCHEMA,
 			query: Type.String({
 				description:
-					"Search query, exact literature command, identifier, paper title, or DOI. Examples: openalex_search_works:CRISPR year_from=2024 open_access_only=true, openalex_get_work:W2741809807, openalex_citations:W2741809807, openalex_search_authors:Jennifer Doudna, arxiv_search:sparse autoencoders category=cs.LG date_from=2023-09-01 date_to=2023-09-30, arxiv_get_papers:2309.08600, pmid:35486828, convert:35486828 id_type=pmid, fulltext:PMC9046468, citation journal=Nature year=2022 volume=604 first_page=123 author=Doudna.",
+					"Search query, exact literature command, identifier, paper title, or DOI. Examples: openalex_search_works:CRISPR year_from=2024 open_access_only=true, openalex_get_work:W2741809807, openalex_citations:W2741809807, openalex_search_authors:Jennifer Doudna, arxiv_get_papers:2309.08600,2401.00001, pmid:35486828, convert:35486828 id_type=pmid, fulltext:PMC9046468, citation journal=Nature year=2022 volume=604 first_page=123 author=Doudna.",
 			}),
 			limit: Type.Optional(Type.Number({ description: `Maximum records to return. Defaults to ${DEFAULT_LIMIT}, max ${MAX_LIMIT}.` })),
 			sort: Type.Optional(Type.Union([
 				Type.Literal("relevance"),
 				Type.Literal("pub_date"),
-			], { description: "PubMed/arXiv sort order. Ignored for other sources." })),
+			], { description: "PubMed sort order. Ignored for other sources." })),
 		}),
 		async execute(_toolCallId, params) {
 			const result = await scienceDatabaseSearch(params as ScienceDatabaseSearchParams);

@@ -151,14 +151,12 @@ test("science database tool exposes exact literature parity names for OpenAlex a
 			}
 		}
 		if (url.origin === "https://export.arxiv.org") {
-			if (url.searchParams.has("search_query")) {
-				assert.equal(url.searchParams.get("search_query"), "sparse autoencoders AND cat:cs.LG AND submittedDate:[202309010000 TO 202309302359]");
-				assert.equal(url.searchParams.get("sortBy"), "submittedDate");
-				return atomResponse(arxivEntry(), 1, 0);
-			}
-			if (url.searchParams.has("id_list")) {
-				assert.equal(url.searchParams.get("id_list"), "2309.08600,2309.08600v1");
+			assert.equal(url.searchParams.has("search_query"), false);
+			if (url.searchParams.get("id_list") === "2309.08600,2309.08600v1") {
 				return atomResponse(arxivEntry("2309.08600v1"), 1, 0);
+			}
+			if (url.searchParams.get("id_list") === "2309.08600") {
+				return atomResponse(arxivEntry(), 1, 0);
 			}
 		}
 		throw new Error(`unexpected URL ${url.toString()}`);
@@ -177,10 +175,7 @@ test("science database tool exposes exact literature parity names for OpenAlex a
 	const searchAuthors = await tool.execute("openalex-search-authors", { source: "openalex", query: "openalex_search_authors:Author One" });
 	const getAuthor = await tool.execute("openalex-get-author", { source: "openalex", query: "openalex_get_author:A5065535610 works_sample=1" });
 	const venueInfo = await tool.execute("openalex-venue-info", { source: "openalex", query: "openalex_venue_info:S4306402512" });
-	const arxivSearch = await tool.execute("arxiv-search", {
-		source: "arxiv",
-		query: "arxiv_search:sparse autoencoders category=cs.LG date_from=2023-09-01 date_to=2023-09-30 sort_by=submittedDate max_results=5",
-	});
+	const arxivBareId = await tool.execute("arxiv-bare-id", { source: "arxiv", query: "https://arxiv.org/abs/2309.08600" });
 	const arxivGet = await tool.execute("arxiv-get-papers", { source: "arxiv", query: "arxiv_get_papers:2309.08600,2309.08600v1" });
 
 	const searchDetails = searchWorks.details as { mode: string; records: Array<{ openalex_id: string; source: { source_id: string } }> };
@@ -190,7 +185,7 @@ test("science database tool exposes exact literature parity names for OpenAlex a
 	const authorSearchDetails = searchAuthors.details as { mode: string; records: Array<{ author_id: string; h_index: number }> };
 	const authorDetails = getAuthor.details as { mode: string; top_works: Array<{ openalex_id: string }> };
 	const venueDetails = venueInfo.details as { mode: string; source_id: string; records: Array<{ display_name: string }> };
-	const arxivSearchDetails = arxivSearch.details as { mode: string; records: Array<{ arxiv_id: string; version: number; doi: string; abstract: string }> };
+	const arxivBareIdDetails = arxivBareId.details as { mode: string; records: Array<{ arxiv_id: string; version: number; doi: string; abstract: string }> };
 	const arxivGetDetails = arxivGet.details as { mode: string; duplicates: Array<Record<string, unknown>>; n_found: number; records: Array<{ arxiv_id: string }> };
 
 	assert.equal(searchDetails.mode, "openalex_search_works");
@@ -206,10 +201,28 @@ test("science database tool exposes exact literature parity names for OpenAlex a
 	assert.equal(authorDetails.top_works[0]?.openalex_id, "W4386839891");
 	assert.equal(venueDetails.source_id, "S4306402512");
 	assert.equal(venueDetails.records[0]?.display_name, "arXiv");
-	assert.equal(arxivSearchDetails.records[0]?.arxiv_id, "2309.08600");
-	assert.equal(arxivSearchDetails.records[0]?.version, 1);
-	assert.equal(arxivSearchDetails.records[0]?.abstract, "Sparse autoencoders reveal features.");
+	assert.equal(arxivBareIdDetails.mode, "arxiv_get_papers");
+	assert.equal(arxivBareIdDetails.records[0]?.arxiv_id, "2309.08600");
+	assert.equal(arxivBareIdDetails.records[0]?.version, 1);
+	assert.equal(arxivBareIdDetails.records[0]?.abstract, "Sparse autoencoders reveal features.");
 	assert.equal(arxivGetDetails.n_found, 1);
 	assert.deepEqual(arxivGetDetails.duplicates, [{ requested: "2309.08600v1", resolved_as: "2309.08600" }]);
 	assert.ok(seen.some((url) => url.includes("openalex_search_works")) === false);
+});
+
+test("arxiv source rejects topic search and points to the discovery sources", async () => {
+	globalThis.fetch = async (input) => {
+		throw new Error(`unexpected URL ${String(input)}`);
+	};
+	const tool = registerTools().get("feynman_science_database_search");
+	assert.ok(tool);
+
+	await assert.rejects(
+		tool.execute("arxiv-topic", { source: "arxiv", query: "sparse autoencoders interpretability" }),
+		/only looks up papers by ID; search topics with source semanticscholar or openalex/,
+	);
+	await assert.rejects(
+		tool.execute("arxiv-search-command", { source: "arxiv", query: "arxiv_search:sparse autoencoders category=cs.LG" }),
+		/arXiv topic search was removed/,
+	);
 });

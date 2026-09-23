@@ -184,7 +184,7 @@ Four bundled research agents, invoked by workflow prompts when decomposition hel
 ### Skills & Tools
 
 - **[AlphaXiv](https://www.alphaxiv.org/)** — paper search, Q&A, code reading, annotations (via Feynman's `alpha` tools and `feynman alpha` command)
-- **Literature databases** — read-only OpenAlex (works, citation graphs, authors, venues, OA status), arXiv, PubMed (metadata, PMID/PMCID/DOI conversion, related articles, citation matching, copyright checks, PMC full-text routing), Europe PMC open-access full-text sections, bioRxiv/medRxiv preprints, and Crossref DOI metadata, with stable identifiers and endpoint provenance
+- **Literature databases** — read-only OpenAlex (works, citation graphs, authors, venues, OA status), arXiv ID lookup, PubMed (metadata, PMID/PMCID/DOI conversion, related articles, citation matching, copyright checks, PMC full-text routing), Europe PMC open-access full-text sections, bioRxiv/medRxiv preprints, and Crossref DOI metadata, with stable identifiers and endpoint provenance
 - **[Hugging Face Hub](https://huggingface.co/docs/hub/api)** — dataset metadata, split/schema inspection, and small file reads from model, dataset, and Space repos
 - **Web research** — multi-provider search, explicit proxy routing, bounded GitHub issue/PR documents, raw or question-grounded page retrieval, direct images, external fetched-content caching, stored-page passage lookup, and auditable source text; tools, commands, images, PDFs, and browser cookies remain independently gated
 - **Session search** — indexed recall across prior research sessions

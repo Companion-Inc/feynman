@@ -99,7 +99,7 @@ test("science database tool searches PubMed through ESearch and ESummary", async
 	assert.match(tools.get("feynman_science_database_search")?.promptSnippet ?? "", /PubMed/);
 });
 
-test("science database tool searches public literature and DOI metadata sources", async () => {
+test("science database tool searches literature sources and looks up arXiv IDs", async () => {
 	const requests: string[] = [];
 	globalThis.fetch = async (input) => {
 		const url = String(input);
@@ -183,14 +183,12 @@ test("science database tool searches public literature and DOI metadata sources"
 	});
 	const arxiv = await tools.get("feynman_science_database_search")?.execute("call-arxiv", {
 		source: "arxiv",
-		query: "crispr",
-		limit: 1,
-		sort: "pub_date",
+		query: "2601.01234v1",
 	});
 
 	const crossrefDetails = crossref?.details as { results: Array<{ doi?: string; title?: string }> };
 	const europePmcDetails = europepmc?.details as { hasMore: boolean; results: Array<{ pmcid?: string; pmid?: string; url?: string }> };
-	const arxivDetails = arxiv?.details as { results: Array<{ arxivId?: string; pdfUrl?: string; primaryCategory?: string }> };
+	const arxivDetails = arxiv?.details as { results: Array<{ id_versioned?: string; pdf_url?: string; primary_category?: string }> };
 
 	assert.equal(crossrefDetails.results[0]?.doi, "10.1234/crossref");
 	assert.equal(crossrefDetails.results[0]?.title, "Crossref CRISPR metadata");
@@ -198,12 +196,12 @@ test("science database tool searches public literature and DOI metadata sources"
 	assert.equal(europePmcDetails.results[0]?.pmid, "12345678");
 	assert.equal(europePmcDetails.results[0]?.pmcid, "PMC123456");
 	assert.equal(europePmcDetails.results[0]?.url, "https://europepmc.org/article/MED/12345678");
-	assert.equal(arxivDetails.results[0]?.arxivId, "2601.01234v1");
-	assert.equal(arxivDetails.results[0]?.primaryCategory, "q-bio.BM");
-	assert.equal(arxivDetails.results[0]?.pdfUrl, "https://arxiv.org/pdf/2601.01234v1");
+	assert.equal(arxivDetails.results[0]?.id_versioned, "2601.01234v1");
+	assert.equal(arxivDetails.results[0]?.primary_category, "q-bio.BM");
+	assert.equal(arxivDetails.results[0]?.pdf_url, "https://arxiv.org/pdf/2601.01234v1");
 	assert.equal(new URL(requests[0]!).searchParams.get("rows"), "1");
 	assert.equal(new URL(requests[1]!).searchParams.get("resultType"), "lite");
-	assert.equal(new URL(requests[2]!).searchParams.get("sortBy"), "submittedDate");
+	assert.equal(new URL(requests[2]!).searchParams.get("id_list"), "2601.01234v1");
 	assert.match(tools.get("feynman_science_database_search")?.promptSnippet ?? "", /Europe PMC/);
 });
 
