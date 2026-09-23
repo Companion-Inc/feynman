@@ -53,9 +53,9 @@
     "experiments"
   ],
   "feynmanReleaseBudget": {
-    "maxTarballBytes": 131072000,
-    "maxUnpackedBytes": 377487360,
-    "maxFileCount": 42000
+    "maxTarballBytes": 2097152,
+    "maxUnpackedBytes": 8388608,
+    "maxFileCount": 1000
   },
   "pi": {
     "extensions": [
