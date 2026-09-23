@@ -13,6 +13,9 @@ test("Pi runtime validation omits null alpha_get_paper sections without losing o
 		registerTool(tool) {
 			tools.set(tool.name, tool);
 		},
+		on() {
+			return () => {};
+		},
 	} as ExtensionAPI);
 
 	const tool = tools.get("alpha_get_paper");
