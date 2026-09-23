@@ -188,7 +188,7 @@ Four bundled research agents, invoked by workflow prompts when decomposition hel
 - **[Hugging Face Hub](https://huggingface.co/docs/hub/api)** — dataset metadata, split/schema inspection, and small file reads from model, dataset, and Space repos
 - **Web research** — multi-provider search, explicit proxy routing, bounded GitHub issue/PR documents, raw or question-grounded page retrieval, direct images, external fetched-content caching, stored-page passage lookup, and auditable source text; tools, commands, images, PDFs, and browser cookies remain independently gated
 - **Session search** — indexed recall across prior research sessions
-- **Observability** — opt-out PostHog analytics, logs, and traces for Feynman's own CLI commands
+- **Observability** — opt-out PostHog usage metadata for CLI commands, research workflows, tools, and model calls (see [Telemetry](#telemetry))
 - **Research execution options** — Docker, plus Modal or RunPod when their CLIs are installed, for explicitly chosen replication, benchmark, or dataset-heavy experiment runs; not service deployment or generic cloud administration
 
 ---
@@ -196,6 +196,12 @@ Four bundled research agents, invoked by workflow prompts when decomposition hel
 ### How it works
 
 Built on [Pi](https://github.com/badlogic/pi-mono) for the agent runtime, [alphaXiv](https://www.alphaxiv.org/) for paper search and analysis, and CLI tools for compute and execution. Runtime resources follow Pi's documented package model for [packages](https://github.com/badlogic/pi-mono/blob/main/packages/coding-agent/docs/packages.md), [extensions](https://github.com/badlogic/pi-mono/blob/main/packages/coding-agent/docs/extensions.md), and [skills](https://github.com/badlogic/pi-mono/blob/main/packages/coding-agent/docs/skills.md). Hugging Face inspection uses the public [Hub API endpoints](https://huggingface.co/docs/hub/api) and `HF_TOKEN` / `HUGGINGFACE_HUB_TOKEN` environment variables documented by [`huggingface_hub`](https://huggingface.co/docs/huggingface_hub/main/en/package_reference/environment_variables). The ML recipe workflow was informed by the open-source [Hugging Face `ml-intern`](https://github.com/huggingface/ml-intern) research-agent repo, but is implemented as native Feynman prompts, skills, and read-only tools. Research outputs are source-grounded — research claims link to papers, docs, or repos with direct URLs.
+
+---
+
+### Telemetry
+
+Feynman sends anonymous usage telemetry to PostHog by default and prints a one-time notice on first run. It sends commands, workflow names and outcomes, tool names, model and provider names, token counts, latency, and error flags under a random install ID. It never sends prompts, model output, paper content, file paths, or tool arguments. Set `FEYNMAN_TELEMETRY=off` (or `DO_NOT_TRACK=1`) to disable it; `feynman status` shows the current setting. The full event list is in the [configuration docs](https://feynman.is/docs/getting-started/configuration#telemetry).
 
 ---
 

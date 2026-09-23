@@ -17,7 +17,7 @@ This page covers the dedicated Feynman CLI commands and flags. Workflow commands
 | `feynman setup` | Run the guided setup wizard |
 | `feynman setup preview` | Install or verify preview dependencies |
 | `feynman doctor` | Diagnose config, auth, Pi runtime, and preview dependencies |
-| `feynman status` | Show the current setup summary (model, auth, packages) |
+| `feynman status` | Show the current setup summary (model, auth, packages, telemetry) |
 
 ## Model management
 
