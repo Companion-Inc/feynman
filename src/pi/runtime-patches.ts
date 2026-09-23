@@ -1,8 +1,6 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 
-import { patchAlphaHubAuthSource } from "../../scripts/lib/alpha-hub-auth-patch.mjs";
-import { patchAlphaHubSearchResultsSource, patchAlphaHubSearchSource } from "../../scripts/lib/alpha-hub-search-patch.mjs";
 import { patchMcpSdkPackageJsonSource } from "../../scripts/lib/mcp-sdk-package-patch.mjs";
 import { patchPiAgentCoreSource } from "../../scripts/lib/pi-agent-core-patch.mjs";
 import {
@@ -564,18 +562,6 @@ export function patchPiRuntimeNodeModules(
 		changed = patchFileIfPresent(
 			resolve(nodeModulesPath, "@companion-ai", "alpha-hub", "node_modules", "@modelcontextprotocol", "sdk", "package.json"),
 			patchMcpSdkPackageJsonSource,
-		) || changed;
-		changed = patchFileIfPresent(
-			resolve(nodeModulesPath, "@companion-ai", "alpha-hub", "src", "lib", "auth.js"),
-			(source) => patchAlphaHubAuthSource(source, { version: "0.1.4" }),
-		) || changed;
-		changed = patchFileIfPresent(
-			resolve(nodeModulesPath, "@companion-ai", "alpha-hub", "src", "lib", "alphaxiv.js"),
-			(source) => patchAlphaHubSearchSource(source, { version: "0.1.4" }),
-		) || changed;
-		changed = patchFileIfPresent(
-			resolve(nodeModulesPath, "@companion-ai", "alpha-hub", "src", "lib", "index.js"),
-			(source) => patchAlphaHubSearchResultsSource(source, { version: "0.1.4" }),
 		) || changed;
 		changed = patchPiWebAccessPackageFiles(nodeModulesPath, appRoot) || changed;
 		changed = patchPiDocparserPackageFiles(nodeModulesPath) || changed;

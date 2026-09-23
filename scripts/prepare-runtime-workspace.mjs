@@ -73,11 +73,6 @@ import {
 import { PI_SUBAGENTS_PATCH_TARGETS, patchPiSubagentsSource, stripPiSubagentBuiltinModelSource } from "./lib/pi-subagents-patch.mjs";
 import { preflightPiOtelPackageRoot } from "./lib/pi-otel-patch.mjs";
 import { PI_SESSION_SEARCH_PATCH_TARGETS, patchPiSessionSearchSource } from "./lib/pi-session-search-patch.mjs";
-import { patchAlphaHubAuthSource } from "./lib/alpha-hub-auth-patch.mjs";
-import {
-	patchAlphaHubSearchResultsSource,
-	patchAlphaHubSearchSource,
-} from "./lib/alpha-hub-search-patch.mjs";
 import { patchMcpSdkPackageJsonSource } from "./lib/mcp-sdk-package-patch.mjs";
 import {
 	FEYNMAN_PI_TELEMETRY_PACKAGE,
@@ -875,37 +870,6 @@ function patchBundledPiDocparser() {
 	return changed;
 }
 
-function patchBundledAlphaHub() {
-	const alphaHubLib = resolve(
-		workspaceNodeModulesDir,
-		"@companion-ai",
-		"alpha-hub",
-		"src",
-		"lib",
-	);
-	const patchTargets = [
-		["auth.js", patchAlphaHubAuthSource],
-		["alphaxiv.js", patchAlphaHubSearchSource],
-		["index.js", patchAlphaHubSearchResultsSource],
-	];
-	if (!patchTargets.some(([fileName]) => existsSync(resolve(alphaHubLib, fileName)))) {
-		return false;
-	}
-
-	let changed = false;
-	for (const [fileName, patchSource] of patchTargets) {
-		const filePath = resolve(alphaHubLib, fileName);
-		if (!existsSync(filePath)) continue;
-		const source = readFileSync(filePath, "utf8");
-		const patched = patchSource(source, { version: "0.1.4" });
-		if (patched !== source) {
-			writeFileSync(filePath, patched, "utf8");
-			changed = true;
-		}
-	}
-	return changed;
-}
-
 function patchMcpSdkManifest(nodeModulesDir) {
 	const manifestPath = resolve(nodeModulesDir, "@modelcontextprotocol", "sdk", "package.json");
 	if (!existsSync(manifestPath)) {
@@ -979,7 +943,6 @@ function patchBundledRuntime(
 	changed = patchBundledPiSubagents() || changed;
 	changed = patchBundledPiSessionSearch() || changed;
 	changed = patchBundledPiDocparser() || changed;
-	changed = patchBundledAlphaHub() || changed;
 	changed = patchMcpSdkManifest(workspaceNodeModulesDir) || changed;
 	changed = removeGeneratedHiddenRuntimeLock() || changed;
 	return changed;

@@ -101,29 +101,22 @@ jobs:
           console.log("Exact coordinated Pi and native-subagent contracts verified");
           NODE
 
-      - name: Assert exact Alpha Hub source contracts
+      - name: Assert exact Alpha Hub version in both installed copies
         run: |
           node --input-type=module <<'NODE'
           import assert from "node:assert/strict";
           import { execFileSync } from "node:child_process";
           import { readFileSync } from "node:fs";
           import { join } from "node:path";
-          import { pathToFileURL } from "node:url";
           const pkg = join(execFileSync("npm", ["root", "-g"], { encoding: "utf8", shell: process.platform === "win32" }).trim(), "@companion-ai", "feynman");
-          const load = (name) => import(pathToFileURL(join(pkg, "scripts", "lib", name)).href);
-          const { assertAlphaHubAuthSource, ALPHA_HUB_AUTH_014_SOURCE_CONTRACT } = await load("alpha-hub-auth-patch.mjs");
-          const { assertAlphaHubSearchSource, assertAlphaHubSearchResultsSource, ALPHA_HUB_SEARCH_014_SOURCE_CONTRACT, ALPHA_HUB_RESULTS_014_SOURCE_CONTRACT } = await load("alpha-hub-search-patch.mjs");
-          for (const contract of [ALPHA_HUB_AUTH_014_SOURCE_CONTRACT, ALPHA_HUB_SEARCH_014_SOURCE_CONTRACT, ALPHA_HUB_RESULTS_014_SOURCE_CONTRACT]) assert.equal(contract.version, "0.1.4");
+          const expected = JSON.parse(readFileSync(join(pkg, "package.json"), "utf8")).dependencies["@companion-ai/alpha-hub"];
+          assert.match(expected, /^\d+\.\d+\.\d+$/);
           for (const modules of [join(pkg, "node_modules"), join(pkg, ".feynman", "npm", "node_modules")]) {
-            const root = join(modules, "@companion-ai", "alpha-hub");
-            const manifest = JSON.parse(readFileSync(join(root, "package.json"), "utf8"));
+            const manifest = JSON.parse(readFileSync(join(modules, "@companion-ai", "alpha-hub", "package.json"), "utf8"));
             assert.equal(manifest.name, "@companion-ai/alpha-hub");
-            assert.equal(manifest.version, "0.1.4");
-            assertAlphaHubAuthSource(readFileSync(join(root, "src", "lib", "auth.js"), "utf8"));
-            assertAlphaHubSearchSource(readFileSync(join(root, "src", "lib", "alphaxiv.js"), "utf8"));
-            assertAlphaHubSearchResultsSource(readFileSync(join(root, "src", "lib", "index.js"), "utf8"));
+            assert.equal(manifest.version, expected);
           }
-          console.log("Exact Alpha Hub auth, discovery, and live-format parser contracts verified in both copies");
+          console.log(`Alpha Hub ${expected} verified in both installed copies`);
           NODE
 
       - name: Configure model auth for live smokes

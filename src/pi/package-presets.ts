@@ -64,7 +64,7 @@ const BEFORE_LATEST_CORE_PACKAGE_SOURCES = [
 ] as const;
 
 export const CORE_PACKAGE_SOURCES = [
-	"npm:@companion-ai/alpha-hub@0.1.4",
+	"npm:@companion-ai/alpha-hub@0.1.5",
 	"npm:pi-subagents@0.65.1",
 	"npm:pi-btw@0.4.1",
 	"npm:pi-docparser@4.0.0",
@@ -193,6 +193,7 @@ const MANAGED_CORE_PACKAGE_SOURCES = new Set<string>([
 	...RECENT_CORE_PACKAGE_SOURCES,
 	...PREVIOUS_RELEASE_CORE_PACKAGE_SOURCES,
 	...CURRENT_RELEASE_CORE_PACKAGE_SOURCES,
+	"npm:@companion-ai/alpha-hub@0.1.4",
 	"npm:pi-subagents@0.37.0",
 	"npm:pi-web-access@0.14.0",
 	"npm:pi-web-access@0.18.0",

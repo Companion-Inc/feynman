@@ -505,7 +505,7 @@ test("reconcileManagedCorePackageInstalls uses normalized Alpha and latest agent
 	}
 	const repaired = reconcileManagedCorePackageInstalls(agentDir, appRoot);
 	assert.deepEqual(repaired, [...CORE_PACKAGE_SOURCES]);
-	assert.equal(readInstalledPackageVersion(resolve(root, "npm-global/lib/node_modules/@companion-ai/alpha-hub")), "0.1.4");
+	assert.equal(readInstalledPackageVersion(resolve(root, "npm-global/lib/node_modules/@companion-ai/alpha-hub")), "0.1.5");
 	assert.equal(readInstalledPackageVersion(resolve(root, "npm-global/lib/node_modules/pi-subagents")), "0.65.1");
 	assert.equal(readInstalledPackageVersion(resolve(root, "npm-global/lib/node_modules/pi-web-access")), "0.28.0");
 });

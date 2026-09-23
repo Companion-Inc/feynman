@@ -39,10 +39,7 @@ function withInstalledFixture(run: (root: string, pkg: string) => void) {
 				put(`${modules}/@earendil-works/${name}/package.json`, { name: `@earendil-works/${name}`, version: "0.85.1" });
 			}
 			put(`${modules}/@earendil-works/pi-coding-agent/dist/cli/args.js`, "reviewed-pi-cli");
-			put(`${modules}/@companion-ai/alpha-hub/package.json`, { name: "@companion-ai/alpha-hub", version: "0.1.4" });
-			for (const file of ["auth.js", "alphaxiv.js", "index.js"]) {
-				put(`${modules}/@companion-ai/alpha-hub/src/lib/${file}`, `reviewed-${file}`);
-			}
+			put(`${modules}/@companion-ai/alpha-hub/package.json`, { name: "@companion-ai/alpha-hub", version: "0.1.5" });
 		}
 		put(".feynman/npm/node_modules/pi-subagents/package.json", { name: "pi-subagents", version: "0.65.1" });
 		put(".feynman/npm/node_modules/pi-subagents/src/runs/shared/child-session.ts", "reviewed-native-session");
@@ -58,14 +55,7 @@ export const PI_SUBAGENTS_NATIVE_VERSION = "0.65.1";
 export function assertPiSubagentsNativeSources(read) {
   assert.equal(read("src/runs/shared/child-session.ts"), "reviewed-native-session");
 }`);
-		put("scripts/lib/alpha-hub-auth-patch.mjs", assertion + `
-export const ALPHA_HUB_AUTH_014_SOURCE_CONTRACT = {version: "0.1.4"};
-export function assertAlphaHubAuthSource(source) { assert.equal(source, "reviewed-auth.js"); }`);
-		put("scripts/lib/alpha-hub-search-patch.mjs", assertion + `
-export const ALPHA_HUB_SEARCH_014_SOURCE_CONTRACT = {version: "0.1.4"};
-export const ALPHA_HUB_RESULTS_014_SOURCE_CONTRACT = {version: "0.1.4"};
-export function assertAlphaHubSearchSource(source) { assert.equal(source, "reviewed-alphaxiv.js"); }
-export function assertAlphaHubSearchResultsSource(source) { assert.equal(source, "reviewed-index.js"); }`);
+		put("package.json", { name: "@companion-ai/feynman", dependencies: { "@companion-ai/alpha-hub": "0.1.5" } });
 		run(root, pkg);
 	} finally {
 		rmSync(root, { recursive: true, force: true });
@@ -80,23 +70,15 @@ function execute(script: string, root: string) {
 	});
 }
 
-test("manual e2e requires exact Alpha Hub contracts for both installed copies", () => {
-	const script = scriptFor("Assert exact Alpha Hub source contracts");
+test("manual e2e requires the pinned Alpha Hub version in both installed copies", () => {
+	const script = scriptFor("Assert exact Alpha Hub version in both installed copies");
 	withInstalledFixture((root, pkg) => {
 		const good = execute(script, root);
 		assert.equal(good.status, 0, good.stderr);
 		for (const modules of ["node_modules", ".feynman/npm/node_modules"]) {
-			const alpha = join(pkg, modules, "@companion-ai", "alpha-hub");
-			for (const file of ["auth.js", "alphaxiv.js", "index.js"]) {
-				const path = join(alpha, "src/lib", file);
-				const source = readFileSync(path, "utf8");
-				writeFileSync(path, source + "\nparseStructuredSearchResults");
-				assert.notEqual(execute(script, root).status, 0, `${modules}/${file} must reject marker-only drift`);
-				writeFileSync(path, source);
-			}
-			const manifest = join(alpha, "package.json");
+			const manifest = join(pkg, modules, "@companion-ai", "alpha-hub", "package.json");
 			const source = readFileSync(manifest, "utf8");
-			writeFileSync(manifest, JSON.stringify({ name: "@companion-ai/alpha-hub", version: "0.1.3" }));
+			writeFileSync(manifest, JSON.stringify({ name: "@companion-ai/alpha-hub", version: "0.1.4" }));
 			assert.notEqual(execute(script, root).status, 0, "old identity must fail");
 			writeFileSync(manifest, source);
 		}

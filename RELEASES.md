@@ -29,6 +29,10 @@ Everything removed is preserved in the repository at the `archive/pre-deslop-0.3
 - **OpenAlex semantic search and key guidance:** prefix an `openalex` query with `semantic:` to use OpenAlex's embedding search (`search.semantic`), which found the test-time-compute paper at rank 1 where keyword search missed it. `OPENALEX_API_KEY` is still sent as the `api_key` parameter when set; when it is missing, results and 401/403/429 errors now say how to get a free key.
 - **Researcher and verifier guidance:** the researcher now routes by need (Semantic Scholar for general ML/CS papers, PubMed and Europe PMC for biomedicine, OpenAlex for citation graphs and semantic search, `web_search` for web sources with keyless Parallel MCP as a fallback, direct ID lookup for known papers) and runs 2–4 reworded queries per question instead of trusting one. The verifier cross-checks each cited paper's DOI or arXiv ID against two indexes and flags title/ID mismatches. Both agents can now call `feynman_science_database_search`. If you customized `~/.feynman/agent/agents/researcher.md` or `verifier.md`, Feynman keeps your copy, so merge these changes by hand.
 
+### alphaXiv
+
+- Updated the bundled alphaXiv client to `@companion-ai/alpha-hub@0.1.5`, which now ships the fixes Feynman used to patch in at install time: opening the login browser from WSL, printing the login URL when no browser opens, and falling back to REST search when `discover_papers` is unavailable. It also adds a paste-the-URL login for headless sessions, fixes a hang in parallel searches, and writes the token file with `0600` permissions. Feynman no longer patches alpha-hub.
+
 ## v0.3.49 - 2026-09-23
 
 ### Repository and package home

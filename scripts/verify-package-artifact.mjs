@@ -1,5 +1,3 @@
-import { assertAlphaHubAuthSource } from "./lib/alpha-hub-auth-patch.mjs";
-import { assertAlphaHubSearchSource, assertAlphaHubSearchResultsSource } from "./lib/alpha-hub-search-patch.mjs";
 import { existsSync, readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { resolve } from "node:path";
@@ -452,11 +450,6 @@ assertPiInteractiveUpdateNoticeSource(
 	"bundled Pi interactive update notice",
 );
 
-const alphaLib = resolve(packageRoot, "node_modules", "@companion-ai", "alpha-hub", "src", "lib");
-assertAlphaHubAuthSource(readText(resolve(alphaLib, "auth.js"), "bundled alpha-hub auth"));
-assertAlphaHubSearchSource(readText(resolve(alphaLib, "alphaxiv.js"), "bundled alpha-hub search"));
-assertAlphaHubSearchResultsSource(readText(resolve(alphaLib, "index.js"), "bundled alpha-hub parser"));
-
 const mcpManifest = readJson(
 	resolve(packageRoot, "node_modules", "@modelcontextprotocol", "sdk", "package.json"),
 	"bundled MCP SDK manifest",
@@ -784,14 +777,6 @@ requireMarkers(
 		'const cursor = "\\x1b[7m \\x1b[27m"',
 	],
 );
-for (const [fileName, assertSource] of [
-	["auth.js", assertAlphaHubAuthSource],
-	["alphaxiv.js", assertAlphaHubSearchSource],
-	["index.js", assertAlphaHubSearchResultsSource],
-]) {
-	assertSource(readArchivedText(archivePath, `npm/node_modules/@companion-ai/alpha-hub/src/lib/${fileName}`));
-}
-
 requireMarkers(
 	readArchivedText(
 		archivePath,
