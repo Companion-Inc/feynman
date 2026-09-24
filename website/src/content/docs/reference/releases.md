@@ -9,6 +9,24 @@ This page summarizes what changed in recent Feynman releases. GitHub releases us
 
 ## Unreleased
 
+## v0.5.5 - 2026-09-24
+
+### Node.js 26
+
+- Feynman now runs on Node.js 26, the current release. The upper version limit is gone: Feynman needs Node.js 22.22.0 or newer, like Pi itself. Tests run on Node 22, 24, and 26.
+- The standalone installers bundle Node.js 24.21.0, the latest LTS release.
+
+### alphaXiv
+
+- When an alphaXiv call fails, the tool error now points the agent to `feynman_science_database_search` (arXiv or Semantic Scholar) or `fetch_content`, so a research run continues on another source instead of retrying a broken tool. A "not logged in" error names `feynman alpha login`.
+- The alphaXiv docs explain signing in from a machine without a browser (SSH, Docker, WSL): open the printed URL anywhere and paste the final `127.0.0.1:9876/callback` URL back into the terminal.
+
+### Other
+
+- The setup docs explain the most common reason local models write no files: a small context window. They show how to raise Ollama's context and set `contextWindow` and `maxTokens` in `models.json`.
+- feynman.is/privacy and feynman.is/telemetry go to the telemetry section, which lists what is collected and how to opt out.
+- Updated dependencies: pi-btw 0.6.1, posthog-node 5.53, @clack/prompts 1.8.1, and the website toolchain (Astro 7.3, @astrojs/react 7). CI uses actions/checkout and actions/setup-node v7 and wrangler 4.139.
+
 ## v0.5.4 - 2026-09-24
 
 ### Use Feynman from ACP editors

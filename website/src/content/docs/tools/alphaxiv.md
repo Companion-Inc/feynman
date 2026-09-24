@@ -15,6 +15,8 @@ Sign in during `feynman setup` or at any time:
 feynman alpha login
 ```
 
+On a machine without a browser (SSH, Docker, WSL without a display), `feynman alpha login` prints the sign-in URL. Open it in a browser on any machine and finish signing in. The browser then lands on a `http://127.0.0.1:9876/callback?code=...` page that fails to load; copy that full URL, paste it into the waiting terminal, and press Enter.
+
 Check your authentication status:
 
 ```bash
