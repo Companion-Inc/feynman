@@ -1,5 +1,4 @@
 const MIN_NODE_VERSION = "22.22.0";
-const MAX_NODE_MAJOR = 25;
 const PREFERRED_NODE_MAJOR = 24;
 
 function parseNodeVersion(version) {
@@ -18,20 +17,16 @@ function compareNodeVersions(left, right) {
 }
 
 function isSupportedNodeVersion(version = process.versions.node) {
-	const parsed = parseNodeVersion(version);
-	return compareNodeVersions(parsed, parseNodeVersion(MIN_NODE_VERSION)) >= 0 && parsed.major <= MAX_NODE_MAJOR;
+	return compareNodeVersions(parseNodeVersion(version), parseNodeVersion(MIN_NODE_VERSION)) >= 0;
 }
 
 function getUnsupportedNodeVersionLines(version = process.versions.node) {
 	const isWindows = process.platform === "win32";
-	const parsed = parseNodeVersion(version);
 	return [
-		`feynman supports Node.js ${MIN_NODE_VERSION} through ${MAX_NODE_MAJOR}.x (detected ${version}).`,
-		parsed.major > MAX_NODE_MAJOR
-			? "This newer Node release is not supported yet."
-			: isWindows
-				? "Install a supported Node.js release from https://nodejs.org, or use the standalone installer:"
-				: `Switch to a supported Node release with \`nvm install ${PREFERRED_NODE_MAJOR} && nvm use ${PREFERRED_NODE_MAJOR}\`, or use the standalone installer:`,
+		`feynman requires Node.js ${MIN_NODE_VERSION} or newer (detected ${version}).`,
+		isWindows
+			? "Install a supported Node.js release from https://nodejs.org, or use the standalone installer:"
+			: `Switch to a supported Node release with \`nvm install ${PREFERRED_NODE_MAJOR} && nvm use ${PREFERRED_NODE_MAJOR}\`, or use the standalone installer:`,
 		isWindows
 			? "irm https://feynman.is/install.ps1 | iex"
 			: "curl -fsSL https://feynman.is/install | bash",
@@ -42,11 +37,5 @@ if (!isSupportedNodeVersion()) {
 	for (const line of getUnsupportedNodeVersionLines()) {
 		console.error(line);
 	}
-	// Too-new Node must not abort the install: failing preinstall makes npm roll
-	// back to the previously installed version, which pins users to a release that
-	// predates the fix they are trying to get (issue #177). The launcher in
-	// bin/feynman.js enforces the supported range at runtime with the same message.
-	if (parseNodeVersion(process.versions.node).major <= MAX_NODE_MAJOR) {
-		process.exit(1);
-	}
+	process.exit(1);
 }

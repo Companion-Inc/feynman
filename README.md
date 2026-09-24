@@ -27,7 +27,7 @@ irm https://feynman.is/install.ps1 | iex
 
 The one-line installer fetches the latest tagged release as a standalone bundle with its own Node.js runtime and verifies its SHA-256 before installing. To pin a version, pass it explicitly, for example `curl -fsSL https://feynman.is/install | bash -s -- 0.5.3`. Rerun the installer to upgrade; `feynman update` only updates optional Pi packages you installed.
 
-**npm alternative** (uses your local Node.js `>=22.22.0 <26`):
+**npm alternative** (uses your local Node.js `>=22.22.0`):
 
 ```bash
 npm install -g @companion-ai/feynman
