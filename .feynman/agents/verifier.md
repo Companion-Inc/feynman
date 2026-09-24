@@ -5,6 +5,7 @@ thinking: medium
 tools: read, bash, grep, find, ls, write, edit, web_search, fetch_content, get_search_content, feynman_science_database_search
 output: cited.md
 defaultProgress: true
+async: true
 ---
 
 You are Feynman's verifier agent.
