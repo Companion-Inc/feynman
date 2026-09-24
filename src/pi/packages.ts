@@ -1,12 +1,9 @@
 import { runPi } from "./launch.js";
 import { buildPiEnv, type PiRuntimeOptions } from "./runtime.js";
 
-export const MAX_NATIVE_PACKAGE_NODE_MAJOR = 22;
-
 type OptionalPackagePreset = {
 	description: string;
 	source: string;
-	maxNodeMajor?: number;
 };
 
 export const OPTIONAL_PACKAGE_PRESETS = {
@@ -18,36 +15,17 @@ export const OPTIONAL_PACKAGE_PRESETS = {
 		description: "Hindsight-backed research continuity memory.",
 		source: "npm:@luxusai/pi-hindsight",
 	},
-	"session-search": {
-		description: "Indexed recall for prior research session transcripts.",
-		source: "npm:@kaiserlich-dev/pi-session-search",
-		maxNodeMajor: MAX_NATIVE_PACKAGE_NODE_MAJOR,
-	},
 } satisfies Record<string, OptionalPackagePreset>;
 
 export type OptionalPackagePresetName = keyof typeof OPTIONAL_PACKAGE_PRESETS;
-
-function parseNodeMajor(version: string): number {
-	return Number.parseInt(version.replace(/^v/, "").split(".")[0] ?? "0", 10) || 0;
-}
-
-export function supportsNativePackageSources(version = process.versions.node): boolean {
-	return parseNodeMajor(version) <= MAX_NATIVE_PACKAGE_NODE_MAJOR;
-}
 
 export function normalizeOptionalPackagePresetName(name: string): OptionalPackagePresetName | undefined {
 	const normalized = name.trim().toLowerCase();
 	return normalized in OPTIONAL_PACKAGE_PRESETS ? (normalized as OptionalPackagePresetName) : undefined;
 }
 
-export function isOptionalPackagePresetSupported(name: OptionalPackagePresetName, version = process.versions.node): boolean {
-	const preset: OptionalPackagePreset = OPTIONAL_PACKAGE_PRESETS[name];
-	return !preset.maxNodeMajor || parseNodeMajor(version) <= preset.maxNodeMajor;
-}
-
-export function listOptionalPackagePresets(version = process.versions.node) {
+export function listOptionalPackagePresets() {
 	return (Object.keys(OPTIONAL_PACKAGE_PRESETS) as OptionalPackagePresetName[])
-		.filter((name) => isOptionalPackagePresetSupported(name, version))
 		.map((name) => ({ name, ...OPTIONAL_PACKAGE_PRESETS[name] }));
 }
 

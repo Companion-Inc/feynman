@@ -17,7 +17,6 @@ import {
 import { buildModelStatusSnapshotFromRecords, choosePreferredModelRecord, chooseRecommendedModel, getAvailableModelRecords, isProClassModelSpec } from "../src/model/catalog.js";
 import { isLocalModelProvider, resolveModelProviderForCommand, setDefaultModelSpec } from "../src/model/commands.js";
 import { createModelRegistry } from "../src/model/registry.js";
-import { supportsNativePackageSources } from "../src/pi/packages.js";
 import { canonicalizeModelSpec, parseModelSpec } from "../src/pi/settings.js";
 
 function createAuthPath(contents: Record<string, unknown>): string {
@@ -226,11 +225,7 @@ test("packages CLI hides removed UI and bulk extras", () => {
 	assert.match(listResult.stdout, /hindsight/);
 	assert.match(listResult.stdout, /Research-session preference and correction memory/);
 	assert.match(listResult.stdout, /Hindsight-backed research continuity memory/);
-	if (supportsNativePackageSources()) {
-		assert.match(listResult.stdout, /prior research session transcripts/);
-	} else {
-		assert.doesNotMatch(listResult.stdout, /session-search/);
-	}
+	assert.doesNotMatch(listResult.stdout, /session-search/);
 	assert.doesNotMatch(listResult.stdout, /Preference and correction memory across sessions|long-term memory for Pi|prior session transcripts/);
 	assert.doesNotMatch(listResult.stdout, /all-extras|generative-ui|pi-generative-ui/);
 
