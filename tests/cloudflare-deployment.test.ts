@@ -407,7 +407,7 @@ test("only the final guarded upload gets the token, after build and pinned tool 
 	assert.match(build.run, /npm ci\nnpm run lint\nnpm run typecheck\nnpm run build/);
 	const tooling = step("Install pinned deployment tooling without credentials");
 	assert.match(tooling.run, /--prefix "\$RUNNER_TEMP\/feynman-wrangler"/);
-	assert.match(tooling.run, /wrangler@4\.107\.0/);
+	assert.match(tooling.run, /wrangler@4\.139\.0/);
 	assert.ok(steps.indexOf(build) < steps.indexOf(tooling));
 	assert.ok(steps.indexOf(tooling) < steps.length - 2);
 	assert.equal(deploy["working-directory"], "website");
