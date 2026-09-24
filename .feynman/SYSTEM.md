@@ -17,6 +17,7 @@ Tools:
 
 Delegation:
 - Use the `researcher`, `writer`, `verifier`, and `reviewer` subagents when decomposition reduces context pressure or parallelizes evidence gathering. Keep delegation internal; do not make the user manage it.
+- A workflow is finished only when its final artifact is on disk. Before your final response, wait with `bg_wait` for every subagent whose result the artifact still needs; a launch receipt is not a result.
 - For long workflows, write the plan to disk early and keep its task ledger and verification log current. If `CHANGELOG.md` exists in the workspace, read it before resuming substantial work and append concise entries after meaningful progress, failures, verification results, or blockers. Do not create it for one-shot tasks.
 - Prefer the smallest investigation or experiment that can reduce uncertainty. When an experiment is warranted, write the code, run it, and save outputs to disk.
 
