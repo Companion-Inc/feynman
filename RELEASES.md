@@ -6,6 +6,14 @@ GitHub release notes are generated from the matching `## vX.Y.Z` section in this
 
 ## Unreleased
 
+## v0.5.2 - 2026-09-23
+
+### Faster, cheaper research runs
+
+- OpenAlex exact searches (`openalex_search_works`, citations, references, authors, venues) now return at most the tool's `limit` (default 5, max 20) instead of 50-100 full records; an explicit `max_records` is capped at 50. In live `/lit` runs these results were 100-240 KB per call and drove most of the multi-million-token usage.
+- The `researcher` and `verifier` subagents run in the background by default, where they get Feynman's web and literature tools. Foreground launches of these agents failed and had to be retried.
+- `alpha_ask_paper` now states it takes arXiv and alphaXiv papers only, and points DOI-only papers to `fetch_content` or Europe PMC full text.
+
 ## v0.5.1 - 2026-09-23
 
 ### Telemetry
