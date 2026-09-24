@@ -2,17 +2,17 @@
 title: Source Comparison
 description: Compare multiple sources and produce an agreement/disagreement matrix.
 section: Workflows
-order: 7
+order: 8
 ---
 
-The source comparison workflow analyzes multiple papers, articles, or documents side by side and produces a structured matrix showing where they agree, disagree, and differ in methodology. It is useful for understanding conflicting results, evaluating competing approaches, and identifying which claims have broad support versus limited evidence.
+The source comparison workflow puts papers, articles, or documents side by side and produces a source-grounded matrix of where they agree, disagree, and remain uncertain.
 
 ## Usage
 
 From the REPL:
 
 ```
-/compare "GPT-4 vs Claude vs Gemini on reasoning benchmarks"
+/compare "sparse attention methods for long-context language models"
 ```
 
 ```
@@ -25,26 +25,23 @@ From the CLI:
 feynman compare "topic or list of sources"
 ```
 
-You can provide a topic and let Feynman find the sources, or list specific papers and documents for a targeted comparison.
+Give a topic and let Feynman find the sources, or list the specific papers and documents to compare.
 
 ## How it works
 
-The comparison workflow begins by identifying or retrieving the sources to compare. If you provide a topic, the researcher agents find the most relevant and contrasting papers. If you provide specific IDs or files, they are used directly.
+Feynman writes a comparison plan (sources, dimensions to evaluate, output structure) to `outputs/.plans/<slug>.md`, summarizes it, and continues without waiting for confirmation unless you asked to review the plan.
 
-Each source is analyzed independently first: the researcher agents extract claims, results, methodology, and limitations from each document. Then the comparison engine aligns claims across sources -- identifying where two papers make the same claim (agreement), where they report contradictory results (disagreement), and where they measure different things entirely (non-overlapping scope).
+When the comparison set is broad, the `researcher` agent gathers source material. The `verifier` agent then checks sources and adds inline citations to the final matrix.
 
-The alignment step handles the nuance that papers often measure slightly different quantities or use different evaluation protocols. The comparison explicitly notes when an apparent disagreement might be explained by methodological differences rather than genuine conflicting results.
+## Output
 
-## Output format
+One comparison at `outputs/<slug>-comparison.md` containing:
 
-The comparison produces:
-
-- **Source Summaries** -- One-paragraph summary of each source's key contributions
-- **Agreement Matrix** -- Claims supported by multiple sources with citation evidence
-- **Disagreement Matrix** -- Conflicting claims with analysis of why sources diverge
-- **Methodology Differences** -- How the sources differ in approach, data, and evaluation
-- **Synthesis** -- An overall assessment of which claims are well-supported and which remain contested
+- **Comparison matrix** -- source, key claim, evidence type, caveats, and confidence for each source
+- **Agreement, disagreement, and uncertainty** -- kept clearly separate
+- **Tables and diagrams** -- a Markdown table for quantitative metrics and a Mermaid diagram for method or architecture comparisons when the sources support the structure
+- **Sources** -- direct URLs for every source used
 
 ## When to use it
 
-Use `/compare` when you encounter contradictory results in the literature, when evaluating competing approaches to the same problem, or when you need to understand how different research groups frame the same topic. It is also useful for writing related work sections where you need to accurately characterize the state of debate.
+Use `/compare` when results in the literature conflict, when choosing between competing approaches to the same problem, or when writing a related-work section that must characterize a debate accurately.

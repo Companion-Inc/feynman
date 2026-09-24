@@ -1,33 +1,31 @@
 ---
 title: Reviewer
-description: The reviewer agent evaluates research artifacts with severity-graded critique.
+description: The reviewer agent critiques research artifacts with severity-graded findings.
 section: Agents
 order: 2
 ---
 
-The reviewer agent evaluates documents, papers, and research artifacts with internal research-review rigor. It does not claim external reviewer authority or venue acceptance; it produces actionable research critique covering methodology, claims, writing quality, and reproducibility.
+The reviewer applies skeptical but fair internal research scrutiny to papers, drafts, and research artifacts. It does not predict venue acceptance; it produces a critique and a revision plan. Its definition lives in `.feynman/agents/reviewer.md`.
 
 ## What it does
 
-For review tasks, the reviewer reads the available artifact and evaluates it against standard academic criteria. It checks whether claims are supported by the presented evidence, whether the methodology is sound and described in sufficient detail, whether the experimental design controls for confounds, and whether the writing is clear and complete.
+The reviewer checks novelty, clarity, empirical rigor, and reproducibility. It looks for missing or weak baselines, missing ablations, evaluation mismatches, benchmark leakage, insufficient statistical evidence, claims that outrun the experiments, sections left over from earlier drafts, notation drift, and "verified" statements that do not show the check behind them. It keeps looking after the first major problem.
 
-Each piece of feedback is assigned a severity level. **Critical** issues are fundamental problems that undermine the document's validity, such as a statistical test applied incorrectly or a conclusion not supported by the data. **Major** issues are significant problems that should be addressed, like missing baselines or inadequate ablation studies. **Minor** issues are suggestions for improvement, and **nits** are stylistic or formatting comments.
+When a workflow frames the task as a verification pass, the reviewer acts as an adversarial auditor: a citation attached to a claim is not enough if the source does not support its exact wording.
 
-## Evaluation criteria
+## Output
 
-The reviewer evaluates documents across several dimensions:
+The reviewer writes two parts to the output path the workflow assigns:
 
-- **Claims vs. Evidence** -- Does the evidence presented actually support the claims made?
-- **Methodology** -- Is the approach sound? Are there confounds or biases?
-- **Experimental Design** -- Are baselines appropriate? Are ablations sufficient?
-- **Reproducibility** -- Could someone replicate this work from the description alone?
-- **Writing Quality** -- Is the paper clear, well-organized, and free of ambiguity?
-- **Completeness** -- Are limitations discussed? Is related work adequately covered?
+1. **Structured review** -- summary, strengths, weaknesses graded **FATAL**, **MAJOR**, or **MINOR**, questions for the authors, a verdict with an overall confidence score, and a prioritized revision plan.
+2. **Inline annotations** -- exact quotes from the artifact, each tied to a weakness or question ID from the structured review.
 
-## Confidence scoring
-
-The reviewer provides a confidence score for each finding, indicating how certain it is about the assessment. High-confidence findings are clear-cut issues (a statistical error, a missing citation). Lower-confidence findings are judgment calls (whether a baseline is sufficient, whether more ablations are needed) where reasonable reviewers might disagree.
+Every weakness must point to a specific passage or section. The review ends with a Sources section for anything it inspected.
 
 ## Used by
 
-The reviewer agent is the primary agent in the `/review` workflow. It also contributes to `/audit` (evaluating paper claims against code) and `/compare` (assessing the strength of evidence across sources). Workflow prompts call it through Pi's `subagent` tool when an adversarial review pass adds value.
+- `/review` -- the main critique pass on larger artifacts
+- `/deepresearch` -- reviews the cited brief after the verifier finishes, when researcher subagents were used
+- `/lit` -- checks the cited review for unsupported claims, logical gaps, and single-source critical findings
+
+Workflows fix FATAL issues before delivery and record MAJOR issues as open questions.

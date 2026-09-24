@@ -27,9 +27,7 @@ import { ensureFeynmanHome, getDefaultSessionDir, getFeynmanAgentDir, getFeynman
 import { launchPiChat, runPi } from "./pi/launch.js";
 import {
 	installPiPackage,
-	isOptionalPackagePresetSupported,
 	listOptionalPackagePresets,
-	MAX_NATIVE_PACKAGE_NODE_MAJOR,
 	normalizeOptionalPackagePresetName,
 	resolvePackageSource,
 	updatePiPackages,
@@ -352,11 +350,6 @@ async function handlePackagesCommand(subcommand: string | undefined, args: strin
 	if (!presetName) {
 		throw new Error(`Unknown package preset: ${target}`);
 	}
-	if (!isOptionalPackagePresetSupported(presetName)) {
-		console.log(`${presetName} is not available on this runtime.`);
-		console.log(`Its sqlite-backed dependency is only supported through Node ${MAX_NATIVE_PACKAGE_NODE_MAJOR}.x.`);
-		return;
-	}
 	const source = resolvePackageSource(presetName);
 	if (configuredSources.has(source)) {
 		console.log(`${source} already installed`);
@@ -574,6 +567,7 @@ async function runMain(input: { here: string; appRoot: string; feynmanVersion: s
 				model: { type: "string" },
 				"new-session": { type: "boolean" },
 				"no-session": { type: "boolean" },
+				"no-themes": { type: "boolean" },
 				prompt: { type: "string" },
 				resume: { type: "boolean", short: "r" },
 				"service-tier": { type: "string" },
@@ -824,7 +818,8 @@ async function runMain(input: { here: string; appRoot: string; feynmanVersion: s
 		thinkingLevel: launchThinkingLevel,
 		explicitModelSpec,
 		resumeRecentSession,
-		piArgs,
+		// ACP adapters such as pi-acp pass --no-themes with --mode rpc.
+		piArgs: values["no-themes"] ? [...piArgs, "--no-themes"] : piArgs,
 		preLaunchNotice,
 		...promptOptions,
 	});

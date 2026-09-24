@@ -5,7 +5,7 @@ section: Workflows
 order: 1
 ---
 
-Deep research is the flagship Feynman workflow. For broad topics, it can call researcher agents in parallel to search academic papers, web sources, and code repositories, then synthesize everything into a structured research brief with inline citations. Narrow explainers stay lead-owned and use direct searches.
+Deep research investigates a topic and produces a research brief with inline citations and a provenance record. Broad topics use parallel researcher agents; narrow explainers stay with the lead agent and direct searches.
 
 ## Usage
 
@@ -21,32 +21,33 @@ From the CLI:
 feynman deepresearch "What are the current approaches to mechanistic interpretability in LLMs?"
 ```
 
-Both forms are equivalent. The workflow first writes a plan to `outputs/.plans/<slug>.md`, summarizes it, and waits for you to confirm or request changes. After you approve the plan, it streams progress as Feynman discovers and analyzes sources.
+`/deepresearch` stops after writing its plan and waits for you to reply "yes" or request changes. Nothing is searched, fetched, or drafted before you approve.
 
 ## How it works
 
-The deep research workflow proceeds through five phases. First, Feynman creates a plan with key questions, source strategy, scale decision, task ledger, and verification log, then asks for confirmation before executing.
+1. **Plan** -- Feynman writes `outputs/.plans/<slug>.md` with key questions, evidence needed, a scale decision, a task ledger, a verification log, and a decision log, then asks for confirmation.
+2. **Scale** -- Narrow questions and "what is X" explainers use direct search by the lead agent (at least three distinct queries). Comparisons of 2-3 items use 2 `researcher` agents, broad surveys 3-4, and complex multi-domain topics 4-6.
+3. **Gather** -- Researchers run in parallel, each writing its findings to a file. Feynman prefers abstracts, HTML pages, official docs, and paper metadata, and reads full text only for the few papers the conclusions depend on. Failed or missing research is recorded in the plan rather than assumed to exist.
+4. **Draft** -- The lead agent writes the draft itself and removes or downgrades any claim that does not map to a source, note, or artifact.
+5. **Cite** -- When researchers were used, the `verifier` agent adds inline citations and checks every URL. In direct-search runs, the lead agent does this itself.
+6. **Review** -- When researchers were used, the `reviewer` agent checks the cited draft for unsupported claims, logical gaps, single-source critical claims, and overstated confidence; FATAL issues are fixed and re-reviewed before delivery. In direct-search runs, the lead agent writes the review itself.
+7. **Deliver** -- The final brief and its provenance sidecar are written, and Feynman checks that every required file exists before responding.
 
-Second, after approval, Feynman chooses the execution scale. Narrow "what is X" explainers usually run as direct lead-owned research with multiple search terms. Broader surveys can dispatch researcher agents in parallel to search academic papers, web sources, and code repositories.
+If a tool or source fails after approval, the run continues in degraded mode and still writes a final output marked `Verification: BLOCKED` or `PASS WITH NOTES`.
 
-Parallel evidence gathering uses one async `workflowScript` with `runs.all` and a concurrency limit of four. Each child reads its task brief from disk and declares an output file. Feynman checks the ordered completion results and actual returned artifact paths before synthesis, recording failed or missing evidence in the task ledger and provenance. Citation verification completes before the reviewer starts; neither an async launch receipt nor an intended filename proves that step finished.
+## Output
 
-Third, Feynman reads and extracts key findings from the most relevant sources. It pulls claims, methodology details, results, and limitations from each paper or article. PDF extraction is avoided unless explicitly requested; metadata, abstracts, HTML pages, and official docs are preferred when PDF parsing is brittle.
+| File | Contents |
+| --- | --- |
+| `outputs/.plans/<slug>.md` | Plan, task ledger, verification log |
+| `outputs/.drafts/<slug>-draft.md` | Uncited draft |
+| `outputs/.drafts/<slug>-cited.md` | Draft with inline citations and Sources |
+| `outputs/.drafts/<slug>-revised.md` | Written only when review fixes need a full rewrite |
+| `outputs/<slug>.md` (or `papers/<slug>.md` for paper-style drafts) | Final brief |
+| `<slug>.provenance.md` next to the final brief | Date, sources consulted/accepted/rejected, verification status, research files |
 
-Fourth, a synthesis step cross-references findings across sources, identifies areas of consensus and disagreement, and organizes the material into a coherent narrative. The output is written as a research brief with sections for background, key findings, open questions, and references.
-
-Finally, Feynman verifies claims against cited sources to flag misattributions or unsupported assertions. The finished report and provenance sidecar are saved under `outputs/` and can be previewed as rendered HTML when a preview command is visible, or opened/rendered with shell tools such as `pandoc`.
-
-## Output format
-
-The research brief follows a consistent structure:
-
-- **Summary** -- A concise overview of the topic and key takeaways
-- **Background** -- Context and motivation for the research area
-- **Key Findings** -- The main results organized by theme, with inline citations
-- **Open Questions** -- Unresolved issues and promising research directions
-- **References** -- Full citation list with links to source papers and articles
+The brief contains an executive summary, findings organized by question or theme, evidence-backed caveats and disagreements, open questions, and a Sources section.
 
 ## Customization
 
-You can steer the research by being specific in your prompt. Narrow topics produce more focused briefs. Broad topics produce survey-style overviews. You can also specify constraints like "focus on papers from 2024" or "only consider empirical results" to guide the agents.
+Steer the run in your prompt. Narrow topics produce focused briefs; broad topics produce survey-style overviews. Constraints such as "focus on papers from 2025" or "only consider empirical results" narrow the search. Ask for comprehensive coverage if you want researcher agents on a topic that would otherwise be treated as a simple explainer.

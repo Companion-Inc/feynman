@@ -2,10 +2,10 @@
 title: Autoresearch
 description: Start a bounded research experiment loop that iteratively optimizes against a benchmark.
 section: Workflows
-order: 9
+order: 10
 ---
 
-The autoresearch workflow runs a bounded research experiment loop that iteratively proposes changes, runs a benchmark, records evidence, and decides whether to keep or revert each change. It is designed for model, retrieval, prompt, architecture, or dataset experiments where the feedback signal is explicit.
+The autoresearch workflow runs a bounded experiment loop: change something, run a benchmark, record the result, and keep or revert the change. It is for model, retrieval, prompt, architecture, or dataset experiments where the feedback signal is an explicit metric.
 
 ## Usage
 
@@ -21,32 +21,25 @@ From the CLI:
 feynman autoresearch "Optimize prompt engineering strategies for math reasoning on GSM8K"
 ```
 
-Autoresearch runs in the active Feynman session after you confirm the benchmark, metric, environment, files in scope, and iteration limit.
+Subcommands:
+
+- `/autoresearch <text>` -- start or resume the loop
+- `/autoresearch off` -- stop the loop and keep its data
+- `/autoresearch clear` -- delete all loop state and start fresh
 
 ## How it works
 
-The workflow begins by analyzing the research goal and designing an initial experiment plan. It then enters an iterative loop:
+1. **Gather** -- If `autoresearch.md` and `autoresearch.jsonl` already exist, Feynman asks whether to resume or start fresh. Otherwise it asks for what to optimize, the benchmark command, the metric name, unit, and direction, the files in scope, and a maximum iteration count (default 20).
+2. **Environment** -- Feynman asks where to run: local, a new git branch, a virtual environment, Docker, Modal (if the `modal` CLI is set up), or RunPod (if `runpodctl` is installed and `RUNPOD_API_KEY` is set).
+3. **Confirm** -- Feynman shows the target, benchmark, files, environment, and iteration limit, and does not start until you approve.
+4. **Run** -- Feynman creates `autoresearch.md`, `autoresearch.jsonl`, and `autoresearch.sh`, runs the baseline, then loops: edit, run the benchmark, log the result and decision, compare against the baseline, and keep, revert, or record the failed hypothesis. The loop continues until you interrupt it or the iteration limit is reached.
 
-1. **Hypothesis** -- The agent proposes a hypothesis or modification based on current results
-2. **Experiment** -- It designs and executes an experiment to test the hypothesis
-3. **Analysis** -- Results are analyzed and compared against prior iterations
-4. **Decision** -- The agent decides whether to continue the current direction, try a variation, or pivot to a new approach
+After the baseline and at meaningful milestones, Feynman appends a short entry to `CHANGELOG.md` with what changed, the observed metric, what failed, and the next step.
 
-Each iteration builds on the previous ones. The agent maintains a running log of what has been tried, what worked, what failed, and what the current best result is. This prevents repeating failed approaches and ensures the search progresses efficiently.
+## Output
 
-## Monitoring and control
-
-The loop writes `autoresearch.md`, `autoresearch.jsonl`, and benchmark output in the active workspace. Use those files, plus `CHANGELOG.md` milestone entries, to inspect the current best result, failed hypotheses, and next step.
-
-## Output format
-
-Autoresearch produces a running experiment log that includes:
-
-- **Experiment History** -- What was tried in each iteration with parameters and results
-- **Best Configuration** -- The best-performing setup found so far
-- **Ablation Results** -- Which factors mattered most based on the experiments run
-- **Recommendations** -- Suggested next steps based on observed trends
+The loop state lives in `autoresearch.md`, `autoresearch.jsonl`, and `autoresearch.sh` in the workspace. When reporting results, Feynman lists every configuration tried (kept, reverted, and failed) with its metric and describes how the result varies across settings and seeds, rather than claiming an effect from the single best run.
 
 ## When to use it
 
-Use `/autoresearch` for research tasks that benefit from iterative exploration: hyperparameter optimization, prompt-strategy evaluation, architecture search, retrieval tuning, or dataset/benchmark ablations where the search space is large and the feedback signal is clear. It is not the right tool for answering a specific question (use `/deepresearch` for that) and it is not a generic code-optimization loop.
+Use `/autoresearch` for hyperparameter searches, prompt-strategy evaluation, architecture or retrieval tuning, and dataset or benchmark ablations. To answer a specific question from sources, use `/deepresearch` instead.

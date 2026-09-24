@@ -5,38 +5,34 @@ section: Getting Started
 order: 2
 ---
 
-This guide assumes you have already [installed Feynman](/docs/getting-started/installation) and run `feynman setup`. If not, start there first.
+This guide assumes you have [installed Feynman](/docs/getting-started/installation) and run `feynman setup`.
 
 ## Launch the REPL
-
-Start an interactive session by running:
 
 ```bash
 feynman
 ```
 
-You are dropped into a conversational REPL where you can ask research questions, run workflows, and interact with agents in natural language. Type your question and press Enter.
+This opens an interactive session in the current directory. An interactive launch continues the most recent session for that directory; pass `--new-session` to start fresh. Type a research question and press Enter.
 
 ## Run a one-shot prompt
 
-If you want a quick answer without entering the REPL, use the `--prompt` flag:
+To get one answer without entering the REPL:
 
 ```bash
 feynman --prompt "Summarize the key findings of Attention Is All You Need"
 ```
 
-Feynman processes the prompt, prints the response, and exits. This is useful for scripting or piping output into other tools.
+Feynman prints the response and exits.
 
-## Start a deep research session
-
-Deep research is the flagship workflow. It can call researcher agents to search, read, cross-reference, and synthesize information from academic papers and the web when the topic is broad enough to benefit from delegation:
+## Start a deep research run
 
 ```bash
 feynman
 > /deepresearch What are the current approaches to mechanistic interpretability in LLMs?
 ```
 
-The agents collaborate to produce a structured research report with citations, key findings, and open questions. The full report is saved to your session directory for later reference.
+Feynman first writes a plan to `outputs/.plans/<slug>.md` and asks you to confirm it. After you reply `yes`, it gathers evidence, delegating to researcher agents when the topic is broad enough, then drafts, verifies citations, and writes the final brief to `outputs/<slug>.md` with a `.provenance.md` sidecar.
 
 ## Find an ML training recipe
 
@@ -46,25 +42,25 @@ For applied ML work, use `/recipe` when you need a practical starting point rath
 feynman recipe "fine-tune a small model for math reasoning"
 ```
 
-Feynman ranks candidate recipes by result quality and feasibility, checks datasets and implementation paths when possible, and writes the final brief to `outputs/<slug>-recipe.md`.
+Feynman ranks candidate recipes by result quality and feasibility, checks datasets and implementation paths when possible, and writes the brief to `outputs/<slug>-recipe.md`.
 
 ## Work with files
 
-Feynman can read and write files in your working directory. Point it at a paper or codebase for targeted analysis:
+Feynman reads and writes files in its working directory. Use `--cwd` to point it at a project folder:
 
 ```bash
 feynman --cwd ~/papers
 > /review arxiv:2301.07041
 ```
 
-You can also ask Feynman to draft documents, audit code, or compare multiple sources by referencing local files directly in your prompts.
+You can also reference local files directly in prompts.
 
-## Explore slash commands
+## Explore commands
 
-Type `/help` inside the REPL to see Feynman's public research commands. Each command maps to a workflow or utility, such as `/deepresearch`, `/recipe`, `/review`, or `/draft`. You can also run any workflow directly from the CLI:
+Type `/help` inside the REPL to see Feynman's commands. Every research workflow also runs directly from the shell:
 
 ```bash
 feynman deepresearch "transformer architectures for protein folding"
 ```
 
-See the [Slash Commands reference](/docs/reference/slash-commands) for the curated public list.
+See the [Slash Commands](/docs/reference/slash-commands) and [CLI Commands](/docs/reference/cli-commands) references.

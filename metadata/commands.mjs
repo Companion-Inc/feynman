@@ -54,8 +54,8 @@ export const livePackageCommandGroups = [
 		title: "Live Package Commands",
 		commands: [
 			{ name: "search", usage: "/search" },
-			{ name: "web-results", usage: "/web-results" },
-			{ name: "preview", usage: "/preview" },
+			{ name: "websearch", usage: "/websearch" },
+			{ name: "curator", usage: "/curator" },
 			{ name: "hotkeys", usage: "/hotkeys" },
 			{ name: "new", usage: "/new" },
 			{ name: "quit", usage: "/quit" },
@@ -161,6 +161,7 @@ export const legacyFlags = [
 	{ usage: "--session <path|id>", description: "Open a specific session." },
 	{ usage: "--fork <path|id>", description: "Fork a session into a new one." },
 	{ usage: "--no-session", description: "Use an in-memory session that is not persisted." },
+	{ usage: "--no-themes", description: "Skip theme loading (passed by ACP adapters such as pi-acp)." },
 	{ usage: "--export <session.jsonl> [out.html]", description: "Export a session file to HTML and exit." },
 	{ usage: "--doctor", description: "Alias for `feynman doctor`." },
 	{ usage: "--setup-preview", description: "Alias for `feynman setup preview`." },

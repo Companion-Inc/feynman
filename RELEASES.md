@@ -6,6 +6,24 @@ GitHub release notes are generated from the matching `## vX.Y.Z` section in this
 
 ## Unreleased
 
+## v0.5.4 - 2026-09-24
+
+### Use Feynman from ACP editors
+
+- `feynman --mode rpc` now accepts `--no-themes`, the Pi flag the [pi-acp](https://github.com/svkozak/pi-acp) adapter passes, so Feynman runs in ACP editors such as Zed. Point pi-acp at Feynman with `PI_ACP_PI_COMMAND=feynman`; the setup guide has the Zed settings.
+
+### Removed what did not work
+
+- The optional `session-search` package preset is gone. It indexes `~/.pi/agent/sessions` and never saw Feynman's sessions in `~/.feynman/sessions`, and its `/search` collided with pi-web-access's. Search past sessions with `grep` or `rg` over `~/.feynman/sessions`; the session-search skill now shows how.
+- `/preview` is no longer listed in `/help`: no bundled or optional package provides it. `feynman setup preview` still installs pandoc, and the preview docs show how to render artifacts to HTML or PDF.
+- `/help` lists pi-web-access's real `/websearch` and `/curator` commands instead of `/web-results`, which pi-web-access 0.31 no longer registers.
+- The autoresearch and alpha skills no longer mention tools and patches that do not exist.
+
+### Docs match the code
+
+- Every docs page, the landing page, and the README were checked against the CLI, prompts, agents, and package code. Corrections include the setup flow (model access, optional packages, alphaXiv login, pandoc), where keys are stored (plain text in `~/.feynman/agent/auth.json` with user-only permissions, not encrypted), the verifier, reviewer, and writer roles and which workflows use them, workflow steps and output files, the web-search tools and commands, and dead Pi links (now `earendil-works/pi`).
+- The landing page adds a PowerShell install command and drops cards for features that do not ship.
+
 ## v0.5.3 - 2026-09-24
 
 ### Leaner prompts, same research quality

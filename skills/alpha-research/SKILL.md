@@ -5,7 +5,7 @@ description: Search, read, and query research papers via Feynman's alphaXiv-back
 
 # Alpha Research CLI
 
-Use visible Feynman alpha tools when they are available. For shell commands, use `feynman alpha ...`; do not call the user's bare global `alpha` binary because it can be stale or unpatched.
+Use visible Feynman alpha tools when they are available. For shell commands, use `feynman alpha ...`; do not call the user's bare global `alpha` binary because it can be stale.
 
 ## Commands
 

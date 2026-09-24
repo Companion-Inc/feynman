@@ -5,11 +5,9 @@ import { join, resolve } from "node:path";
 import test from "node:test";
 
 import {
-	isOptionalPackagePresetSupported,
 	listOptionalPackagePresets,
 	normalizeOptionalPackagePresetName,
 	resolvePackageSource,
-	supportsNativePackageSources,
 } from "../src/pi/packages.js";
 import { BUNDLED_PI_PACKAGES, getFeynmanPackageSources } from "../src/pi/runtime.js";
 import { chooseRecommendedModel } from "../src/model/catalog.js";
@@ -272,16 +270,9 @@ test("ensureFeynmanSettings seeds OpenCode Go Kimi as the preferred OpenCode Go 
 test("optional package presets map friendly names to Pi package sources", () => {
 	assert.equal(resolvePackageSource("memory"), "npm:@samfp/pi-memory");
 	assert.equal(resolvePackageSource("Hindsight"), "npm:@luxusai/pi-hindsight");
-	assert.equal(resolvePackageSource("session-search"), "npm:@kaiserlich-dev/pi-session-search");
+	assert.equal(resolvePackageSource("session-search"), "session-search");
 	assert.equal(resolvePackageSource("npm:custom-package"), "npm:custom-package");
 	assert.equal(normalizeOptionalPackagePresetName("all-extras"), undefined);
-	assert.equal(isOptionalPackagePresetSupported("session-search", "22.12.0"), true);
-	assert.equal(isOptionalPackagePresetSupported("session-search", "24.8.0"), false);
-	assert.deepEqual(listOptionalPackagePresets("24.8.0").map((preset) => preset.name), ["memory", "hindsight"]);
+	assert.deepEqual(listOptionalPackagePresets().map((preset) => preset.name), ["memory", "hindsight"]);
 });
 
-test("supportsNativePackageSources disables sqlite-backed packages on Node 23+", () => {
-	assert.equal(supportsNativePackageSources("22.12.0"), true);
-	assert.equal(supportsNativePackageSources("23.0.0"), false);
-	assert.equal(supportsNativePackageSources("24.8.0"), false);
-});

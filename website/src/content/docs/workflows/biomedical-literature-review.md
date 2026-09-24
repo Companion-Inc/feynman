@@ -21,6 +21,8 @@ From the CLI:
 feynman lit "PICO: adults with type 2 diabetes; intervention continuous glucose monitoring; comparator standard self-monitoring; outcomes HbA1c and hypoglycemia"
 ```
 
+This runs the standard [`/lit` workflow](/docs/workflows/literature-review). For biomedical papers, the `researcher` agent searches PubMed first and Europe PMC for open-access full-text sections.
+
 ## Frame the question
 
 Start with a structured research question. For intervention questions, prefer PICO or PICOS:
@@ -60,7 +62,11 @@ For biomedical topics, include these instructions in the prompt when they matter
 - distinguish efficacy, effectiveness, safety, feasibility, and cost
 - flag single-study conclusions, small samples, unadjusted analyses, and indirect evidence
 - identify whether claims come from peer-reviewed publications, preprints, registry records, guidelines, or secondary summaries
+- report safety signals and adverse events when relevant
 - state limitations and unresolved questions before giving a bottom-line synthesis
+- state that the output is research synthesis, not medical advice
+
+If Feynman cannot access a full text, trial registry, guideline, supplement, dataset, or source URL, the review should mark that check as blocked instead of inferring missing details.
 
 ## Privacy and safety boundaries
 
@@ -84,18 +90,3 @@ What should this patient do?
 Which treatment should I choose for this case?
 Diagnose this patient.
 ```
-
-## Good output checklist
-
-A useful biomedical literature review should include:
-
-- the framed question and scope
-- the search strategy or exact search terms used
-- evidence grouped by study design
-- key effect estimates only when source-backed
-- evidence quality caveats
-- safety signals and adverse event reporting when relevant
-- conflicts, uncertainty, and generalizability limits
-- a clear statement that the output is research synthesis, not medical advice
-
-If Feynman cannot access a full text, trial registry, guideline, supplement, dataset, or source URL, the review should mark that check as blocked instead of inferring missing details.
