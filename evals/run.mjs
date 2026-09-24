@@ -289,6 +289,8 @@ async function main() {
 		await Promise.all(Array.from({ length: Math.max(1, Number(opt.concurrency)) }, worker));
 		mkdirSync(join(evalsDir, "results"), { recursive: true });
 		outBase = join(evalsDir, "results", `${meta.date.slice(0, 10)}-${opt.workflow}-${opt.model.replace(/[^a-zA-Z0-9.-]+/g, "_")}`);
+		// Never overwrite an earlier run from the same day.
+		for (let n = 2, base = outBase; existsSync(`${outBase}.jsonl`); n += 1) outBase = `${base}-${n}`;
 	}
 	writeFileSync(`${outBase}.jsonl`, rows.map((r) => JSON.stringify(r)).join("\n") + "\n");
 	const summary = table(rows);

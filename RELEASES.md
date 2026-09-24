@@ -6,6 +6,22 @@ GitHub release notes are generated from the matching `## vX.Y.Z` section in this
 
 ## Unreleased
 
+## v0.5.3 - 2026-09-24
+
+### Leaner prompts, same research quality
+
+- The system prompt and the 11 workflow prompts lost about 200 lines. A block of tool-name rules was copied into every workflow and repeated in the system prompt, and the prompts referred to memory, process, chart, and experiment tools Feynman does not ship, `FEYNMAN_SUMMARIZE_*` environment variables that nothing reads, and a PDF crash that no longer exists.
+- Workflows now wait for their background subagents before the final answer. In one-shot `feynman --prompt` runs, a `/lit` run could end while its reviewer was still working and never write the provenance file.
+- On the `/lit` eval with GPT-5.6 Terra, 4 of 4 questions finished, all 44 citations resolved with matching titles, and each question ran the researcher, verifier, and reviewer in under 11 minutes (0.5.2: 9-14 minutes, 43 of 43 citations).
+
+### Smaller install
+
+- CLI telemetry sends its command events through posthog-node, like the rest of Feynman. It no longer also sends each command as an OpenTelemetry span and two log records, which removes nine `@opentelemetry` packages (about 28 MB). The events and what they contain are unchanged.
+
+### Known issue
+
+- Claude Opus 5.5 refuses some biology literature reviews (for example `/lit CRISPR base editing`) with "The model refused to complete the request". The same topics run on GPT-5.6 Terra.
+
 ## v0.5.2 - 2026-09-23
 
 ### Faster, cheaper research runs

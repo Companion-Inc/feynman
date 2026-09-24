@@ -182,7 +182,7 @@ What is sent:
 | `feynman_tool_used` | Tool name, whether it failed, whether a subagent called it |
 | `$ai_generation` | [PostHog LLM analytics](https://posthog.com/docs/llm-analytics/generations) metadata for each model response: model, provider, input, output, and cache token counts, latency, HTTP status, stop reason, error flag, and the Pi session ID as the trace ID. No `$ai_input` or `$ai_output_choices`. |
 
-Every event also carries the Feynman version, Node.js version, platform, and CPU architecture. The CLI also sends its command spans to PostHog distributed tracing at `/i/v1/traces` and command logs to PostHog Logs at `/i/v1/logs`, with the same properties.
+Every event also carries the Feynman version, Node.js version, platform, and CPU architecture.
 
 Each send is tried once. The first network or ingest failure turns telemetry off for the rest of that process without printing anything; set `FEYNMAN_DEBUG=1` to see the single CLI diagnostic.
 
