@@ -4,17 +4,6 @@ args: <idea>
 section: Research Workflows
 topLevelCli: true
 ---
-## Tool Discipline (Read First)
-
-Tool names are literal. Use only tools visible in the current tool set.
-
-- Search with `web_search`; do not call `search_web`, `google_search`, `google:search`, `search_google`, or `WebSearch`.
-- Fetch URLs with `fetch_content`; do not call bare `fetch`, `WebFetch`, `read_url_content`, or pass an array as `url`. Use `urls` for multiple URLs when the tool supports it.
-- Use visible Feynman alpha tools such as `alpha_search` when present. For shell access, call `feynman alpha ...`; do not call the user's bare global `alpha` binary.
-- To ask the user a question, write plain chat text and wait for the next user message. Do not call `ask_user_question`, `ask_user`, `ask_followup_question`, or `user_choice`.
-- Do not use `Task` as an agent dispatcher. Use only the visible `subagent` tool when it exists.
-- If a tool returns `Tool not found` or `Invalid URL`, do not retry the same invalid call. Map to a canonical visible tool and valid arguments, or record the capability as blocked.
-
 Start an autoresearch optimization loop for: $@
 
 This command runs a bounded foreground research experiment loop using the visible tools in this session.
@@ -65,14 +54,6 @@ Each iteration: edit -> run the benchmark -> log the benchmark result, evidence,
 After the baseline and after meaningful iteration milestones, append a concise entry to `CHANGELOG.md` summarizing what changed, what metric result was observed, what failed, and the next step.
 
 When reporting results, include every configuration tried from `autoresearch.jsonl` (kept, reverted, and failed) with its metric. Do not claim an effect from the single most favorable setting; state how the result varies across all tried settings and seeds.
-
-## Optional tools
-
-Use these only when they are visible in the current tool set:
-
-- `init_experiment` - one-time session config (name, metric, unit, direction)
-- `run_experiment` - run the benchmark command, capture output and wall-clock time
-- `log_experiment` - record the benchmark result, evidence, and decision in the autoresearch log
 
 ## Subcommands
 

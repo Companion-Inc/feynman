@@ -4,21 +4,7 @@ args: <topic>
 section: Research Workflows
 topLevelCli: true
 ---
-## Tool Discipline (Read First)
-
-Tool names are literal. Use only tools visible in the current tool set.
-
-- Search with `web_search`; do not call `search_web`, `google_search`, `google:search`, `search_google`, or `WebSearch`.
-- Fetch URLs with `fetch_content`; do not call bare `fetch`, `WebFetch`, `read_url_content`, or pass an array as `url`. Use `urls` for multiple URLs when the tool supports it.
-- Use visible Feynman alpha tools such as `alpha_search` when present. For shell access, call `feynman alpha ...`; do not call the user's bare global `alpha` binary.
-- To ask the user a question, write plain chat text and wait for the next user message. Do not call `ask_user_question`, `ask_user`, `ask_followup_question`, or `user_choice`.
-- Do not use `Task` as an agent dispatcher. Use only the visible `subagent` tool when it exists.
-- If a tool returns `Tool not found` or `Invalid URL`, do not retry the same invalid call. Map to a canonical visible tool and valid arguments, or record the capability as blocked.
-
 Run deep research for: $@
-
-This is an execution request, not a request to explain or implement the workflow instructions.
-Execute the workflow. Do not answer by describing the protocol, do not explain these instructions, and do not restate the protocol. Your first actions should be tool calls that create directories and write the plan artifact.
 
 ## Required Artifacts
 
@@ -45,8 +31,6 @@ Create `outputs/.plans/<slug>.md` immediately. The plan must include:
 
 Make the scale decision before assigning owners in the plan. If the topic is a narrow "what is X" explainer, the plan must use lead-owned direct search tasks only; do not allocate researcher subagents in the task ledger.
 
-Also save the plan with `memory_remember` using key `deepresearch.<slug>.plan` if that tool is available. If it is not available, continue without it.
-
 After writing the plan, stop and ask for explicit confirmation before gathering evidence. Summarize the plan briefly and ask:
 
 `Proceed with this deep research plan? Reply "yes" to continue, or tell me what to change.`
@@ -69,9 +53,7 @@ Use subagents only when decomposition clearly helps:
 
 ## Step 3: Gather Evidence
 
-Use only tool names visible in the current tool set. For web search, call `web_search`; never call `google:search`, `google_search`, or `search_google`.
-
-Avoid crash-prone PDF parsing in this workflow. Do not call `alpha_get_paper` and do not fetch `.pdf` URLs unless the user explicitly asks for PDF extraction. Prefer paper metadata, abstracts, HTML pages, official docs, and web snippets. If only a PDF exists, cite the PDF URL from search metadata and mark full-text PDF parsing as blocked instead of fetching it.
+Prefer abstracts, HTML pages, official docs, and paper metadata. Read full text only for the few papers the conclusions depend on.
 
 If direct search was chosen:
 - Skip researcher spawning entirely.
@@ -88,7 +70,6 @@ If subagents were chosen:
 - Use only supported `subagent` keys. Do not add extra keys such as `artifacts` unless the tool schema explicitly exposes them.
 - Use one async `workflowScript` with `await runs.all(...)` for parallel evidence gathering. Each item needs a unique stable `key`, plus its agent, short task, and output path. Set `globalConcurrencyLimit: 4` on the outer call.
 - Read the ordered result array and record each child's `ok`, error, and returned output/artifact paths. Ordinary child failures are collected by `runs.all`; validation or infrastructure failure can still fail the workflow. Do not assume every output exists.
-- Do not name exact tool commands in subagent tasks unless those tool names are visible in the current tool set.
 - Prefer broad guidance such as "use paper search and web search"; if a PDF parser or paper fetch fails, the researcher must continue from metadata, abstracts, and web sources and mark PDF parsing as blocked.
 
 Example shape:
@@ -169,8 +150,6 @@ Consume the review completion result and locate its returned output before proce
 
 When applying reviewer fixes, do not issue one giant `edit` tool call with many replacements. Use small localized edits only for 1-3 simple corrections. For section rewrites, table rewrites, or more than 3 substantive fixes, read the cited draft and write a corrected full file to `outputs/.drafts/<slug>-revised.md` instead.
 
-After applying reviewer, verifier, audit, or PI-style fixes, run an explicit on-disk verification before saying the fixes landed. Use `rg`, `grep`, `diff`, `wc`, `stat`, or a targeted read to prove the old unsupported wording is gone and the replacement wording exists. If an `edit` or `write` tool call fails, do not describe the fix as applied; record the failure in the plan/provenance, retry with a smaller edit or a full corrected file, and verify again. Provenance may only say an issue was fixed when this post-edit verification passed.
-
 The final candidate is `outputs/.drafts/<slug>-revised.md` if it exists; otherwise it is `outputs/.drafts/<slug>-cited.md`.
 
 ## Step 7: Deliver
@@ -195,7 +174,5 @@ Write provenance next to it as `<slug>.provenance.md`:
 ```
 
 Before responding, verify on disk that all required artifacts exist. If verification could not be completed, set `Verification: BLOCKED` or `PASS WITH NOTES` and list the missing checks.
-
-Before responding, also verify that any fixes claimed in the provenance are reflected in the final candidate. If a fix removed a phrase, number, source, or claim, run a targeted `rg`/`grep` check for the removed content and a second check for the corrected content. Do not claim "all patches applied", "all checks pass", or "fixed" unless these commands or reads succeed.
 
 Final response should be brief: link the final file, provenance file, and any blocked checks.

@@ -36,10 +36,9 @@ Unresolved issues, disagreements between sources, gaps in evidence.
 ```
 
 ## Visuals
-- When the research contains quantitative data (benchmarks, comparisons, trends over time), generate charts only when a chart tool is visible; otherwise write a chart specification or source-backed table.
+- Use Markdown tables for quantitative data (benchmarks, comparisons, trends). Plot only source-backed data, and save the plotting script next to the draft.
 - Do not create charts from invented or example data. If values are missing, describe the planned measurement instead.
 - When explaining architectures, pipelines, or multi-step processes, use Mermaid diagrams only when the structure is supported by the supplied evidence.
-- When a comparison across multiple dimensions would benefit from an interactive view, use an interactive UI tool only when one is visible and the data is source-backed.
 - Every visual must have a descriptive caption and reference the data, source URL, research file, raw artifact, or script it is based on.
 - Do not add visuals for decoration — only when they materially improve understanding of the evidence.
 
