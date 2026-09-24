@@ -121,7 +121,8 @@ async function resolveArxiv(idList) {
 		for (const entry of xml.split("<entry>").slice(1)) {
 			const id = entry.match(/<id>https?:\/\/arxiv\.org\/abs\/([^<]+?)(v\d+)?<\/id>/)?.[1];
 			const title = entry.match(/<title>([\s\S]*?)<\/title>/)?.[1].replace(/\s+/g, " ").trim();
-			if (id && title && title !== "Error") titles.set(id, title);
+			const author = entry.match(/<author>\s*<name>([^<]+)<\/name>/)?.[1].trim().split(/\s+/).pop();
+			if (id && title && title !== "Error") titles.set(id, { title, author });
 		}
 	}
 	return titles; // missing key = does not resolve; undefined value = lookup failed
@@ -130,8 +131,8 @@ async function resolveArxiv(idList) {
 async function resolveDoi(doi) {
 	const res = await fetch(`https://api.crossref.org/works/${encodeURIComponent(doi)}`, { headers: UA }).catch(() => null);
 	if (res?.ok) {
-		const title = (await res.json()).message?.title?.[0];
-		return { resolves: true, title: title?.replace(/\s+/g, " ").trim() };
+		const m = (await res.json()).message;
+		return { resolves: true, title: m?.title?.[0]?.replace(/\s+/g, " ").trim(), author: m?.author?.[0]?.family };
 	}
 	// Not in Crossref (DataCite, mEDRA, ...): ask the DOI handle system directly.
 	const handle = await fetch(`https://doi.org/api/handles/${encodeURIComponent(doi)}`, { headers: UA }).catch(() => null);
@@ -160,15 +161,18 @@ async function scoreCitations(text) {
 	const arxiv = await resolveArxiv(ids.filter((c) => c.kind === "arxiv").map((c) => c.id));
 	const rows = [];
 	for (const c of ids) {
-		let resolves, title;
+		let resolves, title, author;
 		if (c.kind === "arxiv") {
 			resolves = arxiv.has(c.id) ? (arxiv.get(c.id) === undefined ? undefined : true) : false;
-			title = arxiv.get(c.id);
+			({ title, author } = arxiv.get(c.id) ?? {});
 		} else {
-			({ resolves, title } = await resolveDoi(c.id));
+			({ resolves, title, author } = await resolveDoi(c.id));
 		}
-		const overlap = title ? Math.max(0, ...citedContexts(text, c.id).map((ctx) => titleOverlap(title, ctx))) : null;
-		rows.push({ ...c, resolves, title, overlap });
+		const contexts = citedContexts(text, c.id);
+		const overlap = title ? Math.max(0, ...contexts.map((ctx) => titleOverlap(title, ctx))) : null;
+		// Author-year citations ("Komor et al. 2016, DOI ...") carry no title; accept the first author's surname.
+		const authorSeen = Boolean(author) && tokens(author).every((t) => contexts.some((ctx) => tokens(ctx).includes(t)));
+		rows.push({ ...c, resolves, title, overlap, matched: overlap !== null && (overlap >= 0.6 || authorSeen) });
 	}
 	const checked = rows.filter((r) => r.resolves !== undefined);
 	const titled = rows.filter((r) => r.resolves && r.overlap !== null);
@@ -176,9 +180,9 @@ async function scoreCitations(text) {
 		citations: rows.length,
 		citations_checked: checked.length,
 		citation_validity: checked.length ? checked.filter((r) => r.resolves).length / checked.length : null,
-		title_match: titled.length ? titled.filter((r) => r.overlap >= 0.6).length / titled.length : null,
+		title_match: titled.length ? titled.filter((r) => r.matched).length / titled.length : null,
 		unresolved: rows.filter((r) => r.resolves === false).map((r) => `${r.kind}:${r.id}`),
-		title_mismatch: titled.filter((r) => r.overlap < 0.6).map((r) => ({ id: `${r.kind}:${r.id}`, resolved_title: r.title, overlap: Number(r.overlap.toFixed(2)) })),
+		title_mismatch: titled.filter((r) => !r.matched).map((r) => ({ id: `${r.kind}:${r.id}`, resolved_title: r.title, overlap: Number(r.overlap.toFixed(2)) })),
 	};
 }
 

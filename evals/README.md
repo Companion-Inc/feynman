@@ -46,9 +46,11 @@ Output goes to `evals/results/<date>-<workflow>-<model>.jsonl` (one row per ques
 | `done` | A final `outputs/<slug>.md` exists with its `outputs/<slug>.provenance.md` sidecar. |
 | `cites` | Distinct arXiv IDs and DOIs in the final output. |
 | `valid` | Share of those identifiers that resolve (arXiv API `id_list`; Crossref, falling back to the doi.org handle API for non-Crossref DOIs). Lookups that fail on the network are left out. Unresolvable IDs are listed in `unresolved`. |
-| `title` | Among resolved IDs with a known title, the share whose resolved title is at least 60% present (by word tokens) on a line of the output that carries the ID. Low values flag IDs attached to the wrong paper; see `title_mismatch`. Bare links with no title also count as misses, so check the listed rows before calling something a hallucination. |
-| `recall` | Share of the question's expected key papers that appear in the output, by any listed identifier or by exact normalized title. |
+| `title` | Among resolved IDs with a known title, the share that match the output: the resolved title is at least 60% present (by word tokens) on a line that carries the ID, or, for author-year citations, the resolved first author's surname is on that line. Low values flag IDs attached to the wrong paper; see `title_mismatch`. Short-name citations ("When2Think, arXiv:…") also miss, so read the listed rows before calling something a hallucination. |
+| `recall` | Share of the question's expected key papers that appear in the final output, by any listed identifier or by exact normalized title. 0 when there is no final output. |
 | `wall`, `tokens`, `cost` | Wall time for the whole run, and token and cost totals summed over every Pi session file in the isolated home and temp dir (parent and subagent sessions, deduplicated). Cost is 0 when the provider's `models.json` entry has no `cost` block. |
+
+The first baseline, `results/2026-09-23-lit-ferrylane-openai_claude-sonnet-5.*`, ran q01, q04, q07 and q10 on Feynman 0.5.0. It used `claude-sonnet-5` through the Ferrylane gateway because the gateway's GPT quota was exhausted that day.
 
 Treat a single run as noisy. Compare before and after on the same ids, and look at the listed failures rather than only the percentages.
 
