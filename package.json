@@ -1,11 +1,11 @@
 {
   "name": "@companion-ai/feynman",
-  "version": "0.5.4",
+  "version": "0.5.5",
   "description": "Research-first CLI agent built on Pi and alphaXiv",
   "license": "MIT",
   "type": "module",
   "engines": {
-    "node": ">=22.22.0 <26"
+    "node": ">=22.22.0"
   },
   "bin": {
     "feynman": "bin/feynman.js"
@@ -77,16 +77,16 @@
     }
   },
   "dependencies": {
-    "@clack/prompts": "^1.7.0",
+    "@clack/prompts": "^1.8.1",
     "@companion-ai/alpha-hub": "0.1.6",
     "@earendil-works/pi-ai": "*",
     "@earendil-works/pi-coding-agent": "*",
     "fast-xml-parser": "5.11.1",
-    "pi-btw": "0.6.0",
+    "pi-btw": "0.6.1",
     "pi-docparser": "4.0.0",
     "pi-subagents": "0.71.0",
     "pi-web-access": "0.31.0",
-    "posthog-node": "^5.51.6"
+    "posthog-node": "^5.53.0"
   },
   "peerDependencies": {
     "@earendil-works/pi-ai": "*",
@@ -95,10 +95,10 @@
     "typebox": "*"
   },
   "devDependencies": {
-    "@types/node": "^26.4.1",
-    "tsx": "^4.23.13",
+    "@types/node": "^26.6.2",
+    "tsx": "^4.23.15",
     "typescript": "^7.0.2",
-    "yaml": "2.9.0"
+    "yaml": "2.9.1"
   },
   "repository": {
     "type": "git",

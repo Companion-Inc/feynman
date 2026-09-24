@@ -33,9 +33,9 @@ jobs:
           - os: windows-latest
             node: 24
           - os: windows-latest
-            node: 25
+            node: 26
           - os: ubuntu-latest
-            node: 25
+            node: 26
     runs-on: ${{ matrix.os }}
     env:
       HAS_OPENAI_KEY: ${{ secrets.OPENAI_API_KEY != '' }}
@@ -43,7 +43,7 @@ jobs:
       run:
         shell: bash
     steps:
-      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: ${{ matrix.node }}
 
@@ -134,9 +134,9 @@ jobs:
           - windows-latest
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: "24.20.0"
+          node-version: "24.21.0"
 
       - name: Install the published native bundle through the live Unix installer
         if: runner.os != 'Windows'
@@ -215,8 +215,8 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
-      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version-file: .nvmrc
 
@@ -282,20 +282,20 @@ jobs:
           - os: ubuntu-latest
             node: "22.22.0"
           - os: ubuntu-latest
-            node: "24.20.0"
+            node: "24.21.0"
           - os: ubuntu-latest
-            node: "25"
+            node: "26"
           - os: macos-14
-            node: "24.20.0"
+            node: "24.21.0"
           - os: windows-latest
-            node: "24.20.0"
+            node: "24.21.0"
           - os: windows-latest
-            node: "25"
+            node: "26"
     runs-on: ${{ matrix.os }}
     permissions:
       contents: read
     steps:
-      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: ${{ matrix.node }}
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
@@ -357,8 +357,8 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
-      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version-file: .nvmrc
 

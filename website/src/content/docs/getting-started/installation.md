@@ -35,7 +35,7 @@ To install into an existing Node.js environment instead:
 npm install -g @companion-ai/feynman
 ```
 
-This uses your local Node.js, which must satisfy `>=22.22.0 <26`.
+This uses your local Node.js, which must satisfy `>=22.22.0`.
 
 If you installed the interim `@advaitpaliwal/feynman` package, migrate once:
 

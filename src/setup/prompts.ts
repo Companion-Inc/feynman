@@ -1,4 +1,5 @@
 import {
+	type CANCEL_SYMBOL,
 	confirm as clackConfirm,
 	intro as clackIntro,
 	isCancel,
@@ -28,7 +29,7 @@ function ensureInteractiveTerminal(): void {
 	}
 }
 
-function guardCancelled<T>(value: T | symbol): T {
+function guardCancelled<T>(value: T | typeof CANCEL_SYMBOL): T {
 	if (isCancel(value)) {
 		throw new SetupCancelledError();
 	}

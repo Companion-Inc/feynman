@@ -69,7 +69,7 @@ feynman model list
 feynman model set <provider>/<model-id>
 ```
 
-Small local models often skip the multi-step research workflows and reply in chat without writing files to `outputs/`.
+Small local models often skip the multi-step research workflows and reply in chat without writing files to `outputs/`. A context window that is too small causes the same symptom: Ollama's default is only a few thousand tokens. Serve the model with a larger one (for example `OLLAMA_CONTEXT_LENGTH=65536 ollama serve`) and set the matching `contextWindow` and `maxTokens` on the model's entry in `~/.feynman/agent/models.json`, since custom models otherwise default to 128k and 16k.
 
 ## Optional packages
 
