@@ -16,7 +16,7 @@ test("pull-request release gates validate the merge candidate", () => {
 	assert.match(e2eWorkflow, /name: Candidate consumer \(\$\{\{ matrix\.os \}\}, Node \$\{\{ matrix\.node \}\}\)/);
 	assert.match(e2eWorkflow, /name: pr-npm-package/);
 	assert.match(e2eWorkflow, /node: "22\.22\.0"/);
-	assert.match(e2eWorkflow, /node: "25"/);
+	assert.match(e2eWorkflow, /node: "26"/);
 	assert.match(e2eWorkflow, /name: Windows native installer \(PR\)/);
 	assert.match(e2eWorkflow, /shell: powershell/);
 	assert.match(e2eWorkflow, /shell: pwsh/);
@@ -144,7 +144,7 @@ test("publish uses the exact verified tarball after native bundles pass", () => 
 	for (const os of ["ubuntu-latest", "macos-14", "windows-latest"]) {
 		assert.match(publishWorkflow, new RegExp(`- os: ${os}`));
 	}
-	for (const nodeVersion of ["22.22.0", "24.20.0", "25"]) {
+	for (const nodeVersion of ["22.22.0", "24.21.0", "26"]) {
 		assert.match(publishWorkflow, new RegExp(`node: "${nodeVersion.replace(/\./g, "\\.")}"`));
 	}
 	const consumerJob = publishWorkflow.match(
@@ -197,7 +197,7 @@ test("npm 12 is pinned only for compatible publisher and signature-audit jobs", 
 	}
 	const consumer = publishWorkflow.match(/\n  verify-package-consumers:[\s\S]*?(?=\n  publish-npm:)/)?.[0];
 	assert.ok(consumer);
-	assert.match(consumer, /node: "25"/);
+	assert.match(consumer, /node: "26"/);
 	assert.doesNotMatch(consumer, /npm@12|npm install.*--global.*npm@/);
 	assert.doesNotMatch(e2eWorkflow, /npm@12/);
 	assert.doesNotMatch(publishWorkflow, /npm@11\.18\.0|npm@latest/);

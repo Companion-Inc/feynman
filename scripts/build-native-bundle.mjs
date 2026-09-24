@@ -15,12 +15,12 @@ const packageLockPath = resolve(appRoot, "package-lock.json");
 const minBundledNodeVersion = packageJson.engines?.node?.match(/>=\s*([0-9]+\.[0-9]+\.[0-9]+)/)?.[1] || process.version.slice(1);
 const releaseNodeVersion = readFileSync(resolve(appRoot, ".nvmrc"), "utf8").trim().replace(/^v/, "");
 const PINNED_NODE_ARCHIVE_SHA256 = {
-	"node-v24.20.0-darwin-arm64.tar.xz": "b7bf7707070b950ba1ec5f1af3bb6de0f2b1962c5033973d94068ab021ef3014",
-	"node-v24.20.0-darwin-x64.tar.xz": "26fc30891004603d094eed11de5efcd03bbd2efbc35c177fc72648d5d7a7701b",
-	"node-v24.20.0-linux-arm64.tar.xz": "5f4ddab610c1ab2016b3c227cebdbf6d9495161487e4739c7b90090595f465f7",
-	"node-v24.20.0-linux-x64.tar.xz": "2f2c0da162318f0de47665410c7c8c2ed3d36c8f3105de4bbc61176c70a7cbf2",
-	"node-v24.20.0-win-arm64.zip": "31c6799744de8a54601643098040c68c3697e56c94e407d61d0e5fa5f34191d7",
-	"node-v24.20.0-win-x64.zip": "6cac9ffbca8f6a47091e4b5c772e0606049c3871cb67d900c0cedde630e545ba",
+	"node-v24.21.0-darwin-arm64.tar.xz": "6239d4cf92d864487ec8cd3615038f7b67e7f58b77b21cd2f09ea9fbd68065fe",
+	"node-v24.21.0-darwin-x64.tar.xz": "0ae5a24c24bb7d015cd816c5036b3f90f2945aa872fcf54e58da054753b3a299",
+	"node-v24.21.0-linux-arm64.tar.xz": "6ad1325edbdb5649c379b75a237147a666c95d4f9ae8d340fef2d1575d289ad2",
+	"node-v24.21.0-linux-x64.tar.xz": "fd8e59d5a511510f6a298afb548f18c7d2b1be404d8b4a27d94fbe49f56cb2d6",
+	"node-v24.21.0-win-arm64.zip": "8779b1bde1d39f8d420e3b57aa657b39891af434d3de44a919044cec06785921",
+	"node-v24.21.0-win-x64.zip": "158f7685b44de51f6c0df1d153526cbcd3e1bc739a8dfc607721cef75de9e541",
 };
 
 function parseSemver(version) {
