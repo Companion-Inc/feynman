@@ -18,6 +18,19 @@ function formatText(value: unknown): string {
 	return JSON.stringify(value, null, 2);
 }
 
+// alphaXiv's API has changed without notice before; when a call fails, point
+// the model at the other paper sources instead of leaving it on a broken tool.
+async function withPaperFallback<T>(run: () => Promise<T>): Promise<T> {
+	try {
+		return await run();
+	} catch (error) {
+		const message = (error instanceof Error ? error.message : String(error)).replace("`alpha login`", "`feynman alpha login`");
+		throw new Error(
+			`${message}\nalphaXiv did not answer this call. Use feynman_science_database_search (source "arxiv" or "semanticscholar") or fetch_content on https://arxiv.org/abs/<id> instead.`,
+		);
+	}
+}
+
 // Pi converts Type.Array inputs before validating them, which would turn null into ["null"].
 // Preserve the JSON Schema array contract without the Type.Array conversion marker.
 const paperSectionsSchema = Type.Unsafe<string[]>({
@@ -47,7 +60,7 @@ export function registerAlphaTools(pi: ExtensionAPI): void {
 			),
 		}),
 		async execute(_toolCallId, params) {
-			const result = await searchPapers(params.query, params.mode?.trim() || "semantic");
+			const result = await withPaperFallback(() => searchPapers(params.query, params.mode?.trim() || "semantic"));
 			return { content: [{ type: "text", text: formatText(result) }], details: result };
 		},
 	});
@@ -69,7 +82,7 @@ export function registerAlphaTools(pi: ExtensionAPI): void {
 			sections: Type.Optional(paperSectionsSchema),
 		}),
 		async execute(_toolCallId, params) {
-			const result = await getPaper(params.paper, { fullText: params.fullText });
+			const result = await withPaperFallback(() => getPaper(params.paper, { fullText: params.fullText }));
 			const extracted = extractPaperSections(result.content, params.section, params.sections);
 			const filteredResult = extracted.requested.length
 				? {
@@ -92,7 +105,7 @@ export function registerAlphaTools(pi: ExtensionAPI): void {
 			question: Type.String({ description: "Question about the paper." }),
 		}),
 		async execute(_toolCallId, params) {
-			const result = await askPaper(params.paper, params.question);
+			const result = await withPaperFallback(() => askPaper(params.paper, params.question));
 			return { content: [{ type: "text", text: formatText(result) }], details: result };
 		},
 	});
