@@ -42,7 +42,7 @@
     "prepack": "node ./scripts/clean-publish-artifacts.mjs && npm run build",
     "start": "tsx src/index.ts",
     "start:dist": "node ./bin/feynman.js",
-    "test": "node --import tsx --test --test-concurrency=1 tests/*.test.ts",
+    "test": "node --import tsx --import ./tests/isolate-tmpdir.ts --test --test-concurrency=1 tests/*.test.ts",
     "typecheck": "tsc --noEmit",
     "architecture:check": "node ./scripts/check-architecture.mjs"
   },

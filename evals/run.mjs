@@ -4,7 +4,7 @@
 // Usage: node evals/run.mjs --model <provider/model> --models-json <path> [--ids q01,q04] [--workflow lit]
 import { spawn, execFileSync } from "node:child_process";
 import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { homedir } from "node:os";
 import { basename, dirname, join, relative, resolve } from "node:path";
 import { parseArgs } from "node:util";
 import { fileURLToPath } from "node:url";
@@ -21,6 +21,8 @@ const { values: opt } = parseArgs({
 		"timeout-min": { type: "string", default: "45" },
 		feynman: { type: "string", default: join(repoRoot, "bin", "feynman.js") },
 		rescore: { type: "string" },
+		// Outside $TMPDIR (temp cleaners) and outside any repo (Pi would load its AGENTS.md).
+		"work-root": { type: "string", default: join(homedir(), ".cache", "feynman-evals") },
 	},
 });
 
@@ -53,6 +55,7 @@ function runFeynman(q, work, args) {
 		}, timeoutMs);
 		child.on("exit", (code) => {
 			clearTimeout(timer);
+			mkdirSync(work.root, { recursive: true });
 			writeFileSync(log, out, { flag: "a" });
 			done({ exit_code: code, timed_out: timedOut });
 		});
@@ -60,7 +63,8 @@ function runFeynman(q, work, args) {
 }
 
 async function runQuestion(q) {
-	const root = mkdtempSync(join(tmpdir(), `feynman-eval-${q.id}-`));
+	mkdirSync(opt["work-root"], { recursive: true });
+	const root = mkdtempSync(join(resolve(opt["work-root"]), `${q.id}-`));
 	const work = { root, home: join(root, "home"), ws: join(root, "ws"), tmp: join(root, "tmp") };
 	for (const d of [join(work.home, ".feynman", "agent"), work.ws, work.tmp]) mkdirSync(d, { recursive: true });
 	if (opt["models-json"]) cpSync(resolve(opt["models-json"]), join(work.home, ".feynman", "agent", "models.json"));
@@ -71,6 +75,8 @@ async function runQuestion(q) {
 	if (opt.workflow === "deepresearch" && !run.timed_out && !findFinal(work.ws)) {
 		run = await runFeynman(q, work, ["--continue", "--prompt", "Approved. Proceed with the plan and deliver the final output and provenance."]);
 	}
+	// Async subagent runners detach from the process group; reap any left behind.
+	try { execFileSync("pkill", ["-f", root]); } catch {}
 	const wall_s = Math.round((Date.now() - t0) / 1000);
 	console.error(`[${q.id}] finished in ${wall_s}s (exit ${run.exit_code}${run.timed_out ? ", timed out" : ""})`);
 	return { id: q.id, workflow: opt.workflow, model: opt.model, ...run, wall_s, workdir: root, ...(await score(q, work)) };
@@ -273,7 +279,13 @@ async function main() {
 		const meta = { date: new Date().toISOString(), ...gitInfo(), feynman_version: JSON.parse(readFileSync(join(repoRoot, "package.json"), "utf8")).version };
 		rows = new Array(selected.length);
 		let next = 0;
-		const worker = async () => { while (next < selected.length) { const i = next++; rows[i] = { ...meta, ...(await runQuestion(selected[i])) }; } };
+		const worker = async () => {
+			while (next < selected.length) {
+				const q = selected[next++];
+				const row = await runQuestion(q).catch((e) => ({ id: q.id, error: String(e), completed: false, citations: 0, key_recall: 0, usage: { total_tokens: 0, cost_usd: 0 } }));
+				rows[selected.indexOf(q)] = { ...meta, ...row };
+			}
+		};
 		await Promise.all(Array.from({ length: Math.max(1, Number(opt.concurrency)) }, worker));
 		mkdirSync(join(evalsDir, "results"), { recursive: true });
 		outBase = join(evalsDir, "results", `${meta.date.slice(0, 10)}-${opt.workflow}-${opt.model.replace(/[^a-zA-Z0-9.-]+/g, "_")}`);

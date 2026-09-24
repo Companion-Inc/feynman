@@ -37,7 +37,7 @@ Built-in providers work the same way; pass their API key env var (for example `O
 
 `--workflow deepresearch` sends one approval turn (`--continue`) after the plan gate. `--rescore evals/results/<file>.jsonl` re-scores the kept workdirs without rerunning Feynman, which is useful after a scorer change.
 
-Output goes to `evals/results/<date>-<workflow>-<model>.jsonl` (one row per question: git SHA, dirty flag, Feynman version, scores, citation failures, usage, and the temp `workdir` holding the full workspace, session JSONL and `feynman.log`) and a `.md` summary table.
+Output goes to `evals/results/<date>-<workflow>-<model>.jsonl` (one row per question: git SHA, dirty flag, Feynman version, scores, citation failures, usage, and the `workdir` (under `~/.cache/feynman-evals/` by default, `--work-root` to change) holding the full workspace, session JSONL and `feynman.log`) and a `.md` summary table.
 
 ## Scores
 
