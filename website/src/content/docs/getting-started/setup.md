@@ -5,119 +5,99 @@ section: Getting Started
 order: 3
 ---
 
-The `feynman setup` wizard configures your model provider, API keys, and optional packages. It runs automatically on first launch, but you can re-run it at any time to change your configuration.
-
-## Running setup
+`feynman setup` connects a model provider, offers optional packages, signs you in to alphaXiv, and offers to install pandoc for preview. It runs automatically when you launch `feynman` interactively without a usable default model, and you can rerun it at any time.
 
 ```bash
 feynman setup
 ```
 
-The wizard walks you through three stages: model configuration, authentication, and optional package installation.
+## Model access
 
-## Stage 1: Model selection
+If no authenticated model is available yet, setup asks how to connect one:
 
-Feynman supports multiple model providers. The setup wizard presents a list of available providers and models. Select your preferred approved research model using the arrow keys:
-
-```
-? Select your default model:
-> provider:approved-model-from-your-list
-  provider:another-approved-model
-```
-
-The non-premium model you choose here becomes the default for all sessions. You can override it per-session with the `--model` flag or change it later via `feynman model set <provider/model>` or `feynman model set <provider:model>`. Feynman rejects premium Pro-class model IDs for default and explicit model selection. Exact DeepSeek V4 Pro IDs remain available because the model name does not identify a premium service tier.
-
-## Stage 2: Authentication
-
-Depending on your chosen provider, setup prompts you for an API key or walks you through OAuth login. For providers that support Pi OAuth, such as Anthropic, OpenAI, GitHub Copilot, and OpenRouter, Feynman opens a browser window to complete sign-in. GitHub Copilot sign-in retries model discovery once when GitHub rate-limits the request. In a remote or headless OpenRouter session where the loopback callback is unavailable, paste the browser's final redirect URL or authorization code into Feynman's prompt. You can also set `OPENROUTER_API_KEY` before launching Feynman to use an OpenRouter API key without OAuth. Stored credentials live in the Pi auth storage at `~/.feynman/`.
-
-For API key providers, you are prompted to paste your key directly:
-
-```
-? Enter your API key: sk-ant-...
+```text
+Choose how to configure model access:
+> OAuth login (recommended: ChatGPT, Claude Max, Copilot, ...)
+  API key or custom provider (OpenAI, Anthropic, ZAI, Kimi, MiniMax, ...)
+  Cancel
 ```
 
-Keys are encrypted at rest and never sent anywhere except the provider's API endpoint.
+OAuth opens a browser to sign in. On a remote or headless machine where the browser callback cannot reach Feynman, paste the final redirect URL or authorization code into the prompt. The API-key flow lists hosted providers plus LM Studio, LiteLLM, custom OpenAI-compatible servers, and Amazon Bedrock. You can paste a key, or leave it empty and set the provider's environment variable (for example `ANTHROPIC_API_KEY` or `OPENAI_API_KEY`) instead.
+
+Credentials are stored in `~/.feynman/agent/auth.json` with user-only file permissions. Setting the key in your shell or `.env` keeps it off disk.
+
+Once a provider is connected, setup picks the recommended research model from what you are signed in to, such as `openai/gpt-5.6-terra` or `anthropic/claude-opus-5-5`. If you already have a valid default, setup keeps it. To change it later:
+
+```bash
+feynman model list
+feynman model set <provider/model>
+```
+
+`model set` also accepts `provider:model`. Pro-class model IDs are rejected.
 
 ### Amazon Bedrock
 
-For Amazon Bedrock, choose:
-
-```text
-Amazon Bedrock (AWS credential chain)
-```
-
-Feynman verifies the same AWS credential chain Pi uses at runtime, including `AWS_PROFILE`, `~/.aws` credentials/config, SSO, ECS/IRSA, and EC2 instance roles. Once that check passes, Bedrock models become available in `feynman model list` without needing a traditional API key.
+Choose `Amazon Bedrock (AWS credential chain)`. Feynman checks the same AWS credential chain Pi uses at runtime, including `AWS_PROFILE`, `~/.aws` credentials and config, SSO, ECS/IRSA, and EC2 instance roles. When the check passes, Bedrock models appear in `feynman model list` without an API key.
 
 ### Local models: LM Studio, LiteLLM, Ollama, vLLM
 
-If you want to use LM Studio, start the LM Studio local server, load a model, choose the API-key flow, and then select:
-
-```text
-LM Studio (local OpenAI-compatible server)
-```
-
-The default settings are:
+For LM Studio, start its local server, load a model, and choose `LM Studio (local OpenAI-compatible server)`. The defaults are:
 
 ```text
 Base URL: http://localhost:1234/v1
-Authorization header: No
 API key: lm-studio
 ```
 
-Feynman attempts to read LM Studio's `/models` endpoint and prefill the loaded model id.
+For LiteLLM, start the proxy and choose `LiteLLM Proxy (OpenAI-compatible gateway)`. The default base URL is `http://localhost:4000/v1`; if the proxy requires a master key, Feynman reads it from `LITELLM_MASTER_KEY`.
 
-For LiteLLM, start the proxy, choose the API-key flow, and then select:
+For both, Feynman reads the server's `/models` endpoint to prefill model IDs.
 
-```text
-LiteLLM Proxy (OpenAI-compatible gateway)
-```
-
-The default settings are:
-
-```text
-Base URL: http://localhost:4000/v1
-API mode: openai-completions
-Master key: optional, read from LITELLM_MASTER_KEY
-```
-
-Feynman attempts to read LiteLLM's `/models` endpoint and prefill model ids from the proxy config.
-
-For Ollama, vLLM, or another OpenAI-compatible local server, choose:
-
-```text
-Custom provider (baseUrl + API key)
-```
-
-For Ollama, the typical settings are:
+For Ollama, vLLM, or another OpenAI-compatible server, choose `Custom provider (local/self-hosted/proxy)`. Typical Ollama settings:
 
 ```text
 API mode: openai-completions
 Base URL: http://localhost:11434/v1
-Authorization header: No
-Model ids: llama3.1:8b
-API key: local
+Send Authorization header: No
+API key / resolver: local
+Model id(s): llama3.1:8b
 ```
 
-After saving the provider, run:
+Custom providers are saved to `~/.feynman/agent/models.json`. Then confirm and select the model:
 
 ```bash
 feynman model list
 feynman model set <provider>/<model-id>
 ```
 
-to confirm the local model is available and make it the default.
+Small local models often skip the multi-step research workflows and reply in chat without writing files to `outputs/`.
 
-## Stage 3: Optional packages
+## Optional packages
 
-Feynman's core ships with the research essentials: alphaXiv access, web access, document parsing, subagents, and `/btw` side conversations while the main research agent is busy. On platforms with supported optional presets, the wizard can offer extras:
+Feynman ships with alphaXiv access, web access, document parsing, subagents, and `/btw` side conversations. Setup can also install optional Pi packages:
 
-- **memory** -- Preference and correction memory for research-session continuity
-- **hindsight** -- Hindsight-backed research-continuity memory; requires a Hindsight server or Hindsight Cloud account
-- **session-search** -- Indexed recall for prior research-session transcripts. Available through Node.js 22.x while its sqlite dependency is native-bound
+- **memory**: preference and correction memory across research sessions
+- **hindsight**: Hindsight-backed memory; requires a Hindsight server or Hindsight Cloud account
 
-You can skip this step and install packages later with `feynman packages install <preset>`.
+Skip this step and install later with `feynman packages install <preset>`. `feynman packages list` shows both.
 
-## Re-running setup
+## alphaXiv and preview
 
-Configuration is stored in `~/.feynman/agent/settings.json`. Running `feynman setup` again overwrites previous settings. If you only need to change a specific value, edit the config file directly or use the targeted commands like `feynman model set` or `feynman alpha login`.
+Setup then offers to sign you in to alphaXiv (same as `feynman alpha login`) and to install pandoc for Markdown-to-HTML/PDF preview (same as `feynman setup preview`).
+
+## Editor integration (ACP)
+
+Feynman runs in ACP editors through [pi-acp](https://github.com/svkozak/pi-acp). In Zed, add to `settings.json`:
+
+```json
+"agent_servers": {
+  "Feynman": {
+    "command": "npx",
+    "args": ["-y", "pi-acp"],
+    "env": { "PI_ACP_PI_COMMAND": "feynman" }
+  }
+}
+```
+
+## Rerunning setup
+
+Settings live in `~/.feynman/agent/settings.json`. Rerunning setup keeps a valid default model and your other settings. To change one thing, use a targeted command such as `feynman model set`, `feynman model login <provider>`, or `feynman alpha login`, or edit the file directly.

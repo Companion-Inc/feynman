@@ -5,126 +5,81 @@ section: Getting Started
 order: 4
 ---
 
-Feynman stores user-level configuration and state under `~/.feynman/`. This directory is created on first run and contains the Pi agent profile, model settings, authentication state, session history, web-search routing, memory state, command shims, and installed user packages.
+Feynman stores user-level configuration and state under `~/.feynman/`, created on first run. Set `FEYNMAN_HOME` to use `<FEYNMAN_HOME>/.feynman` instead.
 
 ## Directory structure
 
 ```
 ~/.feynman/
-├── agent/              # Pi agent dir (PI_CODING_AGENT_DIR)
-│   ├── settings.json   # Core model and runtime configuration
-│   ├── auth.json       # Provider auth metadata and API-key references
-│   ├── web-search.json # Web-search routing config
-│   ├── web-search-cache/ # Private one-hour fetched-page cache
-│   └── npm/            # Optional Pi packages installed with `feynman packages install`
-├── sessions/           # Persisted conversation history
-├── memory/             # Feynman memory storage
-├── bin/                # Feynman command shim used by child agents
-└── .state/             # Bootstrap and telemetry state
+├── agent/                  # Pi agent dir (PI_CODING_AGENT_DIR)
+│   ├── settings.json       # Default model, thinking level, packages
+│   ├── auth.json           # Provider credentials (user-only permissions)
+│   ├── models.json         # Custom and local providers
+│   ├── web-search.json     # Web search provider and keys
+│   ├── web-search-cache/   # Fetched pages, kept for one hour
+│   ├── extensions/subagent/config.json  # Subagent runtime config
+│   └── npm/                # Optional Pi packages from `feynman packages install`
+├── sessions/               # Session transcripts (JSONL)
+├── bin/                    # `feynman` shim used by child agents
+└── .state/                 # Telemetry install ID and first-run notice state
 ```
 
-The `agent/settings.json` file is the primary configuration file. It is created by `feynman setup` and can be edited manually. A typical configuration looks like:
+`agent/settings.json` is the main configuration file. Feynman fills in missing defaults on every launch, and you can edit it by hand. The model fields look like:
 
 ```json
 {
   "defaultProvider": "openai",
-  "defaultModel": "<approved-model-id-from-model-list>",
+  "defaultModel": "gpt-5.6-terra",
   "defaultThinkingLevel": "medium"
 }
 ```
 
 ## Model configuration
 
-The `defaultProvider` and `defaultModel` fields set which model is used when you launch Feynman without the `--model` flag. You can change them via the CLI:
-
-```bash
-feynman model list
-feynman model set <provider>/<model-id>
-```
-
-To see all models you have configured:
-
-```bash
-feynman model list
-```
-
-Only authenticated/configured providers appear in `feynman model list`. If you only see OpenAI models, it usually means only OpenAI auth is configured so far.
-
-To add another provider, authenticate it first:
+`defaultProvider` and `defaultModel` set the model used when you launch without `--model`. Only providers you have authenticated appear in `feynman model list`. To add a provider, sign in to it, then switch the default:
 
 ```bash
 feynman model login anthropic
-feynman model login openrouter
-feynman model login google
-feynman model login amazon-bedrock
-```
-
-Then switch the default model:
-
-```bash
 feynman model list
-feynman model set <provider>/<model-id>
+feynman model set anthropic/claude-opus-5-5
 ```
 
-The `model set` command accepts both `provider/model` and `provider:model` formats. Feynman rejects premium Pro-class model IDs here and in `--model`. Exact DeepSeek V4 Pro IDs remain available because the model name does not identify a premium service tier. `feynman model login openrouter` opens the OAuth authorization page. If a remote or headless session cannot receive the loopback callback, copy the browser's final redirect URL or authorization code back into Feynman's prompt to finish sign-in. As an alternative, set `OPENROUTER_API_KEY` before launching Feynman to use API-key authentication without the OAuth flow. `feynman model login google` opens the API-key flow directly, while `feynman model login amazon-bedrock` verifies the AWS credential chain that Pi uses for Bedrock access.
+`feynman model login` with no provider shows the OAuth and API-key choices. `model set` accepts `provider/model` or `provider:model`. Pro-class model IDs are rejected here and in `--model`. See [Setup](/docs/getting-started/setup) for OAuth on headless machines, Amazon Bedrock, and local models.
 
 ## Web search configuration
 
-Research workflows use `~/.feynman/agent/web-search.json` for web-search routing. The default `auto` route uses configured API-backed providers, including Exa, Jina, Perplexity, and Gemini API. It does not read Chromium or Chrome cookies, so it should not trigger a macOS Keychain prompt.
+Web search, page fetching, and PDF extraction come from the bundled `pi-web-access` package, configured in `~/.feynman/agent/web-search.json`. The default `auto` route works without keys through Exa and uses any other provider you have configured. Set a provider and key from the CLI:
 
-Example:
+```bash
+feynman search status
+feynman search set perplexity <api-key>   # or exa, gemini, auto
+feynman search clear                      # back to auto, keys kept
+```
+
+Example config:
 
 ```json
 {
   "provider": "auto",
-  "searchProvider": "auto",
   "exaApiKey": "exa_...",
-  "jinaApiKey": "jina_...",
   "perplexityApiKey": "pplx-...",
   "geminiApiKey": "AIza...",
-  "openaiSearchProviders": ["openai-codex", "openai"],
   "datalabApiKey": "$DATALAB_API_KEY",
-  "pdf": {
-    "enabled": true,
-    "provider": "auto",
-    "maxPages": 100,
-    "datalabMode": "balanced",
-    "datalabTimeoutMs": 120000
-  },
-  "summaryGenerationDeadlineMs": 30000,
-  "image": { "enabled": true }
+  "pdf": { "provider": "auto", "maxPages": 100 }
 }
 ```
 
-Gemini Web browser-cookie access is disabled by default. To opt into it, set `"allowBrowserCookies": true` in `web-search.json`. On Windows, this can read Chrome or Edge `v10` cookies through current-user DPAPI; Chromium `v20` app-bound cookies are unsupported and fail closed. API-backed search is recommended for `/deepresearch`.
-
-PDF extraction uses Datalab when its key is present, then Gemini, then local PDF.js. The local parser remains available without a key. `pdf.maxPages` bounds every tier and defaults to `100`.
-
-`openaiSearchProviders` sets the ordered Pi provider IDs considered for OpenAI-compatible `web_search`; it defaults to `["openai-codex", "openai"]`.
-
-Full fetched pages live in `~/.feynman/agent/web-search-cache/` for one hour. Session files store bounded metadata and a cache reference, not page bodies.
-
-`tools`, `commands`, `image`, and `pdf` entries can disable individual web features. Feynman's stored-results command key is `web-results`, while `/search` remains research-session search. `summaryGenerationDeadlineMs` defaults to 30 seconds and caps one summary attempt at 10 minutes.
+PDF extraction tries Datalab when its key is set, then Gemini, then local extraction, which needs no key. Browser-cookie access for Gemini Web is off by default; set `"allowBrowserCookies": true` to opt in. The [pi-web-access README](https://github.com/nicobailon/pi-web-access#readme) documents every provider and option.
 
 ## Subagent model overrides
 
-The subagent runtime has a separate config at `~/.feynman/agent/extensions/subagent/config.json`. When relocated, it uses `extensions/subagent/config.json` under the directory containing the active agent `settings.json`. Feynman fills only missing research defaults:
+The bundled subagents (`researcher`, `reviewer`, `writer`, `verifier`) inherit the main research model. To pin one to another model, use `/subagents` or set `subagents.agentOverrides.<name>.model` in `~/.feynman/agent/settings.json`; remove it to inherit again. Feynman sets `subagents.agentExcludeDirs` to `["~/.agents"]` so agent files there cannot replace the bundled agents.
 
-```json
-{
-  "missions": { "enabled": false },
-  "fleetView": false,
-  "asyncByDefault": true
-}
-```
-
-Existing custom values and unrelated settings are preserved. Malformed JSON, a non-object config, or invalid types for these defaults stop normalization without replacing the config. Automatic mission creation and Fleet UI therefore remain off for a fresh research setup; background delegation stays on.
-
-Feynman's bundled subagents inherit the main research model. Change the main model with Pi's `/model`. To pin one subagent to another model, use pi-subagents' `/subagents` or set `subagents.agentOverrides.<name>.model` in `~/.feynman/agent/settings.json`; remove it to inherit again. Feynman also sets `subagents.agentExcludeDirs` to `["~/.agents"]` so agent files there cannot silently replace the bundled `researcher`, `reviewer`, `writer`, and `verifier`.
+The subagent runtime config at `~/.feynman/agent/extensions/subagent/config.json` defaults to background delegation on and missions and the fleet view off. Feynman fills in only missing values and leaves your changes alone.
 
 ## Thinking levels
 
-The `thinkingLevel` field controls how much reasoning the model does before responding. Available levels are `off`, `minimal`, `low`, `medium`, `high`, `xhigh`, and `max`, subject to the active model's capabilities. Higher levels produce more thorough analysis at the cost of latency and token usage. You can override per-session:
+`defaultThinkingLevel` sets how much the model reasons before responding: `off`, `minimal`, `low`, `medium` (default), `high`, `xhigh`, or `max`, subject to the active model's capabilities. Override it for one run:
 
 ```bash
 feynman --thinking high
@@ -132,24 +87,23 @@ feynman --thinking high
 
 ## Environment variables
 
-Feynman respects the following environment variables, which take precedence over `settings.json`:
+Feynman reads these environment variables. `FEYNMAN_MODEL`, `FEYNMAN_THINKING`, and `FEYNMAN_SERVICE_TIER` override `settings.json` for that run. Feynman also loads a `.env` file from the current directory.
 
 | Variable | Description |
 | --- | --- |
-| `FEYNMAN_MODEL` | Override the default with an approved research model |
+| `FEYNMAN_MODEL` | Model to use instead of the default (same as `--model`) |
 | `FEYNMAN_HOME` | Override the parent directory used to create `.feynman` (default parent: `~`) |
-| `FEYNMAN_FETCH_CACHE_DIR` | Override the project-local directory used for `fetch_content` PDF scratch Markdown |
-| `FEYNMAN_THINKING` | Override the thinking level |
+| `FEYNMAN_THINKING` | Thinking level (same as `--thinking`) |
+| `FEYNMAN_SERVICE_TIER` | Request service tier (same as `--service-tier`) |
 | `ANTHROPIC_API_KEY` | Anthropic API key |
 | `OPENAI_API_KEY` | OpenAI API key |
 | `GEMINI_API_KEY` | Google Gemini API key |
 | `DATALAB_API_KEY` | Optional Datalab key for layout-aware PDF-to-Markdown extraction |
 | `AWS_PROFILE` | Preferred AWS profile for Amazon Bedrock |
-| `TAVILY_API_KEY` | Tavily web search API key |
-| `SERPER_API_KEY` | Serper web search API key |
-| `OPENALEX_API_KEY` | Free OpenAlex key ([create one](https://openalex.org/settings/api)); sent as the `api_key` query parameter. OpenAlex has required keys for regular use since February 2026, and anonymous requests share a small daily budget |
-| `SEMANTIC_SCHOLAR_API_KEY` | Optional free Semantic Scholar key ([request one](https://www.semanticscholar.org/product/api#api-key-form)); sent as `x-api-key` so literature searches use your own rate limit instead of the shared anonymous pool |
-| `NCBI_API_KEY` | Optional NCBI E-utilities key; raises the paced request budget from 3 to 10 requests per second |
+| `EXA_API_KEY`, `PERPLEXITY_API_KEY`, `TAVILY_API_KEY`, ... | Web search provider keys read by pi-web-access |
+| `OPENALEX_API_KEY` | Free OpenAlex key ([create one](https://openalex.org/settings/api)); without one, requests share a small anonymous daily budget |
+| `SEMANTIC_SCHOLAR_API_KEY` | Optional free Semantic Scholar key ([request one](https://www.semanticscholar.org/product/api#api-key-form)) so searches use your own rate limit instead of the shared anonymous pool |
+| `NCBI_API_KEY` | Optional NCBI E-utilities key; NCBI allows 10 requests per second with a key instead of 3 |
 | `NCBI_MIN_REQUEST_GAP_MS` | Override the minimum delay between NCBI request starts; defaults to 500 ms anonymously and 125 ms with a key |
 | `FEYNMAN_TELEMETRY` | Set to `off` to disable all Feynman telemetry (`DO_NOT_TRACK=1` also works) |
 | `FEYNMAN_POSTHOG_HOST` | Override the PostHog ingest host |
@@ -175,7 +129,7 @@ What is sent:
 
 | Event | Properties |
 |-------|------------|
-| `feynman_command_started`, `feynman_command_completed`, `feynman_command_failed` | Command and allow-listed subcommand, output mode, whether a prompt, model, or service tier flag was given, duration, exit code, error name and message hash |
+| `feynman_command_started`, `feynman_command_completed`, `feynman_command_failed` | Command and allow-listed subcommand, output mode, whether a prompt, model, service tier, or new-session flag was given, duration, exit code, error name and message hash |
 | `feynman_session_started` | Why the session started (startup, resume, new, fork, reload), mode, model and provider name |
 | `feynman_workflow_started` | Workflow name (`deepresearch`, `lit`, `review`, and so on; `chat` for anything else) |
 | `feynman_workflow_completed` | Workflow name, status (`completed`, `error`, `aborted`), tool and subagent call counts, whether any file under `outputs/` or `papers/` was written (yes or no), duration |
@@ -188,28 +142,18 @@ Each send is tried once. The first network or ingest failure turns telemetry off
 
 ## Session storage
 
-Each conversation is persisted as a JSON file in `~/.feynman/sessions/`. To start a fresh session:
+Sessions are saved as JSONL files in `~/.feynman/sessions/`. An interactive `feynman` launch continues the most recent session for the current directory. Session flags:
 
 ```bash
-feynman --new-session
-```
-
-An interactive `feynman` launch continues the most recent session for the current project. Pi's own session flags pass through unchanged:
-
-```bash
+feynman --new-session                 # start a new session
 feynman --resume                      # pick a previous session
 feynman --session <path|id>           # open a specific session
 feynman --fork <path|id>              # fork a session into a new one
-feynman --no-session                  # in-memory session, not persisted
+feynman --no-session                  # in-memory session, not saved
 feynman --export <session.jsonl> [out.html]   # export a session to HTML
-```
-
-To point sessions at a different directory (useful for per-project session isolation):
-
-```bash
-feynman --session-dir ~/myproject/.feynman/sessions
+feynman --session-dir <path>          # store sessions somewhere else
 ```
 
 ## Diagnostics
 
-Run `feynman doctor` to verify your configuration is valid, check authentication status for all configured providers, and detect missing optional dependencies. The doctor command outputs a checklist showing what is working and what needs attention.
+`feynman doctor` checks alphaXiv auth, the default model and authenticated providers, `models.json`, pandoc, web search config, and the Pi runtime, and prints next steps. `feynman status` prints a shorter summary.

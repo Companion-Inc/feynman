@@ -25,34 +25,22 @@ curl -fsSL https://feynman.is/install | bash
 irm https://feynman.is/install.ps1 | iex
 ```
 
-The one-line installer fetches the latest tagged release. To pin a version, pass it explicitly, for example `curl -fsSL https://feynman.is/install | bash -s -- 0.2.35`.
+The one-line installer fetches the latest tagged release as a standalone bundle with its own Node.js runtime and verifies its SHA-256 before installing. To pin a version, pass it explicitly, for example `curl -fsSL https://feynman.is/install | bash -s -- 0.5.3`. Rerun the installer to upgrade; `feynman update` only updates optional Pi packages you installed.
 
-The installer downloads a standalone native bundle with its own pinned Node.js runtime and verifies the release SHA-256 before replacing an existing installation.
-
-To upgrade the standalone app later, rerun the installer. `feynman update` only refreshes optional Pi packages you installed; Pi and the core packages update with Feynman itself.
-
-To uninstall the standalone app, remove the launcher and runtime bundle, then optionally remove `~/.feynman` if you also want to delete settings, sessions, and installed package state. If you also want to delete alphaXiv login state, remove `~/.ahub`. See the installation guide for platform-specific paths.
-
-**npm alternative** (uses your local Node.js runtime):
+**npm alternative** (uses your local Node.js `>=22.22.0 <26`):
 
 ```bash
 npm install -g @companion-ai/feynman
 ```
 
-To update an npm installation, run `npm install -g @companion-ai/feynman@latest`.
-
-If you installed the interim `@advaitpaliwal/feynman` package (0.3.48), migrate once:
+If you installed the interim `@advaitpaliwal/feynman` package, migrate once:
 
 ```bash
 npm uninstall -g @advaitpaliwal/feynman
 npm install -g @companion-ai/feynman
 ```
 
-The command remains `feynman`; the native install commands above are unchanged. See the [installation guide](https://feynman.is/docs/getting-started/installation) for Node.js requirements and uninstall instructions.
-
-Local models are supported through the setup flow. For LM Studio, run `feynman setup`, choose `LM Studio`, and keep the default `http://localhost:1234/v1` unless you changed the server port. For LiteLLM, choose `LiteLLM Proxy` and keep the default `http://localhost:4000/v1`. For Ollama or vLLM, choose `Custom provider (baseUrl + API key)`, use `openai-completions`, and point it at the local `/v1` endpoint.
-
-To authenticate another hosted provider, run `feynman model login <provider>`. GitHub Copilot sign-in retries model discovery once when GitHub rate-limits the request. OpenRouter login opens an OAuth page and listens for a local callback; over SSH or in another headless environment, paste the browser's final redirect URL or authorization code into Feynman's prompt, or set `OPENROUTER_API_KEY` before launch to use API-key authentication without OAuth.
+Then run `feynman setup` to sign in to a model provider. To use Feynman in an ACP editor such as Zed, run it through [pi-acp](https://github.com/svkozak/pi-acp): `"agent_servers": { "Feynman": { "command": "npx", "args": ["-y", "pi-acp"], "env": { "PI_ACP_PI_COMMAND": "feynman" } } }`. See the [installation guide](https://feynman.is/docs/getting-started/installation) for uninstalling and the [setup guide](https://feynman.is/docs/getting-started/setup) for local models (LM Studio, LiteLLM, Ollama, vLLM) and Amazon Bedrock.
 
 ### Skills Only
 
@@ -70,51 +58,17 @@ curl -fsSL https://feynman.is/install-skills | bash
 irm https://feynman.is/install-skills.ps1 | iex
 ```
 
-That installs the skill library into `~/.codex/skills/feynman` for Codex. You can also name the Codex target explicitly:
-
-**macOS / Linux:**
+That installs the skill library into `~/.codex/skills/feynman` for Codex. For other targets, pass a scope:
 
 ```bash
-curl -fsSL https://feynman.is/install-skills | bash -s -- --codex
+curl -fsSL https://feynman.is/install-skills | bash -s -- --codex     # ~/.codex/skills/feynman (default)
+curl -fsSL https://feynman.is/install-skills | bash -s -- --repo      # .agents/skills/feynman in the current repo
+curl -fsSL https://feynman.is/install-skills | bash -s -- --opencode  # .opencode/skills/feynman in the current repo
 ```
-
-**Windows (PowerShell):**
 
 ```powershell
-& ([scriptblock]::Create((irm https://feynman.is/install-skills.ps1))) -Scope Codex
+& ([scriptblock]::Create((irm https://feynman.is/install-skills.ps1))) -Scope Codex     # or -Scope Repo, -Scope OpenCode
 ```
-
-For a repo-local Claude/agent install instead:
-
-**macOS / Linux:**
-
-```bash
-curl -fsSL https://feynman.is/install-skills | bash -s -- --repo
-```
-
-**Windows (PowerShell):**
-
-```powershell
-& ([scriptblock]::Create((irm https://feynman.is/install-skills.ps1))) -Scope Repo
-```
-
-That installs into `.agents/skills/feynman` under the current repository.
-
-For an OpenCode project-local install instead:
-
-**macOS / Linux:**
-
-```bash
-curl -fsSL https://feynman.is/install-skills | bash -s -- --opencode
-```
-
-**Windows (PowerShell):**
-
-```powershell
-& ([scriptblock]::Create((irm https://feynman.is/install-skills.ps1))) -Scope OpenCode
-```
-
-That installs into `.opencode/skills/feynman` under the current repository.
 
 These installers download the bundled `skills/` and `prompts/` trees plus the repo guidance files referenced by those skills. They do not install the Feynman terminal, bundled Node runtime, auth storage, or Pi packages.
 
@@ -124,16 +78,10 @@ These installers download the bundled `skills/` and `prompts/` trees plus the re
 
 ```
 $ feynman "what do we know about scaling laws"
-→ Searches papers and web, produces a cited research brief
-
-$ feynman -- "- summarize the strongest evidence first"
-→ Preserves a research prompt that begins with a dash instead of parsing it as a CLI option
-
-$ feynman --prompt="- summarize the strongest evidence first"
-→ Runs a dash-leading research prompt once and exits
+→ Searches papers and the web, answers with cited sources
 
 $ feynman deepresearch "mechanistic interpretability"
-→ Multi-agent investigation with parallel researchers, synthesis, verification
+→ Plan-first investigation with parallel researchers, synthesis, and citation verification
 
 $ feynman lit "RLHF alternatives"
 → Literature review with consensus, disagreements, open questions, and lab/PI corpus mode when the input names a research group
@@ -165,6 +113,7 @@ Ask naturally or use slash commands as shortcuts.
 | `/compare <topic>` | Source comparison matrix |
 | `/draft <topic>` | Paper-style draft from research findings |
 | `/autoresearch <idea>` | Bounded experiment loop with benchmark evidence |
+| `/summarize <source>` | Summarize a paper, report, repo, or PDF without loading it raw into context |
 | `/btw <question>` | Side conversation while the main research agent is busy, with optional handoff back into the main thread |
 | `/outputs` | Browse all research artifacts |
 
@@ -183,19 +132,18 @@ Four bundled research agents, invoked by workflow prompts when decomposition hel
 
 ### Skills & Tools
 
-- **[AlphaXiv](https://www.alphaxiv.org/)** — paper search, Q&A, code reading, annotations (via Feynman's `alpha` tools and `feynman alpha` command)
-- **Literature databases** — read-only Semantic Scholar (citation-sorted search that surfaces seminal papers), OpenAlex (keyword and semantic search, citation graphs, authors, venues, OA status), arXiv ID lookup, PubMed (metadata, PMID/PMCID/DOI conversion, related articles, citation matching, copyright checks, PMC full-text routing), Europe PMC open-access full-text sections, bioRxiv/medRxiv preprints, and Crossref DOI metadata, with stable identifiers and endpoint provenance. Set the free `OPENALEX_API_KEY` ([create one](https://openalex.org/settings/api)) and optionally `SEMANTIC_SCHOLAR_API_KEY` ([request one](https://www.semanticscholar.org/product/api#api-key-form)) so searches use your own rate limits
+- **[alphaXiv](https://www.alphaxiv.org/)** — paper search, Q&A, code reading, and annotations (via Feynman's `alpha` tools and `feynman alpha` command)
+- **Literature databases** — read-only Semantic Scholar, OpenAlex, arXiv ID lookup, PubMed, Europe PMC full text, bioRxiv/medRxiv, and Crossref, with stable identifiers. Set the free `OPENALEX_API_KEY` ([create one](https://openalex.org/settings/api)) and optionally `SEMANTIC_SCHOLAR_API_KEY` ([request one](https://www.semanticscholar.org/product/api#api-key-form)) to use your own rate limits
 - **[Hugging Face Hub](https://huggingface.co/docs/hub/api)** — dataset metadata, split/schema inspection, and small file reads from model, dataset, and Space repos
-- **Web research** — multi-provider search, explicit proxy routing, bounded GitHub issue/PR documents, raw or question-grounded page retrieval, direct images, external fetched-content caching, stored-page passage lookup, and auditable source text; tools, commands, images, PDFs, and browser cookies remain independently gated
-- **Session search** — indexed recall across prior research sessions
-- **Observability** — opt-out PostHog usage metadata for CLI commands, research workflows, tools, and model calls (see [Telemetry](#telemetry))
-- **Research execution options** — Docker, plus Modal or RunPod when their CLIs are installed, for explicitly chosen replication, benchmark, or dataset-heavy experiment runs; not service deployment or generic cloud administration
+- **Web research** — search, page fetching, and PDF extraction through [pi-web-access](https://github.com/nicobailon/pi-web-access); Exa works without a key, and `feynman search set` configures Perplexity, Exa, or Gemini
+- **Documents** — local PDF and office-document parsing through [pi-docparser](https://github.com/maxedapps/pi-docparser)
+- **Compute** — Docker, plus Modal or RunPod when their CLIs are installed, for replication and experiment runs you explicitly approve
 
 ---
 
 ### How it works
 
-Built on [Pi](https://github.com/badlogic/pi-mono) for the agent runtime, [alphaXiv](https://www.alphaxiv.org/) for paper search and analysis, and CLI tools for compute and execution. Runtime resources follow Pi's documented package model for [packages](https://github.com/badlogic/pi-mono/blob/main/packages/coding-agent/docs/packages.md), [extensions](https://github.com/badlogic/pi-mono/blob/main/packages/coding-agent/docs/extensions.md), and [skills](https://github.com/badlogic/pi-mono/blob/main/packages/coding-agent/docs/skills.md). Hugging Face inspection uses the public [Hub API endpoints](https://huggingface.co/docs/hub/api) and `HF_TOKEN` / `HUGGINGFACE_HUB_TOKEN` environment variables documented by [`huggingface_hub`](https://huggingface.co/docs/huggingface_hub/main/en/package_reference/environment_variables). The ML recipe workflow was informed by the open-source [Hugging Face `ml-intern`](https://github.com/huggingface/ml-intern) research-agent repo, but is implemented as native Feynman prompts, skills, and read-only tools. Research outputs are source-grounded — research claims link to papers, docs, or repos with direct URLs.
+Feynman runs on stock [Pi](https://github.com/earendil-works/pi) (`@earendil-works/pi-coding-agent`). Its prompts, skills, agents, and research tools load as a Pi [package](https://github.com/earendil-works/pi/blob/main/packages/coding-agent/docs/packages.md) alongside the bundled `pi-subagents`, `pi-web-access`, `pi-docparser`, and `pi-btw` packages. Paper search and analysis use [alphaXiv](https://www.alphaxiv.org/). Research claims link to papers, docs, or repos with direct URLs.
 
 ---
 
@@ -217,7 +165,7 @@ Feynman sends anonymous usage telemetry to PostHog by default and prints a one-t
 
 ---
 
-The bundled research runtime is updated as a coordinated set, including Pi, Alpha Hub's `alpha-mcp`, document parsing, web research, and subagents. See the [package stack](https://feynman.is/docs/reference/package-stack) and [release notes](https://feynman.is/docs/reference/releases) for versions and upgrade details.
+The bundled Pi packages are pinned and update with Feynman, not through `feynman update`. See the [package stack](https://feynman.is/docs/reference/package-stack) and [release notes](https://feynman.is/docs/reference/releases).
 
 ### Contributing
 

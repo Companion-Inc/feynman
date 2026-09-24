@@ -2,12 +2,12 @@
 title: ML Training Recipe
 description: Find ranked, implementable ML training recipes backed by papers, datasets, docs, and code.
 section: Workflows
-order: 6
+order: 7
 ---
 
 The recipe workflow turns a training or fine-tuning goal into a ranked set of implementable recipes. It is designed for ML engineering questions where the useful answer is not just "what papers exist?" but "which dataset, method, hyperparameters, code path, and checks should I try first?"
 
-The workflow borrows the useful idea from Hugging Face's open-source [`ml-intern`](https://github.com/huggingface/ml-intern) repo: make ML research outputs recipe-shaped and implementation-ready. Feynman keeps the implementation native to Pi prompts, bundled skills, and read-only Hub inspection tools rather than copying `ml-intern`'s runtime loop or frontend.
+The recipe-shaped output is borrowed from Hugging Face's [`ml-intern`](https://github.com/huggingface/ml-intern).
 
 ## Usage
 
@@ -27,13 +27,13 @@ You can use `/recipe` for tasks such as choosing an SFT dataset, reproducing a b
 
 ## How it works
 
-The workflow starts by writing a plan to `outputs/.plans/<slug>-recipe.md`, then continues automatically. It gathers evidence from papers, web sources, repositories, official docs, and Hugging Face Hub metadata.
+The workflow writes a plan to `outputs/.plans/<slug>-recipe.md` and continues automatically. Broad tasks use the `researcher` agent for the paper and code sweep; narrow tasks are researched directly. Research starts from evidence of results, not from example scripts alone.
 
-For each candidate, Feynman links the reported result to the recipe that produced it: dataset, split/schema, method, hyperparameters, compute assumptions, benchmark, and implementation code. This result-to-recipe link is the core output. A paper that reports a strong result but does not expose usable data, code, or enough configuration detail is marked as a risk rather than treated as immediately runnable.
+For each candidate, Feynman links the reported result to the recipe that produced it: dataset, split/schema, method, hyperparameters, compute assumptions, benchmark, and implementation code. Datasets are checked for availability, splits, and format; anything not directly checked is marked `unverified`. For the top-ranked recipe, key source URLs and dataset and code availability are verified before delivery, or labeled `blocked` or `unverified`.
 
 ## Hugging Face grounding
 
-When a candidate uses a Hugging Face dataset or repository, the researcher can inspect it directly:
+When a candidate uses a Hugging Face dataset or repository, Feynman inspects it with read-only Hub tools:
 
 - `hf_dataset_info` checks dataset metadata, tags, access status, card data, features, and splits.
 - `hf_repo_files` lists files in model, dataset, and Space repos.
@@ -41,9 +41,9 @@ When a candidate uses a Hugging Face dataset or repository, the researcher can i
 
 These tools use public Hub endpoints by default and use `HF_TOKEN` or `HUGGINGFACE_HUB_TOKEN` when present for private or gated resources.
 
-## Output format
+## Output
 
-The final artifact is written to `outputs/<slug>-recipe.md` with a provenance sidecar at `outputs/<slug>-recipe.provenance.md`.
+Research notes go to `outputs/.drafts/<slug>-recipe-research.md`. The final brief is `outputs/<slug>-recipe.md`, with a provenance sidecar at `outputs/<slug>-recipe.provenance.md`.
 
 The brief includes:
 
@@ -54,4 +54,4 @@ The brief includes:
 - **Known gaps** -- Missing code, inaccessible data, unclear hyperparameters, benchmark mismatch, or unverified assumptions
 - **Sources** -- URLs for every paper, repo, dataset, and doc page used
 
-Feynman uses `verified`, `unverified`, `blocked`, and `inferred` labels precisely. It should not call a recipe state of the art, replicated, or production-ready unless the checks actually support that claim.
+Feynman does not call a recipe state of the art, replicated, or production-ready unless the checks support it.

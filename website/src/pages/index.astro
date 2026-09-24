@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
 
 const workflows = [
-  { command: "/deepresearch", description: "Multi-agent investigation across papers, web, and code" },
+  { command: "/deepresearch", description: "Plan-first investigation across papers, web, and code, with parallel researchers when the topic needs them" },
   { command: "/lit", description: "Literature review from primary sources with consensus mapping" },
   { command: "/review", description: "Internal research critique with severity scores and a revision plan" },
   { command: "/audit", description: "Paper-to-code mismatch audit for reproducibility claims" },
@@ -23,12 +23,11 @@ const agents = [
 ]
 
 const sources = [
-  { name: "Literature databases", description: "Semantic Scholar, OpenAlex, arXiv ID lookup, PubMed, Europe PMC full-text sections, bioRxiv/medRxiv preprints, and Crossref DOI metadata with stable identifiers and provenance" },
-  { name: "AlphaXiv", description: "Paper search, Q&A, code reading, and annotations via the alpha CLI", href: "https://alphaxiv.org" },
+  { name: "Literature databases", description: "Semantic Scholar, OpenAlex, arXiv, PubMed, Europe PMC, bioRxiv/medRxiv, and Crossref with stable identifiers" },
+  { name: "alphaXiv", description: "Paper search, Q&A, code reading, and annotations", href: "https://www.alphaxiv.org/" },
   { name: "Hugging Face Hub", description: "Dataset schema, repo file, and small text-file inspection" },
-  { name: "Web search", description: "Searches via Exa, Perplexity, or Gemini API" },
-  { name: "Session search", description: "Indexed recall across prior research sessions" },
-  { name: "Preview", description: "Render generated Markdown, HTML, and PDF research artifacts when a preview command is available" },
+  { name: "Web research", description: "Search, page fetching, and PDF extraction; Exa works without a key" },
+  { name: "Documents", description: "Local PDF and office-document parsing, search, and page screenshots" },
 ]
 
 const compute = [
@@ -38,8 +37,8 @@ const compute = [
 ]
 
 const terminalCommands = [
-  { command: 'feynman "what do we know about scaling laws"', description: "Cited research brief from papers and web" },
-  { command: 'feynman deepresearch "mechanistic interpretability"', description: "Multi-agent deep dive with synthesis and verification" },
+  { command: 'feynman "what do we know about scaling laws"', description: "Cited answer from papers and the web" },
+  { command: 'feynman deepresearch "mechanistic interpretability"', description: "Planned deep dive with synthesis and citation verification" },
   { command: 'feynman lit "RLHF alternatives"', description: "Literature review with consensus and open questions" },
   { command: "feynman audit 2401.12345", description: "Paper claims vs. what the code actually does" },
   { command: 'feynman replicate "chain-of-thought improves math"', description: "Replication plan, compute target, gated experiment steps" },
@@ -48,6 +47,7 @@ const terminalCommands = [
 
 const installCommands = [
   { label: "curl", command: "curl -fsSL https://feynman.is/install | bash" },
+  { label: "PowerShell", command: "irm https://feynman.is/install.ps1 | iex" },
   { label: "npm", command: "npm install -g @companion-ai/feynman" },
 ]
 ---
@@ -113,11 +113,11 @@ const installCommands = [
         </div>
 
         <p class="text-sm text-muted-foreground">
-          Use curl for the bundled runtime, or npm if you already manage Node locally.
+          curl and PowerShell install a standalone bundle with its own Node.js; npm uses your local Node.js.
         </p>
 
         <p class="text-sm text-muted-foreground">
-          Need just the skills? <a href="/docs/getting-started/installation" class="text-primary hover:underline">Install the skills-only bundle</a>.
+          Need just the skills? <a href="/docs/getting-started/installation#skills-only" class="text-primary hover:underline">Install the skills-only bundle</a>.
         </p>
       </div>
 
@@ -149,7 +149,7 @@ const installCommands = [
       <div class="flex flex-col items-center gap-8 text-center">
         <div class="flex flex-col gap-2">
           <h2 class="text-2xl font-bold tracking-tight sm:text-3xl">Workflows</h2>
-          <p class="text-muted-foreground">Slash commands or natural language. Your call.</p>
+          <p class="text-muted-foreground">Run as slash commands in the REPL or as <code>feynman &lt;workflow&gt;</code> from your shell.</p>
         </div>
         <div class="grid w-full gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {workflows.map((wf) => (
@@ -187,9 +187,9 @@ const installCommands = [
       <div class="flex flex-col items-center gap-8 text-center">
         <div class="flex flex-col gap-2">
           <h2 class="text-2xl font-bold tracking-tight sm:text-3xl">Skills &amp; Tools</h2>
-          <p class="text-muted-foreground">How Feynman retrieves sources, preserves research continuity, and renders artifacts.</p>
+          <p class="text-muted-foreground">How Feynman finds and reads sources.</p>
         </div>
-        <div class="grid w-full gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div class="grid w-full gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {sources.map((source) => (
             <Card client:load size="sm" className="text-center">
               <CardHeader client:load className="items-center">
@@ -235,7 +235,7 @@ const installCommands = [
 
     <section class="flex flex-col items-center gap-6 py-20 text-center">
       <p class="text-muted-foreground">
-        Built on <a href="https://github.com/badlogic/pi-mono" class="text-primary hover:underline">Pi</a> and <a href="https://www.alphaxiv.org/" class="text-primary hover:underline">alphaXiv</a>. Capabilities ship as Pi skills and research outputs stay source-grounded.
+        Built on <a href="https://github.com/earendil-works/pi" class="text-primary hover:underline">Pi</a> and <a href="https://www.alphaxiv.org/" class="text-primary hover:underline">alphaXiv</a>. Research claims link to their sources.
       </p>
       <div class="flex flex-wrap items-center justify-center gap-3">
         <a href="/docs/getting-started/installation">

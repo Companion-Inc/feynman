@@ -5,7 +5,7 @@ section: Workflows
 order: 2
 ---
 
-The literature review workflow produces a structured survey of the academic landscape on a given topic. Unlike deep research which aims for a comprehensive brief, the literature review focuses specifically on mapping the state of the field -- what researchers agree on, where they disagree, and what remains unexplored. When the input names a lab, PI, author, or lab website, `/lit` switches into publication-corpus mode: it resolves the lab or author identity, collects reachable publications, maps topic trajectories, and ranks the papers that most changed the corpus direction.
+The literature review workflow maps a field: what researchers agree on, where they disagree, and what remains open. When the input names a lab, PI, author, or lab website, `/lit` runs as a publication-corpus review instead: it resolves the identity, collects reachable publications, and maps research trajectories across them.
 
 ## Usage
 
@@ -24,26 +24,20 @@ feynman lit "Anthropic interpretability team"
 
 ## How it works
 
-The literature review workflow begins by searching for papers on the topic across AlphaXiv and the web. For a lab/PI input, the lead agent first resolves the lab or author identity and writes a reachable publication log before any delegated synthesis. The workflow prioritizes survey papers, foundational work, recent publications, and stable source URLs to capture both established knowledge and the current frontier.
+1. **Plan** -- Feynman writes the scope (key questions, source types, time period, expected sections, task ledger, verification log) to `outputs/.plans/<slug>.md`, summarizes it, and continues without waiting for confirmation unless you asked to review the plan.
+2. **Gather** -- Wide sweeps use the `researcher` agent, which writes `<slug>-research-*.md` files; narrow topics are searched directly. For a lab or author, the lead agent first resolves the identity and writes a publication log to `notes/<slug>-publications.md` with titles, years, venues, URLs or DOIs, and gaps.
+3. **Synthesize** -- Findings are separated into consensus, disagreements, and open questions, with suggested next experiments or reading when useful. For a lab or author, Feynman also identifies 3-5 research trajectories and the 3-5 papers that most changed the corpus direction, ranked by contrastive originality, methodology strength, and relationship to prior art rather than author prestige.
+4. **Cite** -- The `verifier` agent adds inline citations and checks every source URL.
+5. **Verify** -- The `reviewer` agent checks the cited draft for unsupported claims, logical gaps, and single-source critical findings. FATAL issues are fixed and re-checked; MAJOR issues go into Open Questions.
+6. **Deliver** -- Feynman writes the review and its provenance record and checks that both exist on disk.
 
-After gathering sources, the agents extract claims, results, and methodology from each paper. The synthesis step then organizes findings into a structured review that maps out where the community has reached consensus, where active debate exists, and where gaps in the literature remain.
+## Output
 
-The output is organized chronologically and thematically, showing how ideas evolved over time and how different research groups approach the problem differently. For publication-corpus reviews, the output also names 3-5 research trajectories and ranks 3-5 papers by contrastive originality, methodology strength, and relationship to prior art. Citation counts and publication venues are used as signals for weighting claims, though the review explicitly notes when influential work contradicts the mainstream view.
-
-## Output format
-
-The literature review produces:
-
-- **Scope and Methodology** -- What was searched and how papers were selected
-- **Consensus** -- Claims that most papers agree on, with supporting citations
-- **Disagreements** -- Active debates where papers present conflicting evidence or interpretations
-- **Open Questions** -- Topics that the literature has not adequately addressed
-- **Timeline** -- Key milestones and how the field evolved
-- **Publication Trajectories** -- For lab/PI inputs, reachable corpus coverage plus topic trajectories and originality-ranked papers
-- **References** -- Complete bibliography organized by relevance
+- `outputs/<slug>.md` -- the literature review, with Mermaid diagrams for taxonomies, method pipelines, or trajectory maps when the sources support them
+- `outputs/<slug>.provenance.md` -- date, sources consulted, accepted, and rejected, verification status, and intermediate research files; for lab or author reviews, also the publication log path and unresolved corpus gaps
 
 ## When to use it
 
-Use `/lit` when you need a map of the research landscape rather than a deep dive into a specific question. It is particularly useful at the start of a new research project when you need to understand what has already been done, or when preparing a related work section for a paper.
+Use `/lit` at the start of a project to see what has already been done, when preparing a related-work section, or to understand a lab's or author's body of work.
 
-For biomedical and clinical research topics, see [Biomedical Literature Review](/docs/workflows/biomedical-literature-review) for research-only framing, evidence-type separation, and privacy boundaries.
+For biomedical and clinical topics, see [Biomedical Literature Review](/docs/workflows/biomedical-literature-review) for research-only framing, evidence-type separation, and privacy boundaries.

@@ -2,10 +2,10 @@
 title: Replication
 description: Plan a replication of a paper's experiments and claims; execute only after choosing an environment.
 section: Workflows
-order: 5
+order: 6
 ---
 
-The replication workflow builds a source-backed plan for reproducing published experiments, benchmark results, or specific claims. It can execute steps only after you choose an environment, and it records scripts, raw outputs, and checks before calling a result replicated.
+The replication workflow builds a source-backed plan for reproducing a paper, benchmark result, or specific claim. It executes only after you choose an environment, and it does not call a result replicated unless the planned checks pass.
 
 ## Usage
 
@@ -25,29 +25,16 @@ From the CLI:
 feynman replicate "paper or claim"
 ```
 
-You can point the workflow at a paper for a replication plan, or at a specific claim for a focused reproduction check.
-
 ## How it works
 
-The replication workflow starts with the researcher agent reading the target paper and extracting the details that are actually stated: model architecture, hyperparameters, training schedule, dataset preparation, evaluation protocol, and hardware requirements. It cross-references those details against linked code or supplied code when available.
+1. **Extract** -- The `researcher` agent pulls implementation details from the paper and any linked code. If `CHANGELOG.md` exists, Feynman reads its recent entries first.
+2. **Recipe pass** -- For ML training, fine-tuning, benchmark, or dataset-heavy targets, each claimed result is linked to the exact dataset, method, hyperparameters, compute assumptions, metric, and code path that produced it. Dataset availability and schema are checked when possible (see [Hugging Face Hub](/docs/tools/hugging-face)); unchecked details are marked `unverified`.
+3. **Plan** -- Feynman lists the code, datasets, metrics, and environment needed, separates what is verified, inferred, and missing, and names the checks that will decide whether the replication succeeded.
+4. **Environment** -- Feynman asks where to execute: local, a virtual environment, Docker, Modal (if the `modal` CLI is set up), RunPod (if `runpodctl` is installed and `RUNPOD_API_KEY` is set), or plan only. Nothing is installed or run before you choose.
+5. **Execute** -- In the chosen environment, Feynman implements and runs the steps and saves notes, scripts, raw outputs, and results to disk.
+6. **Log** -- For multi-step or resumable work, Feynman appends entries to `CHANGELOG.md` after progress, failed attempts, and verification outcomes.
+7. **Report** -- The result ends with a `Sources` section listing paper, dataset, documentation, and repository URLs.
 
-For ML training, fine-tuning, benchmark, or dataset-heavy targets, replication includes a recipe pass before execution planning. That pass links each claimed result to the exact dataset, method, hyperparameters, compute assumptions, metric, and code path that produced it. When a candidate uses Hugging Face resources, Feynman can inspect dataset metadata, splits, features, and small repo files through the [Hugging Face Hub tools](/docs/tools/hugging-face).
+## When to use it
 
-Next, the workflow generates a structured replication plan that breaks the experiment into discrete steps, estimates compute requirements when the source material supports that estimate, and identifies where the paper is underspecified. For each underspecified detail, it records the gap, the assumption needed to proceed, and how that assumption could affect divergence.
-
-The plan also includes a risk assessment: which parts of the experiment are most likely to cause replication failure, what tolerance to expect for numerical results, and which claims are most sensitive to implementation details.
-
-## Output format
-
-The replication plan includes:
-
-- **Requirements** -- Hardware, software, data, and estimated compute cost
-- **Recipe Extraction** -- Dataset, method, hyperparameters, metric, code path, and verification status for ML-heavy targets
-- **Step-by-step Plan** -- Ordered steps from environment setup through final evaluation
-- **Underspecified Details** -- Where the paper leaves out information needed for replication
-- **Risk Assessment** -- Which steps are most likely to cause divergence from reported results
-- **Success Criteria** -- What results would constitute a successful replication
-
-## Iterative execution
-
-After generating the plan, Feynman asks where execution should happen: local, isolated environment, Docker, Modal or RunPod (if the `modal` or `runpodctl` CLI is installed), or plan-only. When execution is explicitly chosen, it helps implement and run the planned checks, saves notes/scripts/raw outputs/results, and compares observed results against the paper's reported values. A result is labeled replicated only when the planned checks actually pass.
+Use `/replicate` before building on a result you have not seen reproduced, or to test one specific claim. Choose "plan only" to get the replication plan without running anything.

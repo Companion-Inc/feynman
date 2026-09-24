@@ -1,34 +1,41 @@
 ---
 title: Researcher
-description: The researcher agent searches, reads, and extracts findings from papers and web sources.
+description: The researcher agent gathers primary evidence from papers, web sources, repos, and datasets.
 section: Agents
 order: 1
 ---
 
-The researcher is the primary information-gathering agent in Feynman. It searches academic databases and the web, reads papers and articles, extracts key findings, and organizes source material for other agents to synthesize. Most workflows start with the researcher.
+The researcher is Feynman's evidence-gathering subagent. It searches paper databases and the web, reads the most relevant sources, and writes an evidence file that the lead agent synthesizes. Its definition lives in `.feynman/agents/researcher.md`.
 
 ## What it does
 
-The researcher agent handles source discovery and extraction for workflows that need gathered evidence. It formulates search queries based on your topic, evaluates results for relevance, reads selected sources in depth, and extracts structured information including claims, methodology, results, and limitations.
+The researcher receives a task brief from a workflow, searches broadly, then narrows using the terminology and names it finds. It runs 2–4 reworded queries for each question and merges the results instead of trusting one query's ranking.
 
-For broad deep research and literature review tasks, workflow prompts can spawn multiple researcher agents in parallel through one async `workflowScript` using `await runs.all([{key, agent, task, output}, ...])`. Each child tackles a different angle of the topic. One might search for foundational papers while another looks for recent work that challenges the established view. Feynman consumes the ordered results and verifies the declared output paths before synthesis. This parallel approach produces broader coverage than a single sequential search.
+For broad deep research and literature review tasks, workflow prompts can run several researchers in parallel through one async `workflowScript` using `await runs.all([{key, agent, task, output}, ...])`, each covering a different angle. The lead agent consumes the ordered results and verifies the declared output files before synthesis. Narrow tasks skip the researcher and stay lead-owned.
 
-## Search strategy
+## Tools
 
-The researcher uses a multi-source search strategy. For general ML and CS papers it starts with a citation-sorted Semantic Scholar search (plus alphaXiv when you are logged in); for biomedical papers it uses PubMed and Europe PMC; for citation chains it uses OpenAlex citations and references; for conceptual or recent work that keyword search misses it uses OpenAlex semantic search; and it looks up known arXiv IDs and DOIs directly. For applied topics, it searches the web for documentation, blog posts, and code repositories. For ML implementation tasks, it can inspect Hugging Face dataset metadata and repo files directly. For most topics, it uses multiple channels and cross-references findings.
+The researcher runs with high thinking and these tools: file and shell tools (`read`, `write`, `edit`, `bash`, `grep`, `find`, `ls`), `web_search`, `fetch_content`, `get_search_content`, `feynman_science_database_search`, and the Hugging Face tools `hf_dataset_info`, `hf_repo_files`, and `hf_repo_read_file`. It does not load the `alpha_*` tools; it uses `feynman alpha search` through the shell when alphaXiv is logged in.
 
-The researcher runs 2–4 reworded queries for each question and merges the results instead of trusting one query. Rather than running the same query multiple times, it generates varied queries that approach the topic from different angles. This catches papers that use different terminology for the same concept and surfaces sources that a single query would miss.
+## Source routing
 
-## Source evaluation
+| Need | First choice | Then |
+| --- | --- | --- |
+| General ML/CS papers | Semantic Scholar (citation-sorted) | `feynman alpha search` when logged in |
+| Biomedical papers | PubMed, then Europe PMC for open-access full-text sections | Semantic Scholar for citation counts |
+| Citation graph | OpenAlex citations and references | Semantic Scholar citation counts |
+| Conceptual or recent work keyword search misses | OpenAlex semantic search | Semantic Scholar by relevance |
+| Web, docs, repos, grey literature | `web_search` | `fetch_content` on the best results |
+| Known paper ID | arXiv ID or Crossref DOI lookup | `fetch_content` on `arxiv.org/html/<id>` |
 
-Not every search result is worth reading in full. The researcher evaluates results by scanning abstracts and summaries first, then selects the most relevant and authoritative sources for deep reading. It considers publication venue, citation count, recency, and topical relevance when prioritizing sources.
+## Output
 
-## Extraction
+The researcher writes to the output path the workflow assigns. The file contains an evidence table with stable numeric source IDs and at least five entries, findings that cite those IDs inline, a numbered Sources list with direct URLs, and a Coverage Status section listing what was checked, what remains uncertain, and any tasks it could not complete. It returns a one-line summary to the lead agent rather than the full findings.
 
-When reading a source in depth, the researcher extracts structured data: the main claims and their supporting evidence, methodology details, experimental results, stated limitations, and connections to other work. Each extracted item is tagged with its source location for traceability.
+Every source needs a checkable URL, and the researcher labels inferences separately from claims it read directly.
 
-For ML recipe and replication work, the researcher switches to recipe-shaped extraction. It links reported results to the dataset, split/schema, method, hyperparameters, compute assumptions, metric, implementation code path, and verification status. A dataset is not described as usable unless the researcher checked availability and format, or explicitly marks that check as `unverified` or `blocked`.
+For ML training, replication, benchmark, or dataset tasks, it organizes findings as ranked recipes: reported result, dataset (size, split, access, schema if checked), method and hyperparameters, compute, implementation code paths, and a verification status of `verified`, `unverified`, `blocked`, or `inferred`. A dataset is not described as usable unless its availability and format were checked.
 
 ## Used by
 
-The researcher agent is used by the `/deepresearch`, `/lit`, `/review`, `/audit`, `/replicate`, `/recipe`, `/compare`, and `/draft` workflows. The workflow prompts call it through Pi's `subagent` tool when delegation improves coverage or context management; narrow tasks stay lead-owned.
+Workflows that can delegate to the researcher: `/deepresearch`, `/lit`, `/review`, `/audit`, `/replicate`, `/recipe`, `/compare`, and `/summarize` (one researcher per chunk for very large sources).
