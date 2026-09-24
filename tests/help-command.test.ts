@@ -14,8 +14,7 @@ test("Feynman help omits generic scheduler and process package commands", async 
 		"ps",
 		"schedule-prompt",
 		"search",
-		"web-results",
-		"preview",
+		"websearch",
 		"hotkeys",
 		"new",
 		"quit",
@@ -47,8 +46,7 @@ test("Feynman help omits generic scheduler and process package commands", async 
 
 	const helpItems = selectedItems[0] ?? [];
 	assert.ok(helpItems.some((item) => item.startsWith("/search ")));
-	assert.ok(helpItems.some((item) => item.startsWith("/web-results ")));
-	assert.ok(helpItems.some((item) => item.startsWith("/preview ")));
+	assert.ok(helpItems.some((item) => item.startsWith("/websearch ")));
 	assert.ok(helpItems.some((item) => item.startsWith("/hotkeys ")));
 	assert.equal(helpItems.some((item) => item.startsWith("/ps ")), false);
 	assert.equal(helpItems.some((item) => item.startsWith("/schedule-prompt ")), false);

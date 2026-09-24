@@ -7,6 +7,6 @@ description: Bounded research experiment loop that tries hypotheses, measures be
 
 Run the `/autoresearch` workflow. The slash command expands the full workflow instructions in the active session; do not try to read a relative prompt-template path from the installed skill directory.
 
-Optional tools used when visible: `init_experiment`, `run_experiment`, `log_experiment`. Without those tools, run the benchmark through the available shell/tooling and record benchmark result, evidence, and decision in the session files.
+Run the benchmark through the shell and record each result, its evidence, and the keep/revert decision in the session files.
 
 Session files: `autoresearch.md`, `autoresearch.sh`, `autoresearch.jsonl`
