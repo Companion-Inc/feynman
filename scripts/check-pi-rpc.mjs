@@ -12,7 +12,8 @@ const appRoot = realpathSync(resolve(feynmanBin, "..", ".."));
 const home = mkdtempSync(join(tmpdir(), "feynman-rpc-"));
 const env = { ...process.env, FEYNMAN_HOME: home, HOME: home, USERPROFILE: home, FEYNMAN_TELEMETRY: "0", PI_OFFLINE: "1" };
 
-const child = spawn(process.execPath, [feynmanBin, "--mode", "rpc", "--no-session"], { cwd: home, env });
+// --no-themes is what ACP adapters such as pi-acp pass; Feynman must accept it.
+const child = spawn(process.execPath, [feynmanBin, "--mode", "rpc", "--no-session", "--no-themes"], { cwd: home, env });
 let stdout = "";
 let stderr = "";
 child.stderr.on("data", (chunk) => { stderr += chunk; });
