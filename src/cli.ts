@@ -66,11 +66,9 @@ import { setupPreviewDependencies } from "./setup/preview.js";
 import { runSetup } from "./setup/setup.js";
 import {
 	captureTelemetryEvent,
-	emitTelemetryLog,
 	getCliTelemetryMetadata,
 	initializePostHogTelemetry,
 	shutdownPostHogTelemetry,
-	startTelemetrySpan,
 	telemetryErrorProperties,
 	telemetryFirstRunNotice,
 } from "./telemetry/posthog.js";
@@ -511,14 +509,12 @@ export async function main(): Promise<void> {
 	const here = dirname(fileURLToPath(import.meta.url));
 	const appRoot = resolve(here, "..");
 	const feynmanVersion = loadPackageVersion(appRoot).version;
-	initializePostHogTelemetry({ appVersion: feynmanVersion, serviceName: "feynman-cli" });
+	initializePostHogTelemetry({ appVersion: feynmanVersion });
 	const telemetryNotice = telemetryFirstRunNotice();
 	if (telemetryNotice) process.stderr.write(`${telemetryNotice}\n`);
 	const commandTelemetry = getCliTelemetryMetadata(process.argv.slice(2), { knownCommands: getTelemetryCommandNames(appRoot) });
 	const commandStartedAt = Date.now();
-	const commandSpan = startTelemetrySpan("feynman.cli.command", commandTelemetry);
 	captureTelemetryEvent("feynman_command_started", commandTelemetry);
-	emitTelemetryLog("info", "feynman command started", commandTelemetry);
 	try {
 		await runMain({ here, appRoot, feynmanVersion });
 		const durationMs = Date.now() - commandStartedAt;
@@ -528,9 +524,7 @@ export async function main(): Promise<void> {
 			duration_ms: durationMs,
 			exit_code: exitCode,
 		};
-		commandSpan.end(exitCode === 0 ? "ok" : "error", completeProperties);
 		captureTelemetryEvent(exitCode === 0 ? "feynman_command_completed" : "feynman_command_failed", completeProperties);
-		emitTelemetryLog(exitCode === 0 ? "info" : "error", exitCode === 0 ? "feynman command completed" : "feynman command failed", completeProperties);
 	} catch (error) {
 		const durationMs = Date.now() - commandStartedAt;
 		const failureProperties = {
@@ -538,10 +532,7 @@ export async function main(): Promise<void> {
 			duration_ms: durationMs,
 			...telemetryErrorProperties(error),
 		};
-		commandSpan.recordException(error);
-		commandSpan.end("error", failureProperties);
 		captureTelemetryEvent("feynman_command_failed", failureProperties);
-		emitTelemetryLog("error", "feynman command failed", failureProperties);
 		throw error;
 	} finally {
 		await shutdownPostHogTelemetry();

@@ -12,14 +12,11 @@ import {
 	TELEMETRY_NOTICE,
 	captureTelemetryEventImmediate,
 	createTelemetryCircuitBreakerFetch,
-	createOneShotOtlpTransport,
-	createTelemetryTransportCircuitBreaker,
 	getCliTelemetryMetadata,
 	getPostHogChildEnv,
 	initializePostHogTelemetry,
 	normalizeTelemetryProperties,
 	resolvePostHogTelemetryConfig,
-	sanitizeTelemetryException,
 	shutdownPostHogTelemetry,
 	telemetryErrorProperties,
 	telemetryFirstRunNotice,
@@ -30,7 +27,6 @@ test("resolvePostHogTelemetryConfig defaults to the Feynman PostHog project", ()
 	const config = resolvePostHogTelemetryConfig({
 		home,
 		appVersion: "0.3.4",
-		serviceName: "feynman-test",
 		env: {
 			FEYNMAN_TELEMETRY: "1",
 		},
@@ -40,7 +36,6 @@ test("resolvePostHogTelemetryConfig defaults to the Feynman PostHog project", ()
 	assert.equal(config?.projectId, DEFAULT_POSTHOG_PROJECT_ID);
 	assert.equal(config?.projectToken, DEFAULT_POSTHOG_PROJECT_TOKEN);
 	assert.equal(config?.appVersion, "0.3.4");
-	assert.equal(config?.serviceName, "feynman-test");
 	assert.match(config?.distinctId ?? "", /^feynman_/);
 
 	const state = JSON.parse(readFileSync(join(home, ".state", "telemetry.json"), "utf8")) as { anonymousId?: string };
@@ -62,7 +57,7 @@ test("first-run notice says what is sent and how to opt out, once per Feynman ho
 		assert.match(TELEMETRY_NOTICE, /never sends prompts, paper content, file paths, or tool arguments/);
 		assert.match(TELEMETRY_NOTICE, /FEYNMAN_TELEMETRY=off/);
 
-		initializePostHogTelemetry({ home, posthogFetch: async () => new Response(null, { status: 204 }), otlpFetch: async () => new Response(null, { status: 204 }) });
+		initializePostHogTelemetry({ home, posthogFetch: async () => new Response(null, { status: 204 }) });
 		// Scripts and CI never see it, and it stays pending for the first interactive run.
 		assert.equal(telemetryFirstRunNotice(home, false), undefined);
 		assert.equal(telemetryFirstRunNotice(home, true), TELEMETRY_NOTICE);
@@ -73,7 +68,7 @@ test("first-run notice says what is sent and how to opt out, once per Feynman ho
 		assert.match(state.anonymousId ?? "", /^feynman_/);
 		await shutdownPostHogTelemetry();
 
-		initializePostHogTelemetry({ home, posthogFetch: async () => new Response(null, { status: 204 }), otlpFetch: async () => new Response(null, { status: 204 }) });
+		initializePostHogTelemetry({ home, posthogFetch: async () => new Response(null, { status: 204 }) });
 		assert.equal(telemetryFirstRunNotice(home, true), undefined);
 		await shutdownPostHogTelemetry();
 
@@ -99,7 +94,7 @@ test("Pi child env carries the CLI's PostHog project and install id only while t
 	delete process.env.FEYNMAN_TELEMETRY;
 	try {
 		assert.deepEqual(getPostHogChildEnv(), {});
-		const config = initializePostHogTelemetry({ home, posthogFetch: async () => new Response(null, { status: 204 }), otlpFetch: async () => new Response(null, { status: 204 }) });
+		const config = initializePostHogTelemetry({ home, posthogFetch: async () => new Response(null, { status: 204 }) });
 		assert.deepEqual(getPostHogChildEnv(), {
 			FEYNMAN_POSTHOG_KEY: DEFAULT_POSTHOG_PROJECT_TOKEN,
 			FEYNMAN_POSTHOG_HOST: DEFAULT_POSTHOG_HOST,
@@ -128,7 +123,6 @@ test("PostHog transport failures open a silent session circuit breaker", async (
 		initializePostHogTelemetry({
 			home,
 			appVersion: "0.3.10",
-			serviceName: "feynman-test",
 			posthogFetch: async () => {
 				fetchAttempts += 1;
 				throw new Error("simulated unreachable telemetry endpoint");
@@ -154,13 +148,11 @@ test("PostHog transport sends gzip bytes without retaining Node Blob readers", a
 		initializePostHogTelemetry({
 			home,
 			appVersion: "0.3.39",
-			serviceName: "feynman-test",
 			posthogFetch: async (_url, options) => {
 				requestBody = options?.body;
 				requestHeaders = options?.headers;
 				return new Response(null, { status: 204 });
 			},
-			otlpFetch: async () => new Response(null, { status: 204 }),
 		});
 		await captureTelemetryEventImmediate("gzip_body_probe");
 	} finally {
@@ -192,39 +184,6 @@ test("PostHog circuit breaker drops later requests after a non-success response"
 	assert.equal(fetchAttempts, 1);
 	assert.equal(failures.length, 1);
 	assert.match(failures[0] instanceof Error ? failures[0].message : "", /HTTP 503/);
-});
-
-test("OTLP transport makes one silent attempt and shares the open circuit with PostHog", async () => {
-	let otlpAttempts = 0;
-	let posthogAttempts = 0;
-	const failures: unknown[] = [];
-	const circuit = createTelemetryTransportCircuitBreaker((error) => failures.push(error));
-	const transport = createOneShotOtlpTransport({
-		url: "https://example.test/i/v1/traces",
-		headers: { Authorization: "Bearer test" },
-		contentType: "application/x-protobuf",
-		fetchImpl: async () => {
-			otlpAttempts += 1;
-			throw new Error("simulated blocked collector");
-		},
-		circuit,
-	});
-	const posthogFetch = createTelemetryCircuitBreakerFetch(
-		async () => {
-			posthogAttempts += 1;
-			return new Response(null, { status: 204 });
-		},
-		(error) => failures.push(error),
-		circuit,
-	);
-
-	assert.deepEqual(await transport.send(new Uint8Array([1, 2, 3]), 50), { status: "success" });
-	assert.deepEqual(await transport.send(new Uint8Array([4, 5, 6]), 50), { status: "success" });
-	assert.equal((await posthogFetch("https://example.test/batch", { method: "POST", headers: {} })).status, 204);
-	assert.equal(otlpAttempts, 1);
-	assert.equal(posthogAttempts, 0);
-	assert.equal(failures.length, 1);
-	assert.equal(circuit.isOpen(), true);
 });
 
 test("getCliTelemetryMetadata does not record unknown commands or malformed flag values", () => {
@@ -267,23 +226,6 @@ test("getCliTelemetryMetadata does not treat double-dash prompt text as a comman
 	assert.equal(metadata.command, "chat");
 	assert.equal(serialized.includes("private"), false);
 	assert.equal(serialized.includes("one-shot"), false);
-});
-
-test("sanitizeTelemetryException keeps only an error kind and message hash", () => {
-	const error = new Error("private prompt from /Users/advaitpaliwal/secret-paper.md");
-	error.stack = "Error: private prompt\n    at /Users/advaitpaliwal/secret-paper.md:1:1";
-	const sanitized = sanitizeTelemetryException(error);
-	const properties = telemetryErrorProperties(error);
-	const serialized = JSON.stringify({ sanitized, properties });
-
-	assert.equal(sanitized.name, "Error");
-	assert.equal(sanitized.message, `error_message_hash:${properties.error_message_hash}`);
-	assert.equal(properties.error_name, "Error");
-	assert.match(String(properties.error_message_hash), /^[a-f0-9]{16}$/);
-	assert.equal(serialized.includes("private prompt"), false);
-	assert.equal(serialized.includes("/Users/advaitpaliwal"), false);
-	assert.equal(serialized.includes("secret-paper"), false);
-	assert.equal("stack" in sanitized, false);
 });
 
 test("telemetryErrorProperties falls back when Error.name is not a safe class label", () => {
