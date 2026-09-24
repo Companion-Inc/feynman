@@ -354,7 +354,7 @@ async function resolveDoiWork(doiWorkId: string): Promise<{
 export async function searchOpenAlex(params: SearchParams): Promise<Record<string, unknown>> {
 	const query = cleanQuery(params.query);
 	const limit = safeLimit(params.limit);
-	const exact = await searchExactOpenAlex(query);
+	const exact = await searchExactOpenAlex(query, limit);
 	if (exact) return exact;
 	if (/^rate-limit$/i.test(query)) {
 		if (!openAlexApiKey()) {

@@ -5,6 +5,7 @@ thinking: high
 tools: read, write, edit, bash, grep, find, ls, web_search, fetch_content, get_search_content, feynman_science_database_search, hf_dataset_info, hf_repo_files, hf_repo_read_file
 output: research.md
 defaultProgress: true
+async: true
 ---
 
 You are Feynman's evidence-gathering subagent.

@@ -1,4 +1,4 @@
-const MAX_EXACT_RECORDS = 500;
+const MAX_EXACT_RECORDS = 50;
 const REQUEST_TIMEOUT_MS = 25_000;
 const OPENALEX_BASE = "https://api.openalex.org";
 const OPEN_ABSTRACT_LICENSES = new Set(["cc-by", "cc-by-sa", "cc0", "public-domain"]);
@@ -461,9 +461,9 @@ async function fetchWorkById(workId: string): Promise<{
 	};
 }
 
-async function exactWorkSearch(query: string, commandQuery: string): Promise<Record<string, unknown>> {
+async function exactWorkSearch(query: string, commandQuery: string, defaultLimit?: number): Promise<Record<string, unknown>> {
 	const parsed = parseKeyValueQuery(commandQuery);
-	const maxRecords = safeExactLimit(numberValue(parsed.flags.max_records), 50);
+	const maxRecords = safeExactLimit(numberValue(parsed.flags.max_records), defaultLimit ?? 50);
 	const url = endpointPath("/works");
 	if (parsed.text) url.searchParams.set("search", parsed.text);
 	const filters: string[] = [];
@@ -518,12 +518,12 @@ async function exactGetWork(query: string, workId: string): Promise<Record<strin
 	}, "openalex_get_work", query, resolved.endpoints, resolved.credentialStatus);
 }
 
-async function exactCitations(query: string, commandQuery: string): Promise<Record<string, unknown>> {
+async function exactCitations(query: string, commandQuery: string, defaultLimit?: number): Promise<Record<string, unknown>> {
 	const parsed = parseKeyValueQuery(commandQuery);
 	const workInput = parsed.text;
 	if (!workInput) throw new Error("openalex_citations requires an OpenAlex work id or DOI.");
 	const resolved = await fetchWorkById(workInput);
-	const maxRecords = safeExactLimit(numberValue(parsed.flags.max_records), 50);
+	const maxRecords = safeExactLimit(numberValue(parsed.flags.max_records), defaultLimit ?? 50);
 	const url = endpointPath("/works");
 	url.searchParams.set("filter", `cites:${resolved.workId}`);
 	const sort = exactSearchSort(parsed.flags.sort ?? "cited_by_count", false);
@@ -545,11 +545,11 @@ async function exactCitations(query: string, commandQuery: string): Promise<Reco
 	}, "openalex_citations", query, [...resolved.endpoints, result.endpoint], result.credentialStatus);
 }
 
-async function exactReferences(query: string, commandQuery: string): Promise<Record<string, unknown>> {
+async function exactReferences(query: string, commandQuery: string, defaultLimit?: number): Promise<Record<string, unknown>> {
 	const parsed = parseKeyValueQuery(commandQuery);
 	if (!parsed.text) throw new Error("openalex_references requires an OpenAlex work id or DOI.");
 	const resolved = await fetchWorkById(parsed.text);
-	const maxRecords = safeExactLimit(numberValue(parsed.flags.max_records), 100);
+	const maxRecords = safeExactLimit(numberValue(parsed.flags.max_records), defaultLimit ?? 100);
 	const referenceIds = arrayValue(resolved.payload.referenced_works).map(shortOpenAlexId).filter((id): id is string => Boolean(id));
 	const selected = referenceIds.slice(0, maxRecords);
 	const endpoints = [...resolved.endpoints];
@@ -581,10 +581,10 @@ async function exactReferences(query: string, commandQuery: string): Promise<Rec
 	}, "openalex_references", query, endpoints, credentialStatus);
 }
 
-async function exactSearchAuthors(query: string, commandQuery: string): Promise<Record<string, unknown>> {
+async function exactSearchAuthors(query: string, commandQuery: string, defaultLimit?: number): Promise<Record<string, unknown>> {
 	const parsed = parseKeyValueQuery(commandQuery);
 	if (!parsed.text) throw new Error("openalex_search_authors requires a name query.");
-	const maxRecords = safeExactLimit(numberValue(parsed.flags.max_records), 25);
+	const maxRecords = safeExactLimit(numberValue(parsed.flags.max_records), defaultLimit ?? 25);
 	const url = endpointPath("/authors");
 	url.searchParams.set("search", parsed.text);
 	url.searchParams.set("per-page", String(Math.min(maxRecords, 200)));
@@ -625,7 +625,7 @@ async function exactGetAuthor(query: string, commandQuery: string): Promise<Reco
 	}, "openalex_get_author", query, [result.endpoint, works.endpoint], works.credentialStatus);
 }
 
-async function exactVenueInfo(query: string, commandQuery: string): Promise<Record<string, unknown>> {
+async function exactVenueInfo(query: string, commandQuery: string, defaultLimit?: number): Promise<Record<string, unknown>> {
 	const parsed = parseKeyValueQuery(commandQuery);
 	const venue = parsed.text;
 	if (!venue) throw new Error("openalex_venue_info requires a source id, ISSN, or venue name.");
@@ -640,7 +640,7 @@ async function exactVenueInfo(query: string, commandQuery: string): Promise<Reco
 			records: [row],
 		}, "openalex_venue_info", query, [result.endpoint], result.credentialStatus);
 	}
-	const maxRecords = safeExactLimit(numberValue(parsed.flags.max_records), 10);
+	const maxRecords = safeExactLimit(numberValue(parsed.flags.max_records), defaultLimit ?? 10);
 	const url = endpointPath("/sources");
 	url.searchParams.set("search", venue);
 	url.searchParams.set("per-page", String(Math.min(maxRecords, 200)));
@@ -657,15 +657,15 @@ async function exactVenueInfo(query: string, commandQuery: string): Promise<Reco
 	}, "openalex_venue_info", query, [result.endpoint], result.credentialStatus);
 }
 
-export async function searchExactOpenAlex(query: string): Promise<Record<string, unknown> | undefined> {
+export async function searchExactOpenAlex(query: string, defaultLimit?: number): Promise<Record<string, unknown> | undefined> {
 	const command = exactCommand(query);
 	if (!command) return undefined;
-	if (command.name === "openalex_search_works") return exactWorkSearch(query, command.rest);
+	if (command.name === "openalex_search_works") return exactWorkSearch(query, command.rest, defaultLimit);
 	if (command.name === "openalex_get_work") return exactGetWork(query, command.rest);
-	if (command.name === "openalex_citations") return exactCitations(query, command.rest);
-	if (command.name === "openalex_references") return exactReferences(query, command.rest);
-	if (command.name === "openalex_search_authors") return exactSearchAuthors(query, command.rest);
+	if (command.name === "openalex_citations") return exactCitations(query, command.rest, defaultLimit);
+	if (command.name === "openalex_references") return exactReferences(query, command.rest, defaultLimit);
+	if (command.name === "openalex_search_authors") return exactSearchAuthors(query, command.rest, defaultLimit);
 	if (command.name === "openalex_get_author") return exactGetAuthor(query, command.rest);
-	if (command.name === "openalex_venue_info") return exactVenueInfo(query, command.rest);
+	if (command.name === "openalex_venue_info") return exactVenueInfo(query, command.rest, defaultLimit);
 	return undefined;
 }

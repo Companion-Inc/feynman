@@ -86,7 +86,7 @@ export function registerAlphaTools(pi: ExtensionAPI): void {
 	pi.registerTool({
 		name: "alpha_ask_paper",
 		label: "Alpha Ask Paper",
-		description: "Ask a targeted question about a paper. Uses AI to analyze the PDF and answer.",
+		description: "Ask a targeted question about an arXiv or alphaXiv paper. Uses AI to analyze the PDF and answer. DOI-only papers are not supported; read those with fetch_content on the open-access PDF or Europe PMC full text.",
 		parameters: Type.Object({
 			paper: Type.String({ description: "arXiv ID, arXiv URL, or alphaXiv URL." }),
 			question: Type.String({ description: "Question about the paper." }),
