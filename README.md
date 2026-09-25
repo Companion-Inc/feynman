@@ -7,6 +7,7 @@
 <p align="center">
   <a href="https://feynman.is/docs"><img alt="Docs" src="https://img.shields.io/badge/docs-feynman.is-0d9668?style=flat-square" /></a>
   <a href="https://github.com/Companion-Inc/feynman/blob/main/LICENSE"><img alt="License" src="https://img.shields.io/github/license/Companion-Inc/feynman?style=flat-square" /></a>
+  <a href="https://deepwiki.com/Companion-Inc/feynman"><img alt="Ask DeepWiki" src="https://deepwiki.com/badge.svg" /></a>
 </p>
 
 ---
