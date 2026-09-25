@@ -35,7 +35,7 @@ test("before_agent_start adds current-date context as a system-prompt section", 
 		type: "before_agent_start",
 		prompt: "Find the latest research.",
 		systemPrompt: "Base prompt.",
-		systemPromptOptions: { sections: {} } as unknown as BeforeAgentStartEvent["systemPromptOptions"],
+		systemPromptOptions: {} as unknown as BeforeAgentStartEvent["systemPromptOptions"],
 	} satisfies BeforeAgentStartEvent;
 	const result = handler(event);
 	assert.equal(result?.systemPrompt, undefined);

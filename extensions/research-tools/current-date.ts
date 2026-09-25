@@ -16,6 +16,7 @@ export function registerCurrentDateResearchContext(
 	now: () => Date = () => new Date(),
 ): void {
 	pi.on("before_agent_start", (event) => {
+		event.systemPromptOptions.sections ??= {};
 		event.systemPromptOptions.sections.current_date = buildCurrentDateResearchContext(now());
 	});
 }
