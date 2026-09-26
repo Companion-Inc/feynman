@@ -6,6 +6,11 @@ GitHub release notes are generated from the matching `## vX.Y.Z` section in this
 
 ## Unreleased
 
+## v0.5.8 - 2026-09-26
+
+- `FEYNMAN_HOME=~` or `~/path` now means your home folder. Unexpanded `~` (common in `.env` files, Docker `ENV`, and Windows shells) created a literal `~` folder in the current directory.
+- Starting two Feynman sessions at the same moment no longer crashes one of them with "Subagent config changed during settings normalization". The second start keeps the subagent config the first one wrote.
+
 ## v0.5.7 - 2026-09-26
 
 - When Feynman runs as a package inside another Pi setup, an extension error no longer appears on every turn ("Cannot set properties of undefined (setting 'current_date')") if another extension or the host leaves the system-prompt sections unset (#298, thanks @Oscar-Williams in #300).

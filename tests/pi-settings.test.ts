@@ -291,3 +291,20 @@ test("ensureFeynmanSettings drops the retry backoff older Feynman versions seede
 	await ensureFeynmanSettings(settingsPath, resolve(".feynman", "settings.json"), process.cwd(), "medium", authPath);
 	assert.deepEqual(JSON.parse(readFileSync(settingsPath, "utf8")).retry, { maxRetries: 8 });
 });
+
+test("concurrent Feynman starts share one subagent config instead of failing", async (t) => {
+	const root = mkdtempSync(join(tmpdir(), "feynman-subagent-race-"));
+	t.after(() => rmSync(root, { recursive: true, force: true }));
+	const settingsPath = join(root, "agent", "settings.json");
+	const authPath = join(root, "agent", "auth.json");
+	mkdirSync(join(root, "agent"), { recursive: true });
+	writeFileSync(authPath, "{}\n");
+	// Both calls read the missing config, then await model discovery before writing.
+	await Promise.all([
+		ensureFeynmanSettings(settingsPath, resolve(".feynman", "settings.json"), process.cwd(), "medium", authPath),
+		ensureFeynmanSettings(settingsPath, resolve(".feynman", "settings.json"), process.cwd(), "medium", authPath),
+	]);
+	assert.deepEqual(JSON.parse(readFileSync(join(root, "agent", "extensions", "subagent", "config.json"), "utf8")), {
+		missions: { enabled: false }, fleetView: false, asyncByDefault: true,
+	});
+});

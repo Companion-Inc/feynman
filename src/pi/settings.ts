@@ -207,15 +207,18 @@ export async function ensureFeynmanSettings(
 		}
 	}
 
-	if (subagentDefaults) {
-		const current = existsSync(subagentDefaults.path) ? readFileSync(subagentDefaults.path, "utf8") : undefined;
-		if (current !== subagentDefaults.original) {
-			throw new Error(`Subagent config changed during settings normalization: ${subagentDefaults.path}. Retry without overwriting it.`);
-		}
+	// If another process wrote the subagent config while models were being
+	// discovered, keep its version instead of overwriting it or failing startup.
+	const subagentCurrent = subagentDefaults && existsSync(subagentDefaults.path) ? readFileSync(subagentDefaults.path, "utf8") : undefined;
+	if (subagentDefaults && subagentCurrent === subagentDefaults.original) {
 		mkdirSync(dirname(subagentDefaults.path), { recursive: true });
-		writeFileSync(subagentDefaults.path, subagentDefaults.content, {
-			encoding: "utf8", mode: 0o600, flag: subagentDefaults.original === undefined ? "wx" : "w",
-		});
+		try {
+			writeFileSync(subagentDefaults.path, subagentDefaults.content, {
+				encoding: "utf8", mode: 0o600, flag: subagentDefaults.original === undefined ? "wx" : "w",
+			});
+		} catch (error) {
+			if ((error as NodeJS.ErrnoException).code !== "EEXIST") throw error;
+		}
 	}
 	const content = JSON.stringify(settings, null, 2) + "\n";
 	if (content === existing?.source) return;
