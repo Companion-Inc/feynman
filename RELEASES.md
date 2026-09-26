@@ -6,6 +6,10 @@ GitHub release notes are generated from the matching `## vX.Y.Z` section in this
 
 ## Unreleased
 
+## v0.5.7 - 2026-09-26
+
+- When Feynman runs as a package inside another Pi setup, an extension error no longer appears on every turn ("Cannot set properties of undefined (setting 'current_date')") if another extension or the host leaves the system-prompt sections unset (#298, thanks @Oscar-Williams in #300).
+
 ## v0.5.6 - 2026-09-26
 
 ### Failures report what went wrong
