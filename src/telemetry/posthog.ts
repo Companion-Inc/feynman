@@ -1,5 +1,6 @@
-import { randomUUID, createHash } from "node:crypto";
+import { randomUUID } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { homedir } from "node:os";
 import { dirname, resolve } from "node:path";
 
 import { PostHog, type PostHogOptions } from "posthog-node";
@@ -14,7 +15,7 @@ const TELEMETRY_DISABLED_VALUES = new Set(["0", "false", "no", "off", "disabled"
 const TELEMETRY_KEY_PATTERN = /^[A-Za-z0-9_$./-]+$/;
 export const TELEMETRY_NOTICE = [
 	"Attention: Feynman collects anonymous usage telemetry: commands, workflows, tool names, models, token counts, and errors.",
-	"It never sends prompts, paper content, file paths, or tool arguments.",
+	"Errors include their message and stack trace, with your home folder shown as ~. It never sends prompts, model output, paper content, or tool arguments.",
 	"To opt out, set FEYNMAN_TELEMETRY=off. Learn more: https://www.feynman.is/docs/getting-started/configuration#telemetry",
 ].join("\n");
 
@@ -181,10 +182,23 @@ function normalizeTelemetryKey(key: string): string | undefined {
 	return normalized.slice(0, 80);
 }
 
-function normalizeTelemetryValue(value: TelemetryPrimitive): string | number | boolean | null | undefined {
+// Error text is sent as-is (home folder shown as ~) so failures can be debugged.
+const RAW_TEXT_KEYS = new Set(["error_message", "pi_stderr"]);
+const RAW_TEXT_LIMIT = 4000;
+
+export function redactTelemetryText(text: string, home = homedir()): string {
+	let redacted = text;
+	if (home) {
+		for (const variant of new Set([home, home.replace(/\\/g, "/")])) redacted = redacted.split(variant).join("~");
+	}
+	return redacted.length > RAW_TEXT_LIMIT ? `...${redacted.slice(-RAW_TEXT_LIMIT)}` : redacted;
+}
+
+function normalizeTelemetryValue(value: TelemetryPrimitive, raw = false): string | number | boolean | null | undefined {
 	if (value === undefined) return undefined;
 	if (value === null || typeof value === "boolean") return value;
 	if (typeof value === "number") return Number.isFinite(value) ? value : undefined;
+	if (raw) return value.trim() ? redactTelemetryText(value.trim()) : undefined;
 	const trimmed = value.replace(/\s+/g, " ").trim();
 	if (!trimmed) return undefined;
 	return trimmed.length > 240 ? `${trimmed.slice(0, 237)}...` : trimmed;
@@ -194,7 +208,7 @@ export function normalizeTelemetryProperties(properties: TelemetryProperties = {
 	const normalized: Record<string, string | number | boolean | null> = {};
 	for (const [key, value] of Object.entries(properties)) {
 		const normalizedKey = normalizeTelemetryKey(key);
-		const normalizedValue = normalizeTelemetryValue(value);
+		const normalizedValue = normalizeTelemetryValue(value, RAW_TEXT_KEYS.has(normalizedKey ?? ""));
 		if (!normalizedKey || normalizedValue === undefined) continue;
 		normalized[normalizedKey] = normalizedValue;
 	}
@@ -213,11 +227,6 @@ function baseTelemetryProperties(config: PostHogTelemetryConfig): Record<string,
 	});
 }
 
-export function stableTelemetryHash(value: string | undefined): string | undefined {
-	if (!value) return undefined;
-	return createHash("sha256").update(value).digest("hex").slice(0, 16);
-}
-
 function telemetryErrorName(error: unknown): string {
 	if (!(error instanceof Error)) return typeof error;
 	return /^[A-Za-z][A-Za-z0-9_.-]{0,63}$/.test(error.name) ? error.name : "Error";
@@ -227,7 +236,7 @@ export function telemetryErrorProperties(error: unknown): TelemetryProperties {
 	const message = error instanceof Error ? error.message : String(error);
 	return {
 		error_name: telemetryErrorName(error),
-		error_message_hash: stableTelemetryHash(message),
+		error_message: message,
 	};
 }
 
@@ -274,6 +283,20 @@ export function captureTelemetryEvent(event: string, properties: TelemetryProper
 			...baseTelemetryProperties(activeConfig),
 			...normalizeTelemetryProperties(properties),
 		},
+	});
+}
+
+/** Send an error with its stack trace to PostHog error tracking. */
+export async function captureTelemetryException(error: unknown, properties: TelemetryProperties = {}): Promise<void> {
+	if (!activeConfig || !posthogClient) return;
+	const source = error instanceof Error ? error : new Error(String(error));
+	const redacted = new Error(redactTelemetryText(source.message));
+	redacted.name = source.name;
+	redacted.stack = source.stack ? redactTelemetryText(source.stack) : undefined;
+	// The immediate variant is awaited, so the event is sent before the CLI exits.
+	await posthogClient.captureExceptionImmediate(redacted, activeConfig.distinctId, {
+		...baseTelemetryProperties(activeConfig),
+		...normalizeTelemetryProperties(properties),
 	});
 }
 

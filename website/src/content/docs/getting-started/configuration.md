@@ -114,7 +114,7 @@ Feynman reads these environment variables. `FEYNMAN_MODEL`, `FEYNMAN_THINKING`, 
 
 Feynman collects anonymous usage telemetry by default and prints a one-time notice the first time it runs. Telemetry goes to Feynman's PostHog project under a random install ID stored in `~/.feynman/.state/telemetry.json`. Person profiles and GeoIP lookup are off.
 
-Feynman never sends prompts, model output, paper or document content, file paths, tool arguments, or tool results. Error messages are sent only as a short hash.
+Feynman never sends prompts, model output, paper or document content, or tool arguments. When something fails, it sends the error message and stack trace, the end of Pi's error output, and a failed tool's error text, with your home folder shown as `~`. These can include file paths inside your projects.
 
 To opt out, set either variable in your shell profile:
 
@@ -129,12 +129,12 @@ What is sent:
 
 | Event | Properties |
 |-------|------------|
-| `feynman_command_started`, `feynman_command_completed`, `feynman_command_failed` | Command and allow-listed subcommand, output mode, whether a prompt, model, service tier, or new-session flag was given, duration, exit code, error name and message hash |
+| `feynman_command_started`, `feynman_command_completed`, `feynman_command_failed` | Command and allow-listed subcommand, output mode, whether a prompt, model, service tier, or new-session flag was given, duration, exit code, error name and message; for a failed run, the last lines of Pi's error output. Errors thrown by Feynman also go to PostHog error tracking with their stack trace |
 | `feynman_session_started` | Why the session started (startup, resume, new, fork, reload), mode, model and provider name |
 | `feynman_workflow_started` | Workflow name (`deepresearch`, `lit`, `review`, and so on; `chat` for anything else) |
 | `feynman_workflow_completed` | Workflow name, status (`completed`, `error`, `aborted`), tool and subagent call counts, whether any file under `outputs/` or `papers/` was written (yes or no), duration |
-| `feynman_tool_used` | Tool name, whether it failed, whether a subagent called it |
-| `$ai_generation` | [PostHog LLM analytics](https://posthog.com/docs/llm-analytics/generations) metadata for each model response: model, provider, input, output, and cache token counts, latency, HTTP status, stop reason, error flag, and the Pi session ID as the trace ID. No `$ai_input` or `$ai_output_choices`. |
+| `feynman_tool_used` | Tool name, whether it failed and its error text, whether a subagent called it |
+| `$ai_generation` | [PostHog LLM analytics](https://posthog.com/docs/llm-analytics/generations) metadata for each model response: model, provider, input, output, and cache token counts, latency, HTTP status, stop reason, error flag and provider error message, and the Pi session ID as the trace ID. No `$ai_input` or `$ai_output_choices`. |
 
 Every event also carries the Feynman version, Node.js version, platform, and CPU architecture.
 

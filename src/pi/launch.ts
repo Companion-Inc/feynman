@@ -17,6 +17,13 @@ export function exitCodeFromSignal(signal: NodeJS.Signals): number {
 	return typeof signalNumber === "number" ? 128 + signalNumber : 1;
 }
 
+// The end of Pi's stderr from the last run, reported with a failed command so
+// crashes inside Pi are debuggable.
+let lastPiStderr = "";
+export function getLastPiStderr(): string {
+	return lastPiStderr;
+}
+
 export async function runPi(
 	options: PiRuntimeOptions,
 	args: string[],
@@ -29,8 +36,13 @@ export async function runPi(
 	}
 	const child = spawn(process.execPath, [piCliPath, ...args], {
 		cwd: options.workingDir,
-		stdio: [stdin, "inherit", "inherit"],
+		stdio: [stdin, "inherit", "pipe"],
 		env,
+	});
+	lastPiStderr = "";
+	child.stderr?.on("data", (chunk: Buffer) => {
+		process.stderr.write(chunk);
+		lastPiStderr = (lastPiStderr + chunk.toString("utf8")).slice(-8000);
 	});
 
 	return await new Promise<number>((resolvePromise, reject) => {
