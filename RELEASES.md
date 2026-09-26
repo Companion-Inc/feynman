@@ -6,6 +6,18 @@ GitHub release notes are generated from the matching `## vX.Y.Z` section in this
 
 ## Unreleased
 
+## v0.5.6 - 2026-09-26
+
+### Failures report what went wrong
+
+- Usage telemetry now carries readable error text instead of a hash: the error message and stack trace (also sent to PostHog error tracking), the last lines of Pi's error output when a run exits with an error, a failed tool's error text, and the provider's error message on a failed model call. Your home folder is shown as `~`. Paths inside your projects can appear in this text. Prompts, model output, paper content, and tool arguments are still never sent. Opt out with `FEYNMAN_TELEMETRY=off` as before.
+- CI runs and the test suite no longer report telemetry, so usage numbers count real installs only.
+
+### Fixes
+
+- A dead network connection now fails in about 15 seconds with `Connection error.` instead of retrying silently for over five minutes. Feynman had set a 6-retry, 5-second backoff that also applied to connection errors; it now uses Pi's default, and the old value is removed from existing settings. Rate limits are still retried with the provider's `Retry-After`.
+- `feynman setup` and `feynman model login` in a window Node cannot prompt in (Git Bash's default window, a script, or an AI coding agent) now explain how to proceed: `winpty`, PowerShell, or setting the provider's API key variable and running `feynman model set`.
+
 ## v0.5.5 - 2026-09-24
 
 ### Node.js 26
