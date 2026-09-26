@@ -11,6 +11,8 @@ on:
         default: "latest"
 
 env:
+  # Keep CI runs out of the usage telemetry.
+  FEYNMAN_TELEMETRY: "off"
   FEYNMAN_VERSION_INPUT: ${{ github.event.inputs.version || 'latest' }}
 
 permissions:
