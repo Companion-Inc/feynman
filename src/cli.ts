@@ -24,7 +24,7 @@ import { getValidToken as getValidAlphaToken } from "@companion-ai/alpha-hub/lib
 import { verifyAlphaAuthStatus } from "./alpha-auth-status.js";
 import { ensureFeynmanAgentDir } from "./bootstrap/home.js";
 import { ensureFeynmanHome, getDefaultSessionDir, getFeynmanAgentDir, getFeynmanHome } from "./config/paths.js";
-import { launchPiChat, runPi } from "./pi/launch.js";
+import { getLastPiStderr, launchPiChat, runPi } from "./pi/launch.js";
 import {
 	installPiPackage,
 	listOptionalPackagePresets,
@@ -64,6 +64,7 @@ import { setupPreviewDependencies } from "./setup/preview.js";
 import { runSetup } from "./setup/setup.js";
 import {
 	captureTelemetryEvent,
+	captureTelemetryException,
 	getCliTelemetryMetadata,
 	initializePostHogTelemetry,
 	shutdownPostHogTelemetry,
@@ -516,6 +517,7 @@ export async function main(): Promise<void> {
 			...commandTelemetry,
 			duration_ms: durationMs,
 			exit_code: exitCode,
+			...(exitCode === 0 ? {} : { pi_stderr: getLastPiStderr() }),
 		};
 		captureTelemetryEvent(exitCode === 0 ? "feynman_command_completed" : "feynman_command_failed", completeProperties);
 	} catch (error) {
@@ -526,6 +528,7 @@ export async function main(): Promise<void> {
 			...telemetryErrorProperties(error),
 		};
 		captureTelemetryEvent("feynman_command_failed", failureProperties);
+		await captureTelemetryException(error, commandTelemetry).catch(() => {});
 		throw error;
 	} finally {
 		await shutdownPostHogTelemetry();

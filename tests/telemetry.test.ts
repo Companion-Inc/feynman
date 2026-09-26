@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { mkdtempSync, readFileSync, rmSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { homedir, tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 import { gunzipSync } from "node:zlib";
@@ -10,17 +10,23 @@ import {
 	DEFAULT_POSTHOG_PROJECT_ID,
 	DEFAULT_POSTHOG_PROJECT_TOKEN,
 	TELEMETRY_NOTICE,
+	captureTelemetryException,
 	captureTelemetryEventImmediate,
 	createTelemetryCircuitBreakerFetch,
 	getCliTelemetryMetadata,
 	getPostHogChildEnv,
 	initializePostHogTelemetry,
 	normalizeTelemetryProperties,
+	redactTelemetryText,
 	resolvePostHogTelemetryConfig,
 	shutdownPostHogTelemetry,
 	telemetryErrorProperties,
 	telemetryFirstRunNotice,
 } from "../src/telemetry/posthog.js";
+
+
+// tests/isolate-tmpdir.ts turns telemetry off for spawned CLIs; these tests stub the network.
+delete process.env.FEYNMAN_TELEMETRY;
 
 test("resolvePostHogTelemetryConfig defaults to the Feynman PostHog project", () => {
 	const home = mkdtempSync(join(tmpdir(), "feynman-telemetry-home-"));
@@ -54,7 +60,8 @@ test("first-run notice says what is sent and how to opt out, once per Feynman ho
 	delete process.env.DO_NOT_TRACK;
 	try {
 		assert.match(TELEMETRY_NOTICE, /anonymous usage telemetry/);
-		assert.match(TELEMETRY_NOTICE, /never sends prompts, paper content, file paths, or tool arguments/);
+		assert.match(TELEMETRY_NOTICE, /stack trace, with your home folder shown as ~/);
+		assert.match(TELEMETRY_NOTICE, /never sends prompts, model output, paper content, or tool arguments/);
 		assert.match(TELEMETRY_NOTICE, /FEYNMAN_TELEMETRY=off/);
 
 		initializePostHogTelemetry({ home, posthogFetch: async () => new Response(null, { status: 204 }) });
@@ -248,4 +255,40 @@ test("normalizeTelemetryProperties keeps bounded snake_case scalar properties", 
 	assert.equal(normalized.command_name, "rank");
 	assert.equal(normalized.duration_ms, 123);
 	assert.equal(String(normalized.raw).length, 240);
+});
+
+test("error text is sent raw with the home folder shown as ~", () => {
+	const home = "/Users/someone";
+	assert.equal(redactTelemetryText(`ENOENT: open '${home}/proj/outputs/x.md'`, home), "ENOENT: open '~/proj/outputs/x.md'");
+	assert.equal(redactTelemetryText("C:\\Users\\someone\\a and C:/Users/someone/b", "C:\\Users\\someone"), "~\\a and ~/b");
+	assert.equal(redactTelemetryText("x".repeat(5000), home).length, 4003);
+	assert.equal(telemetryErrorProperties(new Error("Unknown model: openai/gpt-9")).error_message, "Unknown model: openai/gpt-9");
+	const stderr = "line one\n  at frame (file.js:1:2)\n";
+	assert.equal(normalizeTelemetryProperties({ pi_stderr: stderr }).pi_stderr, stderr.trim());
+});
+
+test("captureTelemetryException sends a redacted stack trace to PostHog error tracking", async () => {
+	const home = mkdtempSync(join(tmpdir(), "feynman-telemetry-exception-home-"));
+	const bodies: string[] = [];
+	try {
+		initializePostHogTelemetry({
+			home,
+			posthogFetch: async (_url, options) => {
+				bodies.push(gunzipSync(options?.body as Uint8Array).toString("utf8"));
+				return new Response(null, { status: 204 });
+			},
+		});
+		const error = new TypeError(`boom in ${homedir()}/project`);
+		error.stack = `TypeError: boom in ${homedir()}/project\n    at run (${homedir()}/app/cli.js:10:5)`;
+		await captureTelemetryException(error, { command: "chat" });
+		await shutdownPostHogTelemetry();
+	} finally {
+		await shutdownPostHogTelemetry();
+		rmSync(home, { recursive: true, force: true });
+	}
+	const sent = bodies.join("\n");
+	assert.match(sent, /\$exception/);
+	assert.match(sent, /boom in ~\/project/);
+	assert.match(sent, /cli\.js/);
+	assert.equal(sent.includes(homedir()), false);
 });

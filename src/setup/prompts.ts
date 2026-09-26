@@ -23,9 +23,19 @@ export type PromptSelectOption<T = string> = {
 	hint?: string;
 };
 
+export function nonInteractiveTerminalMessage(env: NodeJS.ProcessEnv = process.env, platform = process.platform): string {
+	return [
+		"feynman setup requires an interactive terminal.",
+		platform === "win32" && env.MSYSTEM
+			? "Git Bash's default window is not one Node can prompt in: run `winpty feynman setup`, or use PowerShell or Windows Terminal."
+			: "Run it yourself in a terminal window, not through a script or an AI coding agent.",
+		"To skip the prompts, set your provider's API key variable (for example OPENAI_API_KEY or ANTHROPIC_API_KEY) and run `feynman model set <provider/model>`.",
+	].join("\n");
+}
+
 function ensureInteractiveTerminal(): void {
 	if (!process.stdin.isTTY || !process.stdout.isTTY) {
-		throw new Error("feynman setup requires an interactive terminal.");
+		throw new Error(nonInteractiveTerminalMessage());
 	}
 }
 

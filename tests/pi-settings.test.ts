@@ -276,3 +276,18 @@ test("optional package presets map friendly names to Pi package sources", () => 
 	assert.deepEqual(listOptionalPackagePresets().map((preset) => preset.name), ["memory", "hindsight"]);
 });
 
+
+test("ensureFeynmanSettings drops the retry backoff older Feynman versions seeded", async (t) => {
+	const root = mkdtempSync(join(tmpdir(), "feynman-settings-retry-"));
+	t.after(() => rmSync(root, { recursive: true, force: true }));
+	const settingsPath = join(root, "settings.json");
+	const authPath = join(root, "auth.json");
+	writeFileSync(authPath, "{}\n");
+	writeFileSync(settingsPath, JSON.stringify({ retry: { maxRetries: 6, baseDelayMs: 5000 }, defaultProvider: "openai", defaultModel: "gpt-5.6-terra" }));
+	await ensureFeynmanSettings(settingsPath, resolve(".feynman", "settings.json"), process.cwd(), "medium", authPath);
+	assert.equal(JSON.parse(readFileSync(settingsPath, "utf8")).retry, undefined);
+
+	writeFileSync(settingsPath, JSON.stringify({ retry: { maxRetries: 8 }, defaultProvider: "openai", defaultModel: "gpt-5.6-terra" }));
+	await ensureFeynmanSettings(settingsPath, resolve(".feynman", "settings.json"), process.cwd(), "medium", authPath);
+	assert.deepEqual(JSON.parse(readFileSync(settingsPath, "utf8")).retry, { maxRetries: 8 });
+});

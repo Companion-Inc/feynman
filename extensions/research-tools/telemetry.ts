@@ -1,4 +1,5 @@
 import { readdirSync, statSync } from "node:fs";
+import { homedir } from "node:os";
 import { join } from "node:path";
 
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
@@ -73,6 +74,20 @@ function createPostHogClient(config: ResearchTelemetryConfig): ResearchTelemetry
 	});
 	client.on("error", () => {});
 	return client;
+}
+
+// Error text is sent as-is so failures can be debugged; the home folder is shown as ~.
+export function errorText(value: unknown, home = homedir()): string | undefined {
+	const text = typeof value === "string" ? value : undefined;
+	if (!text?.trim()) return undefined;
+	let redacted = text.trim();
+	if (home) for (const variant of new Set([home, home.replace(/\\/g, "/")])) redacted = redacted.split(variant).join("~");
+	return redacted.length > 4000 ? `...${redacted.slice(-4000)}` : redacted;
+}
+
+function toolErrorText(result: unknown): string | undefined {
+	const content = (result as { content?: Array<{ type?: string; text?: string }> } | undefined)?.content;
+	return errorText(Array.isArray(content) ? content.filter((part) => part?.type === "text").map((part) => part.text).join("\n") : undefined);
 }
 
 export function workflowName(text: string, workflows: ReadonlySet<string>): string {
@@ -195,7 +210,12 @@ export function registerResearchTelemetry(
 	});
 
 	pi.on("tool_execution_end", (event) => {
-		capture("feynman_tool_used", { tool: event.toolName, is_error: event.isError, subagent: !primary });
+		capture("feynman_tool_used", {
+			tool: event.toolName,
+			is_error: event.isError,
+			subagent: !primary,
+			...(event.isError ? { error_message: toolErrorText(event.result) } : {}),
+		});
 		if (!run) return;
 		run.toolCalls += 1;
 		if (event.toolName === "subagent") run.subagentCalls += 1;
@@ -226,6 +246,7 @@ export function registerResearchTelemetry(
 			$ai_latency: requestStartedAt === undefined ? undefined : (now() - requestStartedAt) / 1000,
 			$ai_http_status: httpStatus,
 			$ai_is_error: message.stopReason === "error",
+			$ai_error: message.stopReason === "error" ? errorText(message.errorMessage) : undefined,
 			$ai_stop_reason: message.stopReason,
 			subagent: !primary,
 		});

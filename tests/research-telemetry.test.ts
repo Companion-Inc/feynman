@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { homedir, tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 
@@ -265,4 +265,27 @@ test("quitting mid-run reports the workflow as aborted", async () => {
 	const completed = captured.find(({ event }) => event === "feynman_workflow_completed")!.properties;
 	assert.equal(completed.workflow, "chat");
 	assert.equal(completed.status, "aborted");
+});
+
+test("failed tools and model calls report their error text with the home folder as ~", async () => {
+	const cwd = mkdtempSync(join(tmpdir(), "feynman-research-telemetry-errors-"));
+	const { pi, emit } = fakePi();
+	const { client, captured } = fakeClient();
+	try {
+		registerResearchTelemetry(pi, { env: TELEMETRY_ENV, shared: {}, createClient: () => client });
+		const context = ctx(cwd, "session-errors");
+		await emit({ type: "session_start", reason: "startup" }, context);
+		await emit({ type: "agent_start" }, context);
+		const toolError = `Not logged in. Run \`feynman alpha login\` first. (${homedir()}/.ahub)`;
+		await emit({ type: "tool_execution_end", toolCallId: "t1", toolName: "alpha_search", result: { content: [{ type: "text", text: toolError }] }, isError: true }, context);
+		await emit({ type: "message_end", message: { ...assistant("error"), errorMessage: "429 rate limit exceeded" } }, context);
+		await emit({ type: "session_shutdown", reason: "quit" }, context);
+	} finally {
+		rmSync(cwd, { recursive: true, force: true });
+	}
+	const tool = captured.find(({ event }) => event === "feynman_tool_used")!.properties;
+	assert.equal(tool.error_message, "Not logged in. Run `feynman alpha login` first. (~/.ahub)");
+	const generation = captured.find(({ event }) => event === "$ai_generation")!.properties;
+	assert.equal(generation.$ai_error, "429 rate limit exceeded");
+	assert.equal(JSON.stringify(captured).includes(homedir()), false);
 });

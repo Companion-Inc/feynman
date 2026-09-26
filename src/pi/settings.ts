@@ -190,6 +190,9 @@ export async function ensureFeynmanSettings(
 	}
 	settings.packages = reconcileFeynmanPackages(settings.packages, appRoot);
 	removeLegacyResearcherExtension(settings);
+	// 0.5.0-0.5.5 seeded a 6-retry, 5s backoff that left a dead connection
+	// retrying silently for over five minutes; drop that exact value for Pi's default.
+	if (isRecord(settings.retry) && JSON.stringify(settings.retry) === '{"maxRetries":6,"baseDelayMs":5000}') delete settings.retry;
 	// A ~/.agents/<name>.md would otherwise silently replace Feynman's agents.
 	if (settings.subagents === undefined) settings.subagents = {};
 	if (isRecord(settings.subagents) && settings.subagents.agentExcludeDirs === undefined) {

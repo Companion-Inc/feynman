@@ -150,7 +150,7 @@ Feynman runs on stock [Pi](https://github.com/earendil-works/pi) (`@earendil-wor
 
 ### Telemetry
 
-Feynman sends anonymous usage telemetry to PostHog by default and prints a one-time notice on first run. It sends commands, workflow names and outcomes, tool names, model and provider names, token counts, latency, and error flags under a random install ID. It never sends prompts, model output, paper content, file paths, or tool arguments. Set `FEYNMAN_TELEMETRY=off` (or `DO_NOT_TRACK=1`) to disable it; `feynman status` shows the current setting. The full event list is in the [configuration docs](https://feynman.is/docs/getting-started/configuration#telemetry).
+Feynman sends anonymous usage telemetry to PostHog by default and prints a one-time notice on first run. It sends commands, workflow names and outcomes, tool names, model and provider names, token counts, latency, and error messages with stack traces (home folder shown as `~`) under a random install ID. It never sends prompts, model output, paper content, or tool arguments. Set `FEYNMAN_TELEMETRY=off` (or `DO_NOT_TRACK=1`) to disable it; `feynman status` shows the current setting. The full event list is in the [configuration docs](https://feynman.is/docs/getting-started/configuration#telemetry).
 
 ---
 
