@@ -2,9 +2,5 @@
   "theme": "feynman",
   "quietStartup": true,
   "collapseChangelog": true,
-  "editorPaddingX": 1,
-  "retry": {
-    "maxRetries": 6,
-    "baseDelayMs": 5000
-  }
+  "editorPaddingX": 1
 }
