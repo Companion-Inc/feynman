@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
 import {
+	expandHomePath,
 	ensureFeynmanHome,
 	getBootstrapStatePath,
 	getDefaultSessionDir,
@@ -89,4 +90,12 @@ test("ensureFeynmanHome is idempotent when dirs already exist", () => {
 	} finally {
 		rmSync(root, { recursive: true, force: true });
 	}
+});
+
+test("FEYNMAN_HOME expands a leading ~ like Pi's agent dir variable", () => {
+	assert.equal(expandHomePath("~", "/home/u"), "/home/u");
+	assert.equal(expandHomePath("~/research", "/home/u"), join("/home/u", "research"));
+	assert.equal(expandHomePath("~\\research", "C:\\Users\\u"), join("C:\\Users\\u", "research"));
+	assert.equal(expandHomePath("/abs/~/x", "/home/u"), "/abs/~/x");
+	assert.equal(expandHomePath("~other/x", "/home/u"), "~other/x");
 });
