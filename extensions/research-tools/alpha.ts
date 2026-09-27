@@ -4,6 +4,7 @@ import {
 	clearPaperAnnotation,
 	disconnect,
 	getPaper,
+	isLoggedIn,
 	listPaperAnnotations,
 	readPaperCode,
 	searchPapers,
@@ -41,14 +42,18 @@ const paperSectionsSchema = Type.Unsafe<string[]>({
 	}),
 });
 
-export function registerAlphaTools(pi: ExtensionAPI): void {
+export function registerAlphaTools(pi: ExtensionAPI, signedIn = isLoggedIn()): void {
 	// The alphaXiv MCP client keeps a connection open; close it so print and
 	// JSON runs can exit once the session ends.
 	pi.on("session_shutdown", async () => {
 		await disconnect();
 	});
+	// Search, paper, Q&A, and code tools need an alphaXiv account. Without one,
+	// every call failed, so leave them out and let the model use the other
+	// paper sources. Annotations are local and stay available.
+	const registerAccountTool: ExtensionAPI["registerTool"] = signedIn ? (tool) => pi.registerTool(tool) : () => {};
 
-	pi.registerTool({
+	registerAccountTool({
 		name: "alpha_search",
 		label: "Alpha Search",
 		description:
@@ -65,7 +70,7 @@ export function registerAlphaTools(pi: ExtensionAPI): void {
 		},
 	});
 
-	pi.registerTool({
+	registerAccountTool({
 		name: "alpha_get_paper",
 		label: "Alpha Get Paper",
 		description:
@@ -96,7 +101,7 @@ export function registerAlphaTools(pi: ExtensionAPI): void {
 		},
 	});
 
-	pi.registerTool({
+	registerAccountTool({
 		name: "alpha_ask_paper",
 		label: "Alpha Ask Paper",
 		description: "Ask a targeted question about an arXiv or alphaXiv paper. Uses AI to analyze the PDF and answer. DOI-only papers are not supported; read those with fetch_content on the open-access PDF or Europe PMC full text.",
@@ -140,7 +145,7 @@ export function registerAlphaTools(pi: ExtensionAPI): void {
 		},
 	});
 
-	pi.registerTool({
+	registerAccountTool({
 		name: "alpha_read_code",
 		label: "Alpha Read Code",
 		description: "Read files from a paper's GitHub repository. Use '/' for repo overview.",

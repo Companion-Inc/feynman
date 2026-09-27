@@ -6,6 +6,12 @@ GitHub release notes are generated from the matching `## vX.Y.Z` section in this
 
 ## Unreleased
 
+## v0.5.9 - 2026-09-27
+
+- **Subagents keep their search tools in the foreground.** A `researcher` or `verifier` launched in the foreground failed at once because foreground children never load the parent's extensions, so `web_search`, `fetch_content`, and `feynman_science_database_search` were missing. Feynman now points pi-subagents' `defaultSubagentOnlyExtensions` setting at its research tools and pi-web-access, so every child has them, in the foreground or background.
+- **No alphaXiv account, no alphaXiv search tools.** Without an account, every `alpha_search`, `alpha_get_paper`, `alpha_ask_paper`, and `alpha_read_code` call failed, and research runs retried them. They are now registered only when you are signed in; otherwise papers come from Semantic Scholar, OpenAlex, and the other literature databases. Start a new session after `feynman alpha login`.
+- The Windows install docs now say Feynman needs Bash from Git for Windows for shell commands.
+
 ## v0.5.8 - 2026-09-26
 
 - `FEYNMAN_HOME=~` or `~/path` now means your home folder. Unexpanded `~` (common in `.env` files, Docker `ENV`, and Windows shells) created a literal `~` folder in the current directory.

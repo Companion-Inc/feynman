@@ -25,6 +25,8 @@ feynman alpha status
 
 ## Agent tools
 
+`alpha_search`, `alpha_get_paper`, `alpha_ask_paper`, and `alpha_read_code` are available only when you are signed in; without an account, Feynman searches papers through Semantic Scholar, OpenAlex, and the other literature databases instead. Start a new Feynman session after `feynman alpha login` to get them.
+
 | Tool | Purpose |
 | --- | --- |
 | `alpha_search` | Search papers. Modes: `semantic` (default), `keyword`, `agentic`, `both`, `all` |

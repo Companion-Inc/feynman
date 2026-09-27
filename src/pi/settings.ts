@@ -3,7 +3,7 @@ import { dirname, join } from "node:path";
 
 import type { ModelRegistry, ModelRuntime, PackageSource } from "@earendil-works/pi-coding-agent";
 
-import { BUNDLED_PI_PACKAGES, getFeynmanPackageSources } from "./runtime.js";
+import { BUNDLED_PI_PACKAGES, getFeynmanPackageSources, resolvePackageRoot } from "./runtime.js";
 import { choosePreferredModelRecord, getAvailableModelRecords } from "../model/catalog.js";
 
 export type ThinkingLevel = "off" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max";
@@ -171,6 +171,19 @@ function removeLegacyResearcherExtension(settings: Record<string, unknown>): voi
 	else delete researcher.subagentOnlyExtensions;
 }
 
+// Foreground subagents run inside the parent process and never load its
+// extensions, so researcher and verifier lost web and paper search there.
+// pi-subagents loads these paths in every child session; they are rewritten on
+// each launch because the install path changes between versions.
+export function feynmanSubagentExtensions(appRoot: string): string[] {
+	const webAccess = resolvePackageRoot(appRoot, "pi-web-access");
+	return [join(appRoot, "extensions", "research-tools.ts"), ...(webAccess ? [webAccess] : [])];
+}
+
+function isFeynmanSubagentExtension(path: unknown): boolean {
+	return typeof path === "string" && (/[\\/]extensions[\\/]research-tools\.ts$/.test(path) || /[\\/]pi-web-access$/.test(path));
+}
+
 export async function ensureFeynmanSettings(
 	settingsPath: string,
 	bundledSettingsPath: string,
@@ -197,6 +210,12 @@ export async function ensureFeynmanSettings(
 	if (settings.subagents === undefined) settings.subagents = {};
 	if (isRecord(settings.subagents) && settings.subagents.agentExcludeDirs === undefined) {
 		settings.subagents.agentExcludeDirs = ["~/.agents"];
+	}
+	if (isRecord(settings.subagents)) {
+		const current = settings.subagents.defaultSubagentOnlyExtensions;
+		if (current === undefined || (Array.isArray(current) && current.every(isFeynmanSubagentExtension))) {
+			settings.subagents.defaultSubagentOnlyExtensions = feynmanSubagentExtensions(appRoot);
+		}
 	}
 
 	if (!settings.defaultProvider || !settings.defaultModel) {

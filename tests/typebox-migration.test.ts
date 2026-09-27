@@ -17,7 +17,7 @@ test("Pi runtime validation omits null alpha_get_paper sections without losing o
 			return () => {};
 		},
 	};
-	registerAlphaTools(fakePi as unknown as ExtensionAPI);
+	registerAlphaTools(fakePi as unknown as ExtensionAPI, true);
 
 	const tool = tools.get("alpha_get_paper");
 	assert.ok(tool);
@@ -49,4 +49,14 @@ test("Pi runtime validation omits null alpha_get_paper sections without losing o
 		() => validate({ paper: "2401.00001", sections: "methodology" }),
 		/Validation failed for tool "alpha_get_paper":[\s\S]*sections: must be array/,
 	);
+});
+
+test("without an alphaXiv account only the local annotation tools are registered", () => {
+	const names = (signedIn: boolean) => {
+		const registered: string[] = [];
+		registerAlphaTools({ registerTool: (tool: { name: string }) => registered.push(tool.name), on: () => () => {} } as unknown as ExtensionAPI, signedIn);
+		return registered.sort();
+	};
+	assert.deepEqual(names(false), ["alpha_annotate_paper", "alpha_list_annotations"]);
+	assert.deepEqual(names(true), ["alpha_annotate_paper", "alpha_ask_paper", "alpha_get_paper", "alpha_list_annotations", "alpha_read_code", "alpha_search"]);
 });
