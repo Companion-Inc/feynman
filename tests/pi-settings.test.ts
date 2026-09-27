@@ -11,7 +11,7 @@ import {
 } from "../src/pi/packages.js";
 import { BUNDLED_PI_PACKAGES, getFeynmanPackageSources } from "../src/pi/runtime.js";
 import { chooseRecommendedModel } from "../src/model/catalog.js";
-import { ensureFeynmanSettings, normalizeThinkingLevel } from "../src/pi/settings.js";
+import { ensureFeynmanSettings, feynmanSubagentExtensions, normalizeThinkingLevel } from "../src/pi/settings.js";
 
 const appRoot = process.cwd();
 const bundledSettingsPath = resolve(appRoot, ".feynman", "settings.json");
@@ -105,11 +105,11 @@ test("user-level ~/.agents definitions cannot replace Feynman's agents unless th
 	const settingsPath = join(root, "settings.json");
 	writeFileSync(join(root, "auth.json"), "{}\n");
 	await ensureFeynmanSettings(settingsPath, bundledSettingsPath, appRoot, "medium", join(root, "auth.json"));
-	assert.deepEqual(JSON.parse(readFileSync(settingsPath, "utf8")).subagents, { agentExcludeDirs: ["~/.agents"] });
+	assert.deepEqual(JSON.parse(readFileSync(settingsPath, "utf8")).subagents, { agentExcludeDirs: ["~/.agents"], defaultSubagentOnlyExtensions: feynmanSubagentExtensions(appRoot) });
 
 	writeFileSync(settingsPath, JSON.stringify({ subagents: { agentExcludeDirs: [], agentOverrides: { writer: { model: "x/y" } } } }));
 	await ensureFeynmanSettings(settingsPath, bundledSettingsPath, appRoot, "medium", join(root, "auth.json"));
-	assert.deepEqual(JSON.parse(readFileSync(settingsPath, "utf8")).subagents, { agentExcludeDirs: [], agentOverrides: { writer: { model: "x/y" } } });
+	assert.deepEqual(JSON.parse(readFileSync(settingsPath, "utf8")).subagents, { agentExcludeDirs: [], agentOverrides: { writer: { model: "x/y" } }, defaultSubagentOnlyExtensions: feynmanSubagentExtensions(appRoot) });
 });
 
 test("the researcher child extension path managed by older releases is removed", async (t) => {
@@ -307,4 +307,24 @@ test("concurrent Feynman starts share one subagent config instead of failing", a
 	assert.deepEqual(JSON.parse(readFileSync(join(root, "agent", "extensions", "subagent", "config.json"), "utf8")), {
 		missions: { enabled: false }, fleetView: false, asyncByDefault: true,
 	});
+});
+
+test("ensureFeynmanSettings gives every subagent Feynman's research and web tools", async (t) => {
+	const root = mkdtempSync(join(tmpdir(), "feynman-subagent-extensions-"));
+	t.after(() => rmSync(root, { recursive: true, force: true }));
+	const settingsPath = join(root, "agent", "settings.json");
+	const authPath = join(root, "agent", "auth.json");
+	mkdirSync(join(root, "agent"), { recursive: true });
+	writeFileSync(authPath, "{}\n");
+	const read = () => JSON.parse(readFileSync(settingsPath, "utf8")).subagents.defaultSubagentOnlyExtensions;
+	const expected = feynmanSubagentExtensions(process.cwd());
+	assert.deepEqual(expected, [join(process.cwd(), "extensions", "research-tools.ts"), join(process.cwd(), "node_modules", "pi-web-access")]);
+
+	writeFileSync(settingsPath, JSON.stringify({ subagents: { defaultSubagentOnlyExtensions: ["/old/feynman-0.5.1/extensions/research-tools.ts", "/old/feynman-0.5.1/node_modules/pi-web-access"] }, defaultProvider: "openai", defaultModel: "gpt-5.6-terra" }));
+	await ensureFeynmanSettings(settingsPath, resolve(".feynman", "settings.json"), process.cwd(), "medium", authPath);
+	assert.deepEqual(read(), expected);
+
+	writeFileSync(settingsPath, JSON.stringify({ subagents: { defaultSubagentOnlyExtensions: ["/mine/tool.ts"] }, defaultProvider: "openai", defaultModel: "gpt-5.6-terra" }));
+	await ensureFeynmanSettings(settingsPath, resolve(".feynman", "settings.json"), process.cwd(), "medium", authPath);
+	assert.deepEqual(read(), ["/mine/tool.ts"]);
 });
