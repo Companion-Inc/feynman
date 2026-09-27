@@ -27,6 +27,8 @@ irm https://feynman.is/install.ps1 | iex
 
 This installs the Windows x64 bundle under `%LOCALAPPDATA%\Programs\feynman` and adds its launcher to your user `PATH`. Windows 11 on Arm runs the same bundle through x64 emulation.
 
+Feynman runs shell commands with Bash, so on Windows also install [Git for Windows](https://git-scm.com/download/win), which provides it. Without Bash, research runs fail at the first shell command with `No bash shell found`. To use another Bash (MSYS2, Cygwin), set `shellPath` in `~/.feynman/agent/settings.json`.
+
 ## Alternative: npm
 
 To install into an existing Node.js environment instead:
