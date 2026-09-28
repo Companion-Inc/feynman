@@ -9,6 +9,10 @@ This page summarizes what changed in recent Feynman releases. GitHub releases us
 
 ## Unreleased
 
+## v0.5.12 - 2026-09-28
+
+- Crossref pacing leaves a margin over the pool's limit and retries a rate-limited request once after the server's `Retry-After`. A stress test of three bursts of 10 parallel searches on the public pool now succeeds on all 30; 0.5.11 still lost about one in six to network jitter.
+
 ## v0.5.11 - 2026-09-27
 
 - **Crossref lookups no longer fail in bursts.** Crossref's public pool allows one request at a time, one per second, and parallel DOI checks (the verifier cross-checks every citation) got `429 Too Many Requests` on most calls. Crossref requests now run one after another at the pool's pace. Set `CROSSREF_MAILTO` to your email for Crossref's faster polite pool; a 429 now says so instead of a generic "Science database request failed".
