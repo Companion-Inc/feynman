@@ -282,6 +282,6 @@ test("Crossref requests run one at a time at the pool's pace", async () => {
 	await Promise.all([request(), request(), request()]);
 	assert.equal(maxRunning, 1);
 	for (let index = 1; index < starts.length; index += 1) {
-		assert.ok(starts[index]! - starts[index - 1]! >= 340, `gap ${starts[index]! - starts[index - 1]!}ms`);
+		assert.ok(starts[index]! - starts[index - 1]! >= 390, `gap ${starts[index]! - starts[index - 1]!}ms`);
 	}
 });
