@@ -145,7 +145,9 @@ let crossrefQueue: Promise<unknown> = Promise.resolve();
 let crossrefLastStartedAt = Number.NEGATIVE_INFINITY;
 
 export function withCrossrefPacing<T>(polite: boolean, run: () => Promise<T>): Promise<T> {
-	const minGapMs = polite ? 350 : 1000;
+	// A little over the pool's limit: network jitter can land two requests paced
+	// exactly one second apart inside the same window.
+	const minGapMs = polite ? 400 : 1200;
 	const next = crossrefQueue.then(async () => {
 		const wait = crossrefLastStartedAt + minGapMs - Date.now();
 		if (wait > 0) await new Promise((resolve) => setTimeout(resolve, wait));
@@ -167,9 +169,16 @@ async function searchCrossref(params: ScienceDatabaseSearchParams): Promise<Reco
 		select: "DOI,title,published-print,published-online,issued,container-title,author,is-referenced-by-count,URL,type",
 		...(mailto ? { mailto } : {}),
 	}).toString();
+	const request = () => withCrossrefPacing(Boolean(mailto), () => fetchJson(url));
 	let payload: Record<string, unknown>;
 	try {
-		payload = recordValue(await withCrossrefPacing(Boolean(mailto), () => fetchJson(url)));
+		try {
+			payload = recordValue(await request());
+		} catch (error) {
+			if (!(error instanceof ScienceDatabaseRequestError) || error.status !== 429) throw error;
+			await new Promise((resolve) => setTimeout(resolve, Math.min(error.retryAfterMs ?? 1500, 5000)));
+			payload = recordValue(await request());
+		}
 	} catch (error) {
 		if (!(error instanceof ScienceDatabaseRequestError) || error.status !== 429) throw error;
 		throw new Error(
