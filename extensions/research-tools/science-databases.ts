@@ -95,7 +95,7 @@ async function fetchJson(url: URL, headers: Record<string, string> = {}): Promis
 		});
 		if (!response.ok) {
 			throw new ScienceDatabaseRequestError(
-				`Science database request failed: ${response.status} ${response.statusText}`,
+				`${url.hostname} request failed: ${response.status} ${response.statusText}`,
 				response.status,
 				retryAfterMs(response.headers.get("retry-after")),
 			);

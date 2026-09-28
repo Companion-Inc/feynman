@@ -285,3 +285,18 @@ test("Crossref requests run one at a time at the pool's pace", async () => {
 		assert.ok(starts[index]! - starts[index - 1]! >= 390, `gap ${starts[index]! - starts[index - 1]!}ms`);
 	}
 });
+
+test("a failed database request names the service that failed", async () => {
+	const originalFetch = globalThis.fetch;
+	globalThis.fetch = (async () => new Response("down", { status: 503, statusText: "Service Temporarily Unavailable" })) as typeof fetch;
+	try {
+		const tools = new Map<string, { execute: (id: string, params: Record<string, unknown>) => Promise<unknown> }>();
+		registerScienceDatabaseTools({ registerTool: (tool: { name: string; execute: never }) => tools.set(tool.name, tool), on: () => () => {} } as never);
+		await assert.rejects(
+			tools.get("feynman_science_database_search")!.execute("x", { source: "europepmc", query: "crispr" }),
+			/www\.ebi\.ac\.uk request failed: 503 Service Temporarily Unavailable/,
+		);
+	} finally {
+		globalThis.fetch = originalFetch;
+	}
+});
