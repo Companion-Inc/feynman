@@ -231,23 +231,23 @@ test("buildModelStatusSnapshotFromRecords prefers the OpenCode Go default lineup
 		[
 			{ provider: "opencode-go", id: "glm-5" },
 			{ provider: "opencode-go", id: "glm-5.1" },
-			{ provider: "opencode-go", id: "kimi-k2.6" },
+			{ provider: "opencode-go", id: "kimi-k2.7-code" },
 			{ provider: "opencode-go", id: "minimax-m2.7" },
 		],
 		[
 			{ provider: "opencode-go", id: "glm-5" },
 			{ provider: "opencode-go", id: "glm-5.1" },
-			{ provider: "opencode-go", id: "kimi-k2.6" },
+			{ provider: "opencode-go", id: "kimi-k2.7-code" },
 			{ provider: "opencode-go", id: "minimax-m2.7" },
 		],
 		undefined,
 	);
 
-	assert.equal(snapshot.availableModels[0], "opencode-go/kimi-k2.6");
+	assert.equal(snapshot.availableModels[0], "opencode-go/kimi-k2.7-code");
 	assert.equal(snapshot.availableModels[1], "opencode-go/glm-5.1");
 	assert.equal(snapshot.availableModels[2], "opencode-go/minimax-m2.7");
 	assert.equal(snapshot.availableModels[3], "opencode-go/glm-5");
-	assert.equal(snapshot.recommended, "opencode-go/kimi-k2.6");
+	assert.equal(snapshot.recommended, "opencode-go/kimi-k2.7-code");
 });
 
 test("buildModelStatusSnapshotFromRecords sorts OpenCode providers with first-class providers", () => {

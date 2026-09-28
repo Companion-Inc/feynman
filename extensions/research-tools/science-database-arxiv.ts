@@ -36,7 +36,7 @@ async function fetchText(url: URL, accept: string): Promise<string> {
 			signal: controller.signal,
 		});
 		if (!response.ok) {
-			throw new Error(`Science database request failed: ${response.status} ${response.statusText}`);
+			throw new Error(`${url.hostname} request failed: ${response.status} ${response.statusText}`);
 		}
 		return response.text();
 	} finally {

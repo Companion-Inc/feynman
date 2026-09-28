@@ -111,9 +111,9 @@ const RESEARCH_MODEL_FAMILY_PREFERENCES: ResearchModelPreference[] = [
 ];
 
 const RESEARCH_MODEL_FALLBACK_PREFERENCES: ResearchModelPreference[] = [
-	exactResearchModel("opencode/kimi-k2.6", "good OpenCode Zen fallback for coding and research work"),
+	exactResearchModel("opencode/kimi-k2.7-code", "good OpenCode Zen fallback for coding and research work"),
 	exactResearchModel("opencode/minimax-m2.7", "good OpenCode Zen fallback for source-heavy research work"),
-	exactResearchModel("opencode-go/kimi-k2.6", "recommended OpenCode Go model for coding and research work"),
+	exactResearchModel("opencode-go/kimi-k2.7-code", "recommended OpenCode Go model for coding and research work"),
 	exactResearchModel("opencode-go/minimax-m3", "good OpenCode Go fallback for source-heavy research work"),
 	exactResearchModel("opencode-go/qwen3.7-max", "good OpenCode Go fallback for source-heavy research work"),
 	exactResearchModel("opencode-go/glm-5.1", "good OpenCode Go fallback for GLM-backed research work"),
@@ -122,13 +122,10 @@ const RESEARCH_MODEL_FALLBACK_PREFERENCES: ResearchModelPreference[] = [
 		matches: (model) => model.provider === "openrouter" && /^openai\/gpt-\d+(?:\.\d+)*(?:-.+)?$/i.test(model.id),
 		reason: "newest OpenRouter OpenAI GPT fallback when direct OpenAI access is unavailable",
 	},
-	exactResearchModel("zai/glm-5", "good fallback when GLM is the available research model"),
 	exactResearchModel("minimax/MiniMax-M3", "good fallback when MiniMax is the available research model"),
 	exactResearchModel("minimax/MiniMax-M2.7", "good fallback when MiniMax is the available research model"),
 	exactResearchModel("minimax/MiniMax-M2.7-highspeed", "good fallback when MiniMax is the available research model"),
 	exactResearchModel("kimi-coding/kimi-for-coding", "Kimi Coding Plan stable ID, auto-maps to the latest backend model"),
-	exactResearchModel("kimi-coding/k2p6", "Kimi K2.6 with strong reasoning for coding and research tasks"),
-	exactResearchModel("kimi-coding/kimi-k2-thinking", "good fallback when Kimi is the available research model"),
 ];
 
 const PROVIDER_SORT_ORDER = [

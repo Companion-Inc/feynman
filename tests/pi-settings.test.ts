@@ -264,7 +264,7 @@ test("ensureFeynmanSettings seeds OpenCode Go Kimi as the preferred OpenCode Go 
 		defaultModel?: string;
 	};
 	assert.equal(settings.defaultProvider, "opencode-go");
-	assert.equal(settings.defaultModel, "kimi-k2.6");
+	assert.equal(settings.defaultModel, "kimi-k2.7-code");
 });
 
 test("optional package presets map friendly names to Pi package sources", () => {
