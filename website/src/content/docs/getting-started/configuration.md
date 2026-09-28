@@ -90,6 +90,7 @@ Feynman reads these environment variables. `FEYNMAN_MODEL`, `FEYNMAN_THINKING`, 
 | `EXA_API_KEY`, `PERPLEXITY_API_KEY`, `TAVILY_API_KEY`, ... | Web search provider keys read by pi-web-access |
 | `OPENALEX_API_KEY` | Free OpenAlex key ([create one](https://openalex.org/settings/api)); without one, requests share a small anonymous daily budget |
 | `SEMANTIC_SCHOLAR_API_KEY` | Optional free Semantic Scholar key ([request one](https://www.semanticscholar.org/product/api#api-key-form)) so searches use your own rate limit instead of the shared anonymous pool |
+| `CROSSREF_MAILTO` | Your email, sent to Crossref so requests use its faster polite pool (3 per second instead of 1) |
 | `NCBI_API_KEY` | Optional NCBI E-utilities key; NCBI allows 10 requests per second with a key instead of 3 |
 | `FEYNMAN_TELEMETRY` | Set to `off` to disable all Feynman telemetry (`DO_NOT_TRACK=1` also works) |
 
