@@ -262,7 +262,7 @@ test("chooseRecommendedModel prefers OpenCode Go Kimi when OpenCode Go is the au
 
 		const recommendation = await chooseRecommendedModel(authPath);
 
-		assert.equal(recommendation?.spec, "opencode-go/kimi-k2.6");
+		assert.equal(recommendation?.spec, "opencode-go/kimi-k2.7-code");
 	});
 });
 
