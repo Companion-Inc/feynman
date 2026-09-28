@@ -56,24 +56,11 @@ feynman search set perplexity <api-key>   # or exa, gemini, auto
 feynman search clear                      # back to auto, keys kept
 ```
 
-Example config:
-
-```json
-{
-  "provider": "auto",
-  "exaApiKey": "exa_...",
-  "perplexityApiKey": "pplx-...",
-  "geminiApiKey": "AIza...",
-  "datalabApiKey": "$DATALAB_API_KEY",
-  "pdf": { "provider": "auto", "maxPages": 100 }
-}
-```
-
-PDF extraction tries Datalab when its key is set, then Gemini, then local extraction, which needs no key. Browser-cookie access for Gemini Web is off by default; set `"allowBrowserCookies": true` to opt in. The [pi-web-access README](https://github.com/nicobailon/pi-web-access#readme) documents every provider and option.
+The [pi-web-access README](https://github.com/nicobailon/pi-web-access#readme) documents every provider and option, including PDF extraction.
 
 ## Subagent model overrides
 
-The bundled subagents (`researcher`, `reviewer`, `writer`, `verifier`) inherit the main research model. To pin one to another model, use `/subagents` or set `subagents.agentOverrides.<name>.model` in `~/.feynman/agent/settings.json`; remove it to inherit again. Feynman sets `subagents.agentExcludeDirs` to `["~/.agents"]` so agent files there cannot replace the bundled agents.
+The bundled subagents (`researcher`, `reviewer`, `writer`, `verifier`) inherit the main research model. To pin one to another model, use `/subagents` or set `subagents.agentOverrides.<name>.model` in `~/.feynman/agent/settings.json`; remove it to inherit again. Feynman sets `subagents.agentExcludeDirs` to `["~/.agents"]` so agent files there cannot replace the bundled agents, and `subagents.defaultSubagentOnlyExtensions` to its research tools and pi-web-access so every subagent can search, including foreground runs. It rewrites that list on each launch unless you replace it with your own.
 
 The subagent runtime config at `~/.feynman/agent/extensions/subagent/config.json` defaults to background delegation on and missions and the fleet view off. Feynman fills in only missing values and leaves your changes alone.
 
@@ -104,11 +91,7 @@ Feynman reads these environment variables. `FEYNMAN_MODEL`, `FEYNMAN_THINKING`, 
 | `OPENALEX_API_KEY` | Free OpenAlex key ([create one](https://openalex.org/settings/api)); without one, requests share a small anonymous daily budget |
 | `SEMANTIC_SCHOLAR_API_KEY` | Optional free Semantic Scholar key ([request one](https://www.semanticscholar.org/product/api#api-key-form)) so searches use your own rate limit instead of the shared anonymous pool |
 | `NCBI_API_KEY` | Optional NCBI E-utilities key; NCBI allows 10 requests per second with a key instead of 3 |
-| `NCBI_MIN_REQUEST_GAP_MS` | Override the minimum delay between NCBI request starts; defaults to 500 ms anonymously and 125 ms with a key |
 | `FEYNMAN_TELEMETRY` | Set to `off` to disable all Feynman telemetry (`DO_NOT_TRACK=1` also works) |
-| `FEYNMAN_POSTHOG_HOST` | Override the PostHog ingest host |
-| `FEYNMAN_POSTHOG_PROJECT_ID` | Override the PostHog project ID used in telemetry metadata |
-| `FEYNMAN_POSTHOG_KEY` | Override the PostHog project token |
 
 ## Telemetry
 

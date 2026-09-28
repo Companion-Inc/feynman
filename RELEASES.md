@@ -6,6 +6,12 @@ GitHub release notes are generated from the matching `## vX.Y.Z` section in this
 
 ## Unreleased
 
+## v0.5.10 - 2026-09-27
+
+- **Semantic Scholar understands the documented query syntax.** A `semantic:` prefix and `year_from=`/`year_to=` flags, which the model reuses from the OpenAlex examples, were sent to Semantic Scholar as search text and returned unrelated papers or nothing. They now become Semantic Scholar's own year filter.
+- **The startup header lists only Feynman's workflows.** It also listed prompt commands that pi-subagents ships, such as `/parallel-review` and `/review-loop`.
+- **Cleaner README and landing page** with a current screenshot, and a shorter configuration page.
+
 ## v0.5.9 - 2026-09-27
 
 - **Subagents keep their search tools in the foreground.** A `researcher` or `verifier` launched in the foreground failed at once because foreground children never load the parent's extensions, so `web_search`, `fetch_content`, and `feynman_science_database_search` were missing. Feynman now points pi-subagents' `defaultSubagentOnlyExtensions` setting at its research tools and pi-web-access, so every child has them, in the foreground or background.

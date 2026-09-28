@@ -257,12 +257,31 @@ function truncateText(value: string | undefined, maxChars: number): string | und
 	return `${value.slice(0, maxChars).trimEnd()}…`;
 }
 
-function semanticScholarSearchUrl(query: string, limit: number, sort: string): URL {
+// The model reuses the OpenAlex syntax this tool documents (a `semantic:`
+// prefix, year_from=/year_to= flags). Sent as text, it returned junk or zero
+// results; map it to Semantic Scholar's own year filter instead.
+export function parseSemanticScholarQuery(raw: string): { query: string; year?: string } {
+	let from = "";
+	let to = "";
+	const query = raw
+		.replace(/^\s*semantic:\s*/i, "")
+		.replace(/\byear_(from|to)=(\d{4})\b/gi, (_match, kind: string, year: string) => {
+			if (kind.toLowerCase() === "from") from = year;
+			else to = year;
+			return " ";
+		})
+		.replace(/\s+/g, " ")
+		.trim();
+	return from || to ? { query, year: `${from}-${to}` } : { query };
+}
+
+function semanticScholarSearchUrl(query: string, limit: number, sort: string, year?: string): URL {
 	const relevance = sort === "relevance";
 	const url = new URL(`${SEMANTIC_SCHOLAR_BASE}/paper/search${relevance ? "" : "/bulk"}`);
 	url.search = new URLSearchParams({
 		query,
 		fields: SEMANTIC_SCHOLAR_FIELDS,
+		...(year ? { year } : {}),
 		...(relevance ? { limit: String(limit) } : { sort }),
 	}).toString();
 	return url;
@@ -271,10 +290,10 @@ function semanticScholarSearchUrl(query: string, limit: number, sort: string): U
 // Bulk search sorted by citation count surfaces seminal papers that relevance
 // ranking misses; it returns up to 1,000 rows, so only the top `limit` are kept.
 async function searchSemanticScholar(params: ScienceDatabaseSearchParams): Promise<Record<string, unknown>> {
-	const query = cleanQuery(params.query);
+	const { query, year } = parseSemanticScholarQuery(cleanQuery(params.query));
 	const limit = safeLimit(params.limit);
 	let sort = params.sort === "relevance" ? "relevance" : params.sort === "pub_date" ? "publicationDate:desc" : "citationCount:desc";
-	const endpoints = [semanticScholarSearchUrl(query, limit, sort)];
+	const endpoints = [semanticScholarSearchUrl(query, limit, sort, year)];
 	let note: string | undefined;
 	let payload: Record<string, unknown>;
 	try {
@@ -284,7 +303,7 @@ async function searchSemanticScholar(params: ScienceDatabaseSearchParams): Promi
 		const anonymous = !process.env.SEMANTIC_SCHOLAR_API_KEY?.trim();
 		if (sort !== "relevance" || !anonymous || !(error instanceof ScienceDatabaseRequestError) || error.status !== 429) throw error;
 		sort = "citationCount:desc";
-		endpoints.push(semanticScholarSearchUrl(query, limit, sort));
+		endpoints.push(semanticScholarSearchUrl(query, limit, sort, year));
 		note = `Relevance search was rate-limited (HTTP 429) on Semantic Scholar's shared anonymous pool, so these are citation-sorted bulk results. A free SEMANTIC_SCHOLAR_API_KEY avoids this: ${SEMANTIC_SCHOLAR_KEY_URL}`;
 		payload = recordValue(await fetchSemanticScholar(endpoints[1]!));
 	}
@@ -314,6 +333,7 @@ async function searchSemanticScholar(params: ScienceDatabaseSearchParams): Promi
 		schema: "feynman.scienceDatabaseSearch.v1",
 		source: "semanticscholar",
 		query,
+		...(year ? { year } : {}),
 		sort,
 		...(note ? { note } : {}),
 		totalCount: numberValue(payload.total) ?? results.length,

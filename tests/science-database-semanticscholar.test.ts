@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { afterEach, test } from "node:test";
 
-import { registerScienceDatabaseTools } from "../extensions/research-tools/science-databases.js";
+import { parseSemanticScholarQuery, registerScienceDatabaseTools } from "../extensions/research-tools/science-databases.js";
 
 type Tool = {
 	execute: (toolCallId: string, params: Record<string, unknown>) => Promise<{ content: Array<{ text: string }>; details: unknown }>;
@@ -182,4 +182,10 @@ test("keyed semanticscholar relevance search still fails after a 429", async () 
 		/rate-limited this API key \(HTTP 429\)/,
 	);
 	assert.equal(calls, 2);
+});
+
+test("Semantic Scholar accepts the OpenAlex-style semantic: prefix and year flags", () => {
+	assert.deepEqual(parseSemanticScholarQuery("semantic: test-time compute scaling year_from=2024"), { query: "test-time compute scaling", year: "2024-" });
+	assert.deepEqual(parseSemanticScholarQuery("RLHF alternatives year_from=2020 year_to=2023"), { query: "RLHF alternatives", year: "2020-2023" });
+	assert.deepEqual(parseSemanticScholarQuery("attention is all you need"), { query: "attention is all you need" });
 });

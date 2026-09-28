@@ -41,7 +41,7 @@ test("research source request identities use the Companion repository", () => {
 });
 
 test("installation docs include the ordered one-time npm scope migration", () => {
-	for (const path of ["README.md", "website/src/content/docs/getting-started/installation.md"]) {
+	for (const path of ["website/src/content/docs/getting-started/installation.md"]) {
 		const content = read(path);
 		assert.ok(content.includes("npm uninstall -g @advaitpaliwal/feynman\nnpm install -g @companion-ai/feynman"), path);
 	}
