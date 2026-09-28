@@ -6,6 +6,11 @@ GitHub release notes are generated from the matching `## vX.Y.Z` section in this
 
 ## Unreleased
 
+## v0.5.13 - 2026-09-28
+
+- **OpenCode no longer recommends a retired Kimi model.** OpenCode Go and OpenCode Zen retired `kimi-k2.6` ("Use kimi-k2.7-code instead"), but Feynman still picked it as the default for new OpenCode users. It now recommends `kimi-k2.7-code`. If `feynman status` shows `kimi-k2.6`, switch with `feynman model set opencode-go/kimi-k2.7-code`. Three model preferences that no longer exist in the catalog were removed.
+- A failed literature database request now names the service, for example `www.ebi.ac.uk request failed: 503`, instead of "Science database request failed".
+
 ## v0.5.12 - 2026-09-28
 
 - Crossref pacing leaves a margin over the pool's limit and retries a rate-limited request once after the server's `Retry-After`. A stress test of three bursts of 10 parallel searches on the public pool now succeeds on all 30; 0.5.11 still lost about one in six to network jitter.
