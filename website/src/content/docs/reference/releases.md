@@ -12,6 +12,7 @@ This page summarizes what changed in recent Feynman releases. GitHub releases us
 ## v0.5.11 - 2026-09-27
 
 - **Crossref lookups no longer fail in bursts.** Crossref's public pool allows one request at a time, one per second, and parallel DOI checks (the verifier cross-checks every citation) got `429 Too Many Requests` on most calls. Crossref requests now run one after another at the pool's pace. Set `CROSSREF_MAILTO` to your email for Crossref's faster polite pool; a 429 now says so instead of a generic "Science database request failed".
+- Telemetry's "wrote output" flag no longer misses a report written in the first second of a run on filesystems that round file times (HFS+, FAT, ext3).
 
 ## v0.5.10 - 2026-09-27
 

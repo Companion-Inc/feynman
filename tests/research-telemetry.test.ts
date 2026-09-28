@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, utimesSync, writeFileSync } from "node:fs";
 import { homedir, tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
@@ -10,6 +10,7 @@ import {
 	registerResearchTelemetry,
 	resolveResearchTelemetryConfig,
 	workflowName,
+	wroteResearchOutput,
 	type ResearchTelemetryClient,
 	type ResearchTelemetrySharedState,
 } from "../extensions/research-tools/telemetry.js";
@@ -288,4 +289,20 @@ test("failed tools and model calls report their error text with the home folder 
 	const generation = captured.find(({ event }) => event === "$ai_generation")!.properties;
 	assert.equal(generation.$ai_error, "429 rate limit exceeded");
 	assert.equal(JSON.stringify(captured).includes(homedir()), false);
+});
+
+test("output written just after the run started counts even when the filesystem rounds its mtime down", () => {
+	const cwd = mkdtempSync(join(tmpdir(), "feynman-output-mtime-"));
+	try {
+		mkdirSync(join(cwd, "outputs"), { recursive: true });
+		const file = join(cwd, "outputs", "brief.md");
+		writeFileSync(file, "x");
+		const since = Date.now();
+		utimesSync(file, (since - 1000) / 1000, (since - 1000) / 1000);
+		assert.equal(wroteResearchOutput(cwd, since), true);
+		utimesSync(file, (since - 60_000) / 1000, (since - 60_000) / 1000);
+		assert.equal(wroteResearchOutput(cwd, since), false);
+	} finally {
+		rmSync(cwd, { recursive: true, force: true });
+	}
 });
