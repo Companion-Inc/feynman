@@ -137,6 +137,25 @@ function crossrefAuthors(value: unknown): string[] {
 		.slice(0, 8);
 }
 
+// Crossref's public pool allows one request at a time, one per second
+// (x-concurrency-limit: 1); the polite pool, used when a mailto is sent, allows
+// three per second. Parallel DOI checks got 429 on most calls, so run Crossref
+// requests one after another at the pool's pace.
+let crossrefQueue: Promise<unknown> = Promise.resolve();
+let crossrefLastStartedAt = Number.NEGATIVE_INFINITY;
+
+export function withCrossrefPacing<T>(polite: boolean, run: () => Promise<T>): Promise<T> {
+	const minGapMs = polite ? 350 : 1000;
+	const next = crossrefQueue.then(async () => {
+		const wait = crossrefLastStartedAt + minGapMs - Date.now();
+		if (wait > 0) await new Promise((resolve) => setTimeout(resolve, wait));
+		crossrefLastStartedAt = Date.now();
+		return run();
+	});
+	crossrefQueue = next.catch(() => {});
+	return next;
+}
+
 async function searchCrossref(params: ScienceDatabaseSearchParams): Promise<Record<string, unknown>> {
 	const query = cleanQuery(params.query);
 	const limit = safeLimit(params.limit);
@@ -148,7 +167,17 @@ async function searchCrossref(params: ScienceDatabaseSearchParams): Promise<Reco
 		select: "DOI,title,published-print,published-online,issued,container-title,author,is-referenced-by-count,URL,type",
 		...(mailto ? { mailto } : {}),
 	}).toString();
-	const payload = recordValue(await fetchJson(url));
+	let payload: Record<string, unknown>;
+	try {
+		payload = recordValue(await withCrossrefPacing(Boolean(mailto), () => fetchJson(url)));
+	} catch (error) {
+		if (!(error instanceof ScienceDatabaseRequestError) || error.status !== 429) throw error;
+		throw new Error(
+			mailto
+				? "Crossref rate-limited this request (HTTP 429). Wait a few seconds and retry, or look the DOI up with source openalex."
+				: "Crossref's public pool rate-limited this request (HTTP 429). Set CROSSREF_MAILTO to your email for Crossref's faster polite pool, wait and retry, or look the DOI up with source openalex.",
+		);
+	}
 	const message = recordValue(payload.message);
 	const results = arrayValue(message.items).flatMap((item) => {
 		const record = recordValue(item);

@@ -95,6 +95,11 @@ export function workflowName(text: string, workflows: ReadonlySet<string>): stri
 	return name && workflows.has(name) ? name : "chat";
 }
 
+// Filesystems stamp modification times from a coarse clock, and some (HFS+,
+// FAT, ext3) round them to whole seconds, so a file written just after the run
+// started can carry an earlier mtime. Allow for that rounding.
+const MTIME_TOLERANCE_MS = 2000;
+
 export function wroteResearchOutput(cwd: string, since: number): boolean {
 	let scanned = 0;
 	for (const dir of OUTPUT_DIRS) {
@@ -108,7 +113,7 @@ export function wroteResearchOutput(cwd: string, since: number): boolean {
 			if (++scanned > OUTPUT_SCAN_LIMIT) return false;
 			try {
 				const stats = statSync(join(cwd, dir, entry));
-				if (stats.isFile() && stats.mtimeMs >= since) return true;
+				if (stats.isFile() && stats.mtimeMs >= since - MTIME_TOLERANCE_MS) return true;
 			} catch {}
 		}
 	}

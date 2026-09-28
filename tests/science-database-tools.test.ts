@@ -266,3 +266,22 @@ test("science database tool searches bioRxiv and medRxiv preprint sources", asyn
 	assert.equal(medrxivDetails.results[0]?.doi, "10.1101/2020.09.09.20191205");
 	assert.match(tools.get("feynman_science_database_search")?.promptSnippet ?? "", /bioRxiv/);
 });
+
+test("Crossref requests run one at a time at the pool's pace", async () => {
+	const { withCrossrefPacing } = await import("../extensions/research-tools/science-databases.js");
+	const starts: number[] = [];
+	let running = 0;
+	let maxRunning = 0;
+	const request = () => withCrossrefPacing(true, async () => {
+		starts.push(Date.now());
+		running += 1;
+		maxRunning = Math.max(maxRunning, running);
+		await new Promise((resolve) => setTimeout(resolve, 20));
+		running -= 1;
+	});
+	await Promise.all([request(), request(), request()]);
+	assert.equal(maxRunning, 1);
+	for (let index = 1; index < starts.length; index += 1) {
+		assert.ok(starts[index]! - starts[index - 1]! >= 340, `gap ${starts[index]! - starts[index - 1]!}ms`);
+	}
+});
