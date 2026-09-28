@@ -9,6 +9,10 @@ This page summarizes what changed in recent Feynman releases. GitHub releases us
 
 ## Unreleased
 
+## v0.5.11 - 2026-09-27
+
+- **Crossref lookups no longer fail in bursts.** Crossref's public pool allows one request at a time, one per second, and parallel DOI checks (the verifier cross-checks every citation) got `429 Too Many Requests` on most calls. Crossref requests now run one after another at the pool's pace. Set `CROSSREF_MAILTO` to your email for Crossref's faster polite pool; a 429 now says so instead of a generic "Science database request failed".
+
 ## v0.5.10 - 2026-09-27
 
 - **Semantic Scholar understands the documented query syntax.** A `semantic:` prefix and `year_from=`/`year_to=` flags, which the model reuses from the OpenAlex examples, were sent to Semantic Scholar as search text and returned unrelated papers or nothing. They now become Semantic Scholar's own year filter.
