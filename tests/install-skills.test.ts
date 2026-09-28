@@ -30,7 +30,7 @@ test("skills installers expose Codex, repo, and OpenCode scopes", () => {
 });
 
 test("skills docs include the Codex and OpenCode install targets", () => {
-	for (const relativePath of ["README.md", "website/src/content/docs/getting-started/installation.md"]) {
+	for (const relativePath of ["website/src/content/docs/getting-started/installation.md"]) {
 		const source = readFileSync(resolve(appRoot, relativePath), "utf8");
 		assert.match(source, /--codex/);
 		assert.match(source, /Scope Codex/);

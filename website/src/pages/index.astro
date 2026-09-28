@@ -1,7 +1,7 @@
 ---
 import Layout from "@/layouts/main.astro"
 import { Button } from "@/components/ui/button"
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
+import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 
 const workflows = [
   { command: "/deepresearch", description: "Plan-first investigation across papers, web, and code, with parallel researchers when the topic needs them" },
@@ -15,34 +15,12 @@ const workflows = [
   { command: "/autoresearch", description: "Bounded loop: hypothesize, experiment, measure, repeat" },
 ]
 
-const agents = [
-  { name: "Researcher", description: "Hunts for evidence across papers, the web, repos, and docs" },
-  { name: "Reviewer", description: "Grades claims by severity, flags gaps, and suggests revisions" },
-  { name: "Writer", description: "Structures notes into briefs, drafts, and paper-style output" },
-  { name: "Verifier", description: "Checks citations, verifies URLs, removes dead links" },
-]
-
 const sources = [
   { name: "Literature databases", description: "Semantic Scholar, OpenAlex, arXiv, PubMed, Europe PMC, bioRxiv/medRxiv, and Crossref with stable identifiers" },
   { name: "alphaXiv", description: "Paper search, Q&A, code reading, and annotations", href: "https://www.alphaxiv.org/" },
   { name: "Hugging Face Hub", description: "Dataset schema, repo file, and small text-file inspection" },
   { name: "Web research", description: "Search, page fetching, and PDF extraction; Exa works without a key" },
   { name: "Documents", description: "Local PDF and office-document parsing, search, and page screenshots" },
-]
-
-const compute = [
-  { name: "Docker", description: "Isolated containers for explicitly chosen replication and benchmark runs", href: "https://www.docker.com/" },
-  { name: "Modal", description: "Burst GPU execution for bounded research benchmark jobs, if you have the modal CLI installed", href: "https://modal.com/" },
-  { name: "RunPod", description: "Persistent GPU pods for long-running research experiments with SSH, if you have the runpodctl CLI installed", href: "https://www.runpod.io/" },
-]
-
-const terminalCommands = [
-  { command: 'feynman "what do we know about scaling laws"', description: "Cited answer from papers and the web" },
-  { command: 'feynman deepresearch "mechanistic interpretability"', description: "Planned deep dive with synthesis and citation verification" },
-  { command: 'feynman lit "RLHF alternatives"', description: "Literature review with consensus and open questions" },
-  { command: "feynman audit 2401.12345", description: "Paper claims vs. what the code actually does" },
-  { command: 'feynman replicate "chain-of-thought improves math"', description: "Replication plan, compute target, gated experiment steps" },
-  { command: 'feynman recipe "fine-tune a small model for math reasoning"', description: "Ranked, implementable ML training recipes" },
 ]
 
 const installCommands = [
@@ -127,27 +105,6 @@ const installCommands = [
     <section class="py-16">
       <div class="flex flex-col items-center gap-8 text-center">
         <div class="flex flex-col gap-2">
-          <h2 class="text-2xl font-bold tracking-tight sm:text-3xl">What you type &rarr; what happens</h2>
-          <p class="text-muted-foreground">Ask a research question or run a workflow. Research claims carry citations.</p>
-        </div>
-        <Card client:load className="w-full text-left">
-          <CardContent client:load>
-            <div class="flex flex-col gap-3 font-mono text-sm">
-              {terminalCommands.map((cmd) => (
-                <div class="flex flex-col gap-0.5">
-                  <span class="text-primary">{cmd.command}</span>
-                  <span class="text-xs text-muted-foreground">{cmd.description}</span>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    </section>
-
-    <section class="py-16">
-      <div class="flex flex-col items-center gap-8 text-center">
-        <div class="flex flex-col gap-2">
           <h2 class="text-2xl font-bold tracking-tight sm:text-3xl">Workflows</h2>
           <p class="text-muted-foreground">Run as slash commands in the REPL or as <code>feynman &lt;workflow&gt;</code> from your shell.</p>
         </div>
@@ -167,27 +124,8 @@ const installCommands = [
     <section class="py-16">
       <div class="flex flex-col items-center gap-8 text-center">
         <div class="flex flex-col gap-2">
-          <h2 class="text-2xl font-bold tracking-tight sm:text-3xl">Agents</h2>
-          <p class="text-muted-foreground">Specialist agents join when the research task needs them.</p>
-        </div>
-        <div class="grid w-full gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {agents.map((agent) => (
-            <Card client:load size="sm" className="text-center">
-              <CardHeader client:load className="items-center">
-                <CardTitle client:load>{agent.name}</CardTitle>
-                <CardDescription client:load>{agent.description}</CardDescription>
-              </CardHeader>
-            </Card>
-          ))}
-        </div>
-      </div>
-    </section>
-
-    <section class="py-16">
-      <div class="flex flex-col items-center gap-8 text-center">
-        <div class="flex flex-col gap-2">
-          <h2 class="text-2xl font-bold tracking-tight sm:text-3xl">Skills &amp; Tools</h2>
-          <p class="text-muted-foreground">How Feynman finds and reads sources.</p>
+          <h2 class="text-2xl font-bold tracking-tight sm:text-3xl">Sources</h2>
+          <p class="text-muted-foreground">Where Feynman looks for evidence.</p>
         </div>
         <div class="grid w-full gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {sources.map((source) => (
@@ -203,29 +141,6 @@ const installCommands = [
                   )}
                 </CardTitle>
                 <CardDescription client:load>{source.description}</CardDescription>
-              </CardHeader>
-            </Card>
-          ))}
-        </div>
-      </div>
-    </section>
-
-    <section class="py-16">
-      <div class="flex flex-col items-center gap-8 text-center">
-        <div class="flex flex-col gap-2">
-          <h2 class="text-2xl font-bold tracking-tight sm:text-3xl">Compute</h2>
-          <p class="text-muted-foreground">Optional execution targets for research experiments after the workflow chooses an environment.</p>
-        </div>
-        <div class="grid w-full gap-4 sm:grid-cols-3">
-          {compute.map((provider) => (
-            <Card client:load size="sm" className="text-center">
-              <CardHeader client:load className="items-center">
-                <CardTitle client:load>
-                  <a href={provider.href} target="_blank" rel="noopener noreferrer" class="text-primary hover:underline">
-                    {provider.name}
-                  </a>
-                </CardTitle>
-                <CardDescription client:load>{provider.description}</CardDescription>
               </CardHeader>
             </Card>
           ))}
