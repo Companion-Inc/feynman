@@ -37,7 +37,7 @@ To install into an existing Node.js environment instead:
 npm install -g @companion-ai/feynman
 ```
 
-This uses your local Node.js, which must satisfy `>=22.22.0`.
+This uses your local Node.js, which must satisfy `>=22.22.0`. npm installs Feynman's Pi runtime as a peer dependency, so if your npm config sets `legacy-peer-deps`, add `--legacy-peer-deps=false`.
 
 If you installed the interim `@advaitpaliwal/feynman` package, migrate once:
 

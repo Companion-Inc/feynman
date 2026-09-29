@@ -1,4 +1,5 @@
 import { OPENALEX_API_KEY_HINT, openAlexRequestFailure, searchExactOpenAlex } from "./science-database-openalex-exact.js";
+import { createRequestPacer } from "./request-pacer.js";
 
 export type OpenAlexScienceDatabaseSource = "openalex";
 
@@ -96,9 +97,18 @@ function scrubOpenAlexText(text: string, url: URL): string {
 	return scrubbed;
 }
 
-async function fetchJson(url: URL): Promise<{ credentialStatus: string; endpoint: string; payload: unknown; usingApiKey: boolean }> {
-	const auth = addAuth(url);
-	const endpoint = scrubOpenAlexEndpoint(url);
+type OpenAlexResponse =
+	| { ok: true; payload: unknown }
+	| { ok: false; status: number; statusText: string; retryAfterMs?: number; body: string };
+
+// Semantic search allows one request per second (429 with Retry-After: 1), so
+// semantic requests are paced. A 429 that asks for a short wait, such as one
+// caused by a subagent in another process, is retried once.
+const semanticPacer = createRequestPacer();
+const SEMANTIC_MIN_GAP_MS = 1100;
+const MAX_RETRY_WAIT_MS = 5000;
+
+async function requestOnce(url: URL): Promise<OpenAlexResponse> {
 	const controller = new AbortController();
 	const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 	try {
@@ -109,14 +119,37 @@ async function fetchJson(url: URL): Promise<{ credentialStatus: string; endpoint
 			},
 			signal: controller.signal,
 		});
-		if (!response.ok) {
-			const snippet = scrubOpenAlexText((await response.text()).slice(0, 4096), url).slice(0, 240);
-			throw openAlexRequestFailure(response.status, response.statusText, snippet, auth.usingApiKey);
-		}
-		return { ...auth, endpoint, payload: await response.json() };
+		if (response.ok) return { ok: true, payload: await response.json() };
+		const retryAfter = response.headers.get("retry-after");
+		const retryAfterSeconds = retryAfter === null ? Number.NaN : Number(retryAfter);
+		return {
+			ok: false,
+			status: response.status,
+			statusText: response.statusText,
+			retryAfterMs: Number.isFinite(retryAfterSeconds) && retryAfterSeconds >= 0 ? retryAfterSeconds * 1000 : undefined,
+			body: (await response.text()).slice(0, 4096),
+		};
 	} finally {
 		clearTimeout(timeout);
 	}
+}
+
+async function fetchJson(url: URL): Promise<{ credentialStatus: string; endpoint: string; payload: unknown; usingApiKey: boolean }> {
+	const auth = addAuth(url);
+	const endpoint = scrubOpenAlexEndpoint(url);
+	const request = () =>
+		url.searchParams.has("search.semantic") ? semanticPacer(SEMANTIC_MIN_GAP_MS, () => requestOnce(url)) : requestOnce(url);
+	let response = await request();
+	if (!response.ok && response.status === 429 && response.retryAfterMs !== undefined && response.retryAfterMs <= MAX_RETRY_WAIT_MS) {
+		const waitMs = response.retryAfterMs + Math.random() * 500;
+		await new Promise((resolve) => setTimeout(resolve, waitMs));
+		response = await request();
+	}
+	if (!response.ok) {
+		const snippet = scrubOpenAlexText(response.body, url).slice(0, 240);
+		throw openAlexRequestFailure(response.status, response.statusText, snippet, auth.usingApiKey);
+	}
+	return { ...auth, endpoint, payload: response.payload };
 }
 
 function shortOpenAlexId(value: unknown): string | undefined {

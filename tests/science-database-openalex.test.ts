@@ -270,3 +270,46 @@ test("OpenAlex failures without a key explain how to get a free key", async () =
 		/openalex\.org\/settings\/api/,
 	);
 });
+
+test("OpenAlex semantic searches are paced and a short 429 is retried once", async () => {
+	delete process.env.OPENALEX_API_KEY;
+	const starts: number[] = [];
+	let calls = 0;
+	globalThis.fetch = async () => {
+		starts.push(Date.now());
+		calls += 1;
+		if (calls === 1) {
+			return new Response(JSON.stringify({ error: "Rate limit exceeded", retryAfter: 1 }), {
+				status: 429,
+				statusText: "Too Many Requests",
+				headers: { "retry-after": "1" },
+			});
+		}
+		return jsonResponse({ meta: { count: 1 }, results: [work()] });
+	};
+	const search = registerTools().get("feynman_science_database_search")!;
+	const results = await Promise.all(
+		["a", "b"].map((topic) => search.execute(`call-${topic}`, { source: "openalex", query: `semantic: crispr ${topic}` })),
+	);
+
+	assert.equal(results.length, 2);
+	assert.equal(calls, 3);
+	for (let index = 1; index < starts.length; index += 1) {
+		assert.ok(starts[index]! - starts[index - 1]! >= 1090, `gap ${starts[index]! - starts[index - 1]!}ms`);
+	}
+});
+
+test("OpenAlex does not wait out a long 429", async () => {
+	delete process.env.OPENALEX_API_KEY;
+	let calls = 0;
+	globalThis.fetch = async () => {
+		calls += 1;
+		return new Response("Please retry in 30s", { status: 429, statusText: "Too Many Requests", headers: { "retry-after": "30" } });
+	};
+
+	await assert.rejects(
+		registerTools().get("feynman_science_database_search")!.execute("call-openalex-long-429", { source: "openalex", query: "sparse autoencoders" }),
+		/429 Too Many Requests\. Please retry in 30s/,
+	);
+	assert.equal(calls, 1);
+});

@@ -370,6 +370,65 @@ test("setDefaultModelSpec accepts an authenticated DeepSeek V4 Pro model", async
 	assert.equal(settings.defaultModel, "deepseek-ai/DeepSeek-V4-Pro");
 });
 
+test("setDefaultModelSpec explains why a model spec is unusable", async () => {
+	await withoutModelEnv(async () => {
+		const authPath = createAuthPath({ openai: { type: "api_key", key: "openai-test-key" } });
+		writeFileSync(
+			join(dirname(authPath), "models.json"),
+			JSON.stringify({
+				providers: {
+					ollama: {
+						baseUrl: "http://localhost:11434/v1",
+						api: "openai-completions",
+						models: [{ id: "qwen3:8b" }],
+					},
+				},
+			}) + "\n",
+			"utf8",
+		);
+		const settingsPath = join(mkdtempSync(join(tmpdir(), "feynman-settings-")), "settings.json");
+		const openAiModel = await getOpenAiGptModel(authPath);
+
+		await assert.rejects(
+			setDefaultModelSpec(settingsPath, authPath, "ollama:qwen3:8b"),
+			/ollama\/qwen3:8b has no API key\. .*add "apiKey": "local" to the ollama provider in .*models\.json/,
+		);
+		await assert.rejects(
+			setDefaultModelSpec(settingsPath, authPath, "anthropic/claude-opus-5-5"),
+			/anthropic\/claude-opus-5-5 has no credentials\. Run `feynman model login anthropic` first\./,
+		);
+		const partialId = openAiModel.id.slice(0, -2);
+		await assert.rejects(
+			setDefaultModelSpec(settingsPath, authPath, partialId),
+			new RegExp(`Unknown model: ${partialId}\\. Did you mean .*openai/${openAiModel.id}.*\\? Run \`feynman model list\``),
+		);
+	});
+});
+
+test("model help lists model commands, and -h is an alias for --help", () => {
+	const homeDir = mkdtempSync(join(tmpdir(), "feynman-model-help-home-"));
+	const run = (args: string[]) =>
+		spawnSync(process.execPath, ["--import", "tsx", "src/index.ts", ...args], {
+			cwd: process.cwd(),
+			encoding: "utf8",
+			env: { ...process.env, FEYNMAN_HOME: homeDir, FEYNMAN_TELEMETRY: "0" },
+			maxBuffer: 1024 * 1024,
+		});
+
+	const help = run(["model", "help"]);
+	assert.equal(help.status, 0);
+	assert.match(help.stdout, /feynman model set/);
+	assert.match(help.stdout, /feynman model login/);
+
+	const unknown = run(["model", "change"]);
+	assert.equal(unknown.status, 1);
+	assert.match(unknown.stderr, /Unknown model command: change\nRun `feynman model help` to see model commands\./);
+
+	const shortHelp = run(["-h"]);
+	assert.equal(shortHelp.status, 0);
+	assert.match(shortHelp.stdout, /feynman model list/);
+});
+
 test("resolveModelProviderForCommand falls back to API-key providers when OAuth is unavailable", async () => {
 	const authPath = createAuthPath({});
 
