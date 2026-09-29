@@ -9,7 +9,7 @@ GitHub release notes are generated from the matching `## vX.Y.Z` section in this
 ## v0.5.14 - 2026-09-28
 
 - **The Windows installer no longer fails on slow networks (#309).** When usage telemetry could not reach PostHog quickly, the PostHog library printed a timeout to stderr, and Windows PowerShell treats stderr from the installer's `feynman --help` check as a failure. Each telemetry send now has a 1.5 s budget and ends quietly, so no command waits on telemetry (on a stalled network `feynman --help` took 11 s and printed two errors; it now takes about 2 s and prints nothing). The installers also run their checks with telemetry off and judge them by exit code.
-- pi-subagents 0.73.1 (no longer discards the prompt cache when subagents turn on; caps very large workflow output) and pi-web-access 0.33.0 (resumed sessions keep their tools; no false Pi version warnings). undici is overridden to a patched version for GHSA-3wwx-pv8p-q78v in the standalone installers; npm installs get the fix when pi-subagents updates its pin.
+- pi-subagents 0.73.1 (no longer discards the prompt cache when subagents turn on; caps very large workflow output) and pi-web-access 0.33.0 (resumed sessions keep their tools; no false Pi version warnings). undici is overridden to a patched version for GHSA-3wwx-pv8p-q78v in the standalone installers; npm installs get the fix when pi-subagents releases its bump (nicobailon/pi-subagents#2548); pi-subagents only uses undici's HTTP proxy agent, not the affected WebSocket client.
 
 ## v0.5.13 - 2026-09-28
 

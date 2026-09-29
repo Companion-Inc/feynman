@@ -408,7 +408,7 @@ async function main() {
 		copyPackageFiles(appDir);
 		installAppDependencies(appDir, stagingRoot, target);
 		installBundledNode(bundleRoot, target, stagingRoot);
-		run("npm", ["audit", "--omit=dev", "--no-fund"], { cwd: appDir });
+		run(process.execPath, [resolve(appRoot, "scripts", "npm-audit.mjs")], { cwd: appDir });
 
 		writeLauncher(bundleRoot, target);
 		validateBundle(bundleRoot, target);

@@ -25,7 +25,7 @@ assert.ok(reconciliationStart >= 0);
 // Execute the real policy after the independently tested npm certificate verifier.
 const reconcile = versionRun.slice(reconciliationStart);
 const finalIdentity = (finalStep.run as string).match(
-	/# Reconciliation verifies the published source[\s\S]*?(?=npm audit --omit=dev --prefix "\$consumer")/,
+	/# Reconciliation verifies the published source[\s\S]*?(?=node scripts\/npm-audit\.mjs --prefix "\$consumer")/,
 )?.[0];
 assert.ok(finalIdentity);
 const finalIntegrity = (finalStep.run as string).match(

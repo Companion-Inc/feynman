@@ -231,7 +231,7 @@ jobs:
           npm run typecheck
           npm run build
           npm run architecture:check
-          npm audit --omit=dev
+          node scripts/npm-audit.mjs
           (
             cd website
             npm ci
@@ -256,7 +256,7 @@ jobs:
           mkdir -p "$consumer"
           (cd "$consumer" && npm init -y >/dev/null)
           npm install --prefix "$consumer" --omit=dev --no-audit "$tarball"
-          npm audit --omit=dev --prefix "$consumer"
+          node scripts/npm-audit.mjs --prefix "$consumer"
 
           bin="$consumer/node_modules/.bin/feynman"
           test "$("$bin" --version | tail -1)" = "$(node -p "require('./package.json').version")"
@@ -325,7 +325,7 @@ jobs:
           mkdir -p "$consumer"
           (cd "$consumer" && npm init -y >/dev/null)
           npm install --prefix "$consumer" --omit=dev --no-audit "$tarball"
-          npm audit --omit=dev --prefix "$consumer"
+          node scripts/npm-audit.mjs --prefix "$consumer"
           bin="$consumer/node_modules/.bin/feynman"
           if command -v cygpath >/dev/null 2>&1; then
             bin="$consumer/node_modules/.bin/feynman.cmd"
