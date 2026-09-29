@@ -9,6 +9,7 @@ GitHub release notes are generated from the matching `## vX.Y.Z` section in this
 ## v0.5.15 - 2026-09-29
 
 - **`feynman model set` explains a model it cannot use.** "Model not available in Pi auth storage" gave no reason. It now says which applies: the provider has no credentials (with the `feynman model login` command to run), a local provider in `models.json` has no `apiKey` (Pi hides providers without one; a placeholder such as `"local"` is enough), or the ID is unknown (with close matches, for example `gpt-5.6` suggests `openai/gpt-5.6-terra`).
+- **Parallel OpenAlex semantic searches no longer fail.** OpenAlex allows one semantic search per second, and parallel searches got `429 Too Many Requests`: in a live test of six at once, five failed. They now run one after another at that pace, and a 429 that asks for a short wait is retried once. Six parallel searches now all succeed.
 - `feynman model set` with no model opens a picker of the available models instead of failing. `feynman model help` lists the model commands, an unknown model subcommand points to it, and `-h` works like `--help`.
 
 ## v0.5.14 - 2026-09-28
