@@ -13,6 +13,7 @@ import {
 	getAuthenticatedModelRecords,
 	getAvailableModelRecords,
 	getSupportedModelRecords,
+	isProClassModelSpec,
 	type ModelStatusSnapshot,
 } from "./catalog.js";
 import { MODEL_API_KEY_PROVIDERS, type ApiKeyProviderInfo } from "./api-key-providers.js";
@@ -967,10 +968,35 @@ export async function logoutModelProvider(authPath: string, providerId?: string)
 	printSuccess(`Model provider logout complete: ${provider.id}`);
 }
 
+// Explains why `feynman model set <spec>` found no usable model.
+async function describeUnavailableModelSpec(authPath: string, spec: string): Promise<string> {
+	const input = spec.trim().replace(/^([^/:]+):(.+)$/, "$1/$2").toLowerCase();
+	const known = (await getSupportedModelRecords(authPath)).find(
+		(model) => `${model.provider}/${model.id}`.toLowerCase() === input || model.id.toLowerCase() === input,
+	);
+	if (known) {
+		const knownSpec = `${known.provider}/${known.id}`;
+		if (isProClassModelSpec(knownSpec)) {
+			return `Pro-class model disabled: ${knownSpec}. Choose an approved research model.`;
+		}
+		if (isLocalModelProvider(authPath, known.provider)) {
+			return `${knownSpec} has no API key. Pi only lists a local provider when it has one: add "apiKey": "local" to the ${known.provider} provider in ${getModelsJsonPath(authPath)}.`;
+		}
+		return `${knownSpec} has no credentials. Run \`feynman model login ${known.provider}\` first.`;
+	}
+	const modelId = input.slice(input.lastIndexOf("/") + 1);
+	const matches = (await getAvailableModelRecords(authPath))
+		.map((model) => `${model.provider}/${model.id}`)
+		.filter((candidate) => candidate.toLowerCase().includes(modelId))
+		.slice(0, 5);
+	const suggestion = matches.length > 0 ? ` Did you mean ${matches.join(", ")}?` : "";
+	return `Unknown model: ${spec}.${suggestion} Run \`feynman model list\` to see available models.`;
+}
+
 export async function setDefaultModelSpec(settingsPath: string, authPath: string, spec: string): Promise<void> {
 	const resolvedSpec = await resolveAvailableModelSpec(authPath, spec);
 	if (!resolvedSpec) {
-		throw new Error(`Model not available in Pi auth storage: ${spec}. Run \`feynman model list\` first.`);
+		throw new Error(await describeUnavailableModelSpec(authPath, spec));
 	}
 
 	const [provider, ...rest] = resolvedSpec.split("/");
@@ -980,6 +1006,27 @@ export async function setDefaultModelSpec(settingsPath: string, authPath: string
 	settings.defaultModel = modelId;
 	writeFileSync(settingsPath, JSON.stringify(settings, null, 2) + "\n", "utf8");
 	printSuccess(`Research default model set to ${resolvedSpec}`);
+}
+
+export async function selectDefaultModel(settingsPath: string, authPath: string): Promise<void> {
+	const status = await collectModelStatus(settingsPath, authPath);
+	if (status.availableModels.length === 0) {
+		printWarning("No authenticated Pi models are currently available.");
+		for (const line of status.guidance) {
+			printInfo(line);
+		}
+		return;
+	}
+	const spec = await promptSelect(
+		"Choose the default research model:",
+		status.availableModels.map((value) => ({
+			value,
+			label: value,
+			hint: value === status.current ? "current" : value === status.recommended ? "recommended" : undefined,
+		})),
+		status.current ?? status.recommended,
+	);
+	await setDefaultModelSpec(settingsPath, authPath, spec);
 }
 
 export async function runModelSetup(settingsPath: string, authPath: string): Promise<void> {

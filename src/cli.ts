@@ -48,6 +48,7 @@ import {
 	loginModelProvider,
 	logoutModelProvider,
 	printModelList,
+	selectDefaultModel,
 	setDefaultModelSpec,
 } from "./model/commands.js";
 import {
@@ -262,10 +263,13 @@ async function handleModelCommand(subcommand: string | undefined, args: string[]
 
 	if (subcommand === "set") {
 		const spec = args[0];
-		if (!spec) {
+		if (spec) {
+			await setDefaultModelSpec(feynmanSettingsPath, feynmanAuthPath, spec);
+		} else if (process.stdin.isTTY && process.stdout.isTTY) {
+			await selectDefaultModel(feynmanSettingsPath, feynmanAuthPath);
+		} else {
 			throw new Error("Usage: feynman model set <provider/model|provider:model>");
 		}
-		await setDefaultModelSpec(feynmanSettingsPath, feynmanAuthPath, spec);
 		return;
 	}
 
@@ -292,7 +296,15 @@ async function handleModelCommand(subcommand: string | undefined, args: string[]
 		return;
 	}
 
-	throw new Error(`Unknown model command: ${subcommand}`);
+	if (subcommand === "help") {
+		printSection("Model Management");
+		for (const command of cliCommandSections.find((section) => section.title === "Model Management")?.commands ?? []) {
+			printHelpLine(command.usage, command.description);
+		}
+		return;
+	}
+
+	throw new Error(`Unknown model command: ${subcommand}\nRun \`feynman model help\` to see model commands.`);
 }
 
 async function handleUpdateCommand(piOptions: PiRuntimeOptions, feynmanVersion: string | undefined, source?: string): Promise<void> {
@@ -561,7 +573,7 @@ async function runMain(input: { here: string; appRoot: string; feynmanVersion: s
 				doctor: { type: "boolean" },
 				export: { type: "string" },
 				fork: { type: "string" },
-				help: { type: "boolean" },
+				help: { type: "boolean", short: "h" },
 				version: { type: "boolean" },
 				"alpha-login": { type: "boolean" },
 				"alpha-logout": { type: "boolean" },
@@ -760,7 +772,7 @@ async function runMain(input: { here: string; appRoot: string; feynmanVersion: s
 		const modelRuntime = await createModelRuntime(feynmanAuthPath);
 		const canonicalModelSpec = canonicalizeModelSpec(requestedExplicitModelSpec, modelRuntime);
 		if (!canonicalModelSpec) {
-			throw new Error(`Unknown model: ${requestedExplicitModelSpec}`);
+			throw new Error(`Unknown model: ${requestedExplicitModelSpec}. Run \`feynman model list\` to see available models.`);
 		}
 		explicitModelSpec = canonicalModelSpec;
 	}
