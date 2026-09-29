@@ -26,10 +26,10 @@ This page covers the Feynman CLI commands and flags. `feynman help` prints the s
 | `feynman model list` | List available models in Pi auth storage |
 | `feynman model login [id]` | Authenticate a model provider with OAuth or API-key setup |
 | `feynman model logout [id]` | Clear stored auth for a model provider |
-| `feynman model set <provider/model>` | Set the default approved research model for all sessions |
+| `feynman model set [provider/model]` | Set the default approved research model for all sessions; without one, pick from a list |
 | `feynman model tier [value]` | View or set the request service tier override |
 
-The `model set` command updates `~/.feynman/agent/settings.json` with the new default. It accepts either `provider/model-name` or `provider:model-name`; run `feynman model list` first and choose a model ID from that output. `feynman model login <id>` goes straight to API-key setup for API-key providers such as `google`, `amazon-bedrock`, and `openrouter`. For OAuth logins in SSH or other headless sessions, paste the final redirect URL into Feynman when the browser runs on another machine.
+The `model set` command updates `~/.feynman/agent/settings.json` with the new default. It accepts either `provider/model-name` or `provider:model-name`; run `feynman model list` first and choose a model ID from that output, or run `feynman model set` alone to pick from the available models. When a model is not usable, the error says why: no credentials for its provider, a local provider in `models.json` without an `apiKey` placeholder, or close matches for an unknown ID. `feynman model help` lists these commands. `feynman model login <id>` goes straight to API-key setup for API-key providers such as `google`, `amazon-bedrock`, and `openrouter`. For OAuth logins in SSH or other headless sessions, paste the final redirect URL into Feynman when the browser runs on another machine.
 
 ## AlphaXiv commands
 
