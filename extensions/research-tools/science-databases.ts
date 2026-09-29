@@ -5,6 +5,7 @@ import { searchOpenAlex } from "./science-database-openalex.js";
 import { searchPreprints } from "./science-database-preprints.js";
 import { searchPubMed } from "./science-database-pubmed.js";
 import { isEuropePmcFullTextQuery, searchEuropePmcFullText } from "./science-database-europepmc-fulltext.js";
+import { createRequestPacer } from "./request-pacer.js";
 
 type ScienceDatabaseSource = "arxiv" | "biorxiv" | "crossref" | "europepmc" | "medrxiv" | "openalex" | "pubmed" | "semanticscholar";
 
@@ -141,21 +142,12 @@ function crossrefAuthors(value: unknown): string[] {
 // (x-concurrency-limit: 1); the polite pool, used when a mailto is sent, allows
 // three per second. Parallel DOI checks got 429 on most calls, so run Crossref
 // requests one after another at the pool's pace.
-let crossrefQueue: Promise<unknown> = Promise.resolve();
-let crossrefLastStartedAt = Number.NEGATIVE_INFINITY;
+const crossrefPacer = createRequestPacer();
 
 export function withCrossrefPacing<T>(polite: boolean, run: () => Promise<T>): Promise<T> {
 	// A little over the pool's limit: network jitter can land two requests paced
 	// exactly one second apart inside the same window.
-	const minGapMs = polite ? 400 : 1200;
-	const next = crossrefQueue.then(async () => {
-		const wait = crossrefLastStartedAt + minGapMs - Date.now();
-		if (wait > 0) await new Promise((resolve) => setTimeout(resolve, wait));
-		crossrefLastStartedAt = Date.now();
-		return run();
-	});
-	crossrefQueue = next.catch(() => {});
-	return next;
+	return crossrefPacer(polite ? 400 : 1200, run);
 }
 
 async function searchCrossref(params: ScienceDatabaseSearchParams): Promise<Record<string, unknown>> {
