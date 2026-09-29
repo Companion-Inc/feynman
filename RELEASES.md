@@ -6,6 +6,10 @@ GitHub release notes are generated from the matching `## vX.Y.Z` section in this
 
 ## Unreleased
 
+## v0.5.14 - 2026-09-28
+
+- **The Windows installer no longer fails on slow networks (#309).** When usage telemetry could not reach PostHog quickly, the PostHog library printed a timeout to stderr, and Windows PowerShell treats stderr from the installer's `feynman --help` check as a failure. Each telemetry send now has a 1.5 s budget and ends quietly, so no command waits on telemetry (on a stalled network `feynman --help` took 11 s and printed two errors; it now takes about 2 s and prints nothing). The installers also run their checks with telemetry off and judge them by exit code.
+
 ## v0.5.13 - 2026-09-28
 
 - **OpenCode no longer recommends a retired Kimi model.** OpenCode Go and OpenCode Zen retired `kimi-k2.6` ("Use kimi-k2.7-code instead"), but Feynman still picked it as the default for new OpenCode users. It now recommends `kimi-k2.7-code`. If `feynman status` shows `kimi-k2.6`, switch with `feynman model set opencode-go/kimi-k2.7-code`. Three model preferences that no longer exist in the catalog were removed.
