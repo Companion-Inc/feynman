@@ -292,3 +292,16 @@ test("captureTelemetryException sends a redacted stack trace to PostHog error tr
 	assert.match(sent, /cli\.js/);
 	assert.equal(sent.includes(homedir()), false);
 });
+
+test("a telemetry send that gets no answer ends quietly within its budget", async () => {
+	const failures: unknown[] = [];
+	const hangingFetch = ((_url: string, options?: { signal?: AbortSignal }) => new Promise((_resolve, reject) => {
+		options?.signal?.addEventListener("abort", () => reject(options.signal!.reason));
+	})) as never;
+	const send = createTelemetryCircuitBreakerFetch(hangingFetch, (error) => failures.push(error), 200);
+	const started = Date.now();
+	const response = await send("https://posthog.test/batch/", { method: "POST", headers: {} } as never);
+	assert.equal(response.status, 204);
+	assert.ok(Date.now() - started < 1000, `took ${Date.now() - started}ms`);
+	assert.equal(failures.length, 1);
+});

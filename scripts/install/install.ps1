@@ -325,39 +325,51 @@ Workarounds:
       throw "Downloaded archive did not contain the expected launcher: $candidate"
     }
   }
-  $candidateVersionOutput = @(& $candidateCmd --version 2>&1)
-  if ($LASTEXITCODE -ne 0) {
-    throw "Downloaded launcher failed --version: $candidateCmd"
-  }
-  $candidateVersion = ($candidateVersionOutput | Select-Object -Last 1).ToString().Trim()
-  if ($candidateVersion -ne $resolvedVersion) {
-    throw "Downloaded bundle version mismatch: expected=$resolvedVersion actual=$candidateVersion"
-  }
-  $candidateHelp = @(& $candidateCmd --help 2>&1)
-  if ($LASTEXITCODE -ne 0 -or $candidateHelp.Count -eq 0) {
-    throw "Downloaded launcher failed --help: $candidateCmd"
-  }
+  # Verify with telemetry off: the check is not usage, and under
+  # $ErrorActionPreference = "Stop" any stderr line from a native command
+  # aborts the install (#309). Judge the launcher by its exit code instead.
+  $previousTelemetry = $env:FEYNMAN_TELEMETRY
+  $previousErrorAction = $ErrorActionPreference
+  try {
+    $env:FEYNMAN_TELEMETRY = "off"
+    $ErrorActionPreference = "Continue"
+    $candidateVersionOutput = @(& $candidateCmd --version 2>&1)
+    if ($LASTEXITCODE -ne 0) {
+      throw "Downloaded launcher failed --version: $candidateCmd"
+    }
+    $candidateVersion = ($candidateVersionOutput | Select-Object -Last 1).ToString().Trim()
+    if ($candidateVersion -ne $resolvedVersion) {
+      throw "Downloaded bundle version mismatch: expected=$resolvedVersion actual=$candidateVersion"
+    }
+    $candidateHelp = @(& $candidateCmd --help 2>&1)
+    if ($LASTEXITCODE -ne 0 -or $candidateHelp.Count -eq 0) {
+      throw "Downloaded launcher failed --help: $candidateCmd"
+    }
 
-  # The public one-line installer can run under Windows PowerShell's default
-  # Restricted policy because it executes an in-memory scriptblock. Validate
-  # the packaged PowerShell launcher in a child host with an explicit process-
-  # scoped bypass rather than invoking the downloaded .ps1 file directly.
-  $powerShellExecutable = (Get-Process -Id $PID).Path
-  $candidateVersionOutput = @(
-    & $powerShellExecutable -NoProfile -ExecutionPolicy Bypass -File $candidatePs1 --version 2>&1
-  )
-  if ($LASTEXITCODE -ne 0) {
-    throw "Downloaded launcher failed --version: $candidatePs1"
-  }
-  $candidateVersion = ($candidateVersionOutput | Select-Object -Last 1).ToString().Trim()
-  if ($candidateVersion -ne $resolvedVersion) {
-    throw "Downloaded bundle version mismatch: expected=$resolvedVersion actual=$candidateVersion"
-  }
-  $candidateHelp = @(
-    & $powerShellExecutable -NoProfile -ExecutionPolicy Bypass -File $candidatePs1 --help 2>&1
-  )
-  if ($LASTEXITCODE -ne 0 -or $candidateHelp.Count -eq 0) {
-    throw "Downloaded launcher failed --help: $candidatePs1"
+    # The public one-line installer can run under Windows PowerShell's default
+    # Restricted policy because it executes an in-memory scriptblock. Validate
+    # the packaged PowerShell launcher in a child host with an explicit process-
+    # scoped bypass rather than invoking the downloaded .ps1 file directly.
+    $powerShellExecutable = (Get-Process -Id $PID).Path
+    $candidateVersionOutput = @(
+      & $powerShellExecutable -NoProfile -ExecutionPolicy Bypass -File $candidatePs1 --version 2>&1
+    )
+    if ($LASTEXITCODE -ne 0) {
+      throw "Downloaded launcher failed --version: $candidatePs1"
+    }
+    $candidateVersion = ($candidateVersionOutput | Select-Object -Last 1).ToString().Trim()
+    if ($candidateVersion -ne $resolvedVersion) {
+      throw "Downloaded bundle version mismatch: expected=$resolvedVersion actual=$candidateVersion"
+    }
+    $candidateHelp = @(
+      & $powerShellExecutable -NoProfile -ExecutionPolicy Bypass -File $candidatePs1 --help 2>&1
+    )
+    if ($LASTEXITCODE -ne 0 -or $candidateHelp.Count -eq 0) {
+      throw "Downloaded launcher failed --help: $candidatePs1"
+    }
+  } finally {
+    $ErrorActionPreference = $previousErrorAction
+    $env:FEYNMAN_TELEMETRY = $previousTelemetry
   }
 
   New-Item -ItemType Directory -Path $installRoot -Force | Out-Null

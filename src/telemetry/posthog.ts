@@ -44,16 +44,25 @@ let telemetryTransportFailed = false;
 let telemetryNoticeThisProcess: string | undefined;
 
 type PostHogFetch = NonNullable<PostHogOptions["fetch"]>;
+// On a slow or filtered network a pending send made every command wait for
+// posthog-node's 10s deadline, and the library then printed its timeout to
+// stderr, which Windows PowerShell treats as a failure (#309). Give each send
+// a short budget and end it here, where it counts as a quiet transport failure.
+export const TELEMETRY_REQUEST_BUDGET_MS = 1500;
+
 /** One silent attempt per session: after the first failure, later requests are dropped. */
 export function createTelemetryCircuitBreakerFetch(
 	fetchImpl: PostHogFetch,
 	onTransportFailure: (error: unknown) => void,
+	budgetMs = TELEMETRY_REQUEST_BUDGET_MS,
 ): PostHogFetch {
 	let open = false;
 	return async (url, options) => {
 		if (!open) {
 			try {
-				const response = await fetchImpl(url, options);
+				const budget = AbortSignal.timeout(budgetMs);
+				const signal = options.signal ? AbortSignal.any([options.signal, budget]) : budget;
+				const response = await fetchImpl(url, { ...options, signal });
 				if (response.status >= 200 && response.status < 400) return response;
 				throw new Error(`PostHog transport returned HTTP ${response.status}`);
 			} catch (error) {

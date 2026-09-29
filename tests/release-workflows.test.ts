@@ -46,7 +46,7 @@ test("manual post-release gates exercise the live native installers", () => {
 
 test("PR and publish workflows require clean package and consumer audits", () => {
 	for (const workflow of [e2eWorkflow, publishWorkflow]) {
-		assert.match(workflow, /npm audit --omit=dev --prefix "\$consumer"/);
+		assert.match(workflow, /node scripts\/npm-audit\.mjs --prefix "\$consumer"/);
 		assert.match(workflow, /npm pack --dry-run --json/);
 		assert.match(workflow, /verify-package-budget\.mjs/);
 		assert.match(workflow, /git status --porcelain --untracked-files=all/);

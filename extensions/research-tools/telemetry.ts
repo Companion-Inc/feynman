@@ -56,7 +56,11 @@ function createPostHogClient(config: ResearchTelemetryConfig): ResearchTelemetry
 	const fetchOnce: NonNullable<PostHogOptions["fetch"]> = async (url, options) => {
 		if (!transportFailed) {
 			try {
-				const response = await fetch(url, options as RequestInit);
+				// A short budget per send, so a slow network ends quietly instead of
+				// hitting posthog-node's 10s deadline, which logs to stderr.
+				const budget = AbortSignal.timeout(1500);
+				const signal = options.signal ? AbortSignal.any([options.signal as AbortSignal, budget]) : budget;
+				const response = await fetch(url, { ...(options as RequestInit), signal });
 				if (response.status >= 200 && response.status < 400) return response;
 			} catch {}
 			transportFailed = true;
