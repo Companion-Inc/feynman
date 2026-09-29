@@ -84,8 +84,8 @@
     "fast-xml-parser": "5.11.1",
     "pi-btw": "0.6.1",
     "pi-docparser": "4.0.0",
-    "pi-subagents": "0.71.0",
-    "pi-web-access": "0.31.0",
+    "pi-subagents": "0.73.1",
+    "pi-web-access": "0.33.0",
     "posthog-node": "^5.53.0"
   },
   "peerDependencies": {
@@ -115,5 +115,8 @@
   "author": "Advait Paliwal",
   "publishConfig": {
     "access": "public"
+  },
+  "overrides": {
+    "undici": "^8.10.2"
   }
 }
