@@ -320,12 +320,12 @@ if [ ! -x "$candidate_bundle/feynman" ]; then
   echo "Downloaded archive did not contain the expected executable: ${bundle_name}/feynman" >&2
   exit 1
 fi
-candidate_version="$("$candidate_bundle/feynman" --version | tail -n 1)"
+candidate_version="$(FEYNMAN_TELEMETRY=off "$candidate_bundle/feynman" --version | tail -n 1)"
 if [ "$candidate_version" != "$resolved_version" ]; then
   echo "Downloaded bundle version mismatch: expected ${resolved_version}, found ${candidate_version}." >&2
   exit 1
 fi
-"$candidate_bundle/feynman" --help >/dev/null
+FEYNMAN_TELEMETRY=off "$candidate_bundle/feynman" --help >/dev/null
 
 mkdir -p "$INSTALL_APP_DIR"
 mkdir -p "$INSTALL_BIN_DIR"
