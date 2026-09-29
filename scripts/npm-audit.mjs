@@ -1,15 +1,37 @@
 // `npm audit --omit=dev` that fails on every advisory except the ones below.
-// Each exception names why it cannot be fixed here and what removes it.
+// Each exception names why it cannot be fixed here, what removes it, and the
+// only install paths where it may appear.
 // Usage: node scripts/npm-audit.mjs [--prefix <dir>]
 import { spawnSync } from "node:child_process";
 
-const ALLOWED_ADVISORIES = {
-	// pi-subagents pins undici 8.10.0 exactly, and npm ignores Feynman's
-	// `overrides` when Feynman is installed as a dependency. pi-subagents only
-	// uses undici's HTTP proxy agent, not the WebSocket client this advisory is
-	// about. Remove once nicobailon/pi-subagents#2548 is released.
-	"GHSA-3wwx-pv8p-q78v": "undici 8.10.0 pinned by pi-subagents",
+// pi-subagents pins undici 8.10.0 exactly, and npm ignores Feynman's `overrides`
+// when Feynman is installed as a dependency, so npm installs keep that copy under
+// pi-subagents (Feynman's own undici dependency keeps every other package on a
+// patched one; the standalone installers apply the override). pi-subagents'
+// background runner installs it as the process-wide fetch and WebSocket, so
+// these apply to background subagent runs: denial of service from a malicious
+// server, plus retry, cache, cookie, dump-interceptor, and BalancedPool issues
+// in undici features the runner does not use. Remove once pi-subagents releases
+// nicobailon/pi-subagents#2548 (undici 8.10.2).
+const PI_SUBAGENTS_UNDICI = {
+	reason: "undici 8.10.0 pinned by pi-subagents",
+	nodes: /(^|\/)node_modules\/pi-subagents\/node_modules\/undici$/,
 };
+const ALLOWED_ADVISORIES = Object.fromEntries(
+	[
+		"GHSA-3wwx-pv8p-q78v",
+		"GHSA-pmjh-fq2x-6v4x",
+		"GHSA-r53p-7pc4-xj5r",
+		"GHSA-rfgv-xxqx-mfg5",
+		"GHSA-3xpg-4rpp-hhhm",
+		"GHSA-2jfj-6hjv-fm6j",
+		"GHSA-2gqq-gqf2-x968",
+		"GHSA-w293-vg96-wgc3",
+		"GHSA-8436-99hf-9mmv",
+		"GHSA-vp8m-p9jh-q5pm",
+		"GHSA-rx4f-c7p8-82vq",
+	].map((id) => [id, PI_SUBAGENTS_UNDICI]),
+);
 
 const result = spawnSync("npm", ["audit", "--omit=dev", "--json", ...process.argv.slice(2)], {
 	encoding: "utf8",
@@ -27,11 +49,16 @@ try {
 const blocking = [];
 const allowed = new Set();
 for (const [name, vulnerability] of Object.entries(report.vulnerabilities ?? {})) {
+	const nodes = vulnerability.nodes ?? [];
 	// Entries whose `via` is only package names inherit an advisory listed on another entry.
 	for (const via of vulnerability.via.filter((entry) => typeof entry === "object")) {
 		const id = String(via.url ?? "").split("/").pop();
-		if (ALLOWED_ADVISORIES[id]) allowed.add(`${id} (${ALLOWED_ADVISORIES[id]})`);
-		else blocking.push(`${name}: ${via.title} ${via.url} [${via.severity}]`);
+		const exception = ALLOWED_ADVISORIES[id];
+		if (exception && nodes.length > 0 && nodes.every((node) => exception.nodes.test(node))) {
+			allowed.add(`${id} (${exception.reason})`);
+		} else {
+			blocking.push(`${name}: ${via.title} ${via.url} [${via.severity}] at ${nodes.join(", ")}`);
+		}
 	}
 }
 
