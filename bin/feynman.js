@@ -40,4 +40,15 @@ if (process.argv.length === 3 && process.argv[2] === "--version") {
   process.exit(0);
 }
 
+// Pi is a peer dependency, as Pi requires of extension packages, and npm skips
+// peers when legacy-peer-deps is on.
+try {
+  import.meta.resolve("@earendil-works/pi-coding-agent");
+  import.meta.resolve("@earendil-works/pi-ai");
+} catch {
+  console.error("feynman could not find its Pi runtime (@earendil-works/pi-coding-agent), which npm skips when legacy-peer-deps is on.");
+  console.error("Reinstall with: npm install -g @companion-ai/feynman --legacy-peer-deps=false");
+  process.exit(1);
+}
+
 await import(pathToFileURL(resolve(here, "..", "dist", "index.js")).href);

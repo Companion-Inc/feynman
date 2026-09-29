@@ -79,8 +79,6 @@
   "dependencies": {
     "@clack/prompts": "^1.8.1",
     "@companion-ai/alpha-hub": "0.1.6",
-    "@earendil-works/pi-ai": "*",
-    "@earendil-works/pi-coding-agent": "*",
     "fast-xml-parser": "5.11.1",
     "pi-btw": "0.6.1",
     "pi-docparser": "4.0.0",
@@ -89,8 +87,8 @@
     "posthog-node": "^5.53.0"
   },
   "peerDependencies": {
-    "@earendil-works/pi-ai": "*",
-    "@earendil-works/pi-coding-agent": "*",
+    "@earendil-works/pi-ai": "0.99.1",
+    "@earendil-works/pi-coding-agent": "0.99.1",
     "@earendil-works/pi-tui": "*",
     "typebox": "*"
   },
