@@ -6,6 +6,11 @@ GitHub release notes are generated from the matching `## vX.Y.Z` section in this
 
 ## Unreleased
 
+## v0.5.15 - 2026-09-29
+
+- **`feynman model set` explains a model it cannot use.** "Model not available in Pi auth storage" gave no reason. It now says which applies: the provider has no credentials (with the `feynman model login` command to run), a local provider in `models.json` has no `apiKey` (Pi hides providers without one; a placeholder such as `"local"` is enough), or the ID is unknown (with close matches, for example `gpt-5.6` suggests `openai/gpt-5.6-terra`).
+- `feynman model set` with no model opens a picker of the available models instead of failing. `feynman model help` lists the model commands, an unknown model subcommand points to it, and `-h` works like `--help`.
+
 ## v0.5.14 - 2026-09-28
 
 - **The Windows installer no longer fails on slow networks (#309).** When usage telemetry could not reach PostHog quickly, the PostHog library printed a timeout to stderr, and Windows PowerShell treats stderr from the installer's `feynman --help` check as a failure. Each telemetry send now has a 1.5 s budget and ends quietly, so no command waits on telemetry (on a stalled network `feynman --help` took 11 s and printed two errors; it now takes about 2 s and prints nothing). The installers also run their checks with telemetry off and judge them by exit code.
