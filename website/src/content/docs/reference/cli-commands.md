@@ -52,6 +52,7 @@ Use `feynman alpha ...` rather than a global `alpha` binary so the bundled clien
 | --- | --- |
 | `feynman packages list` | Show core packages and optional package presets |
 | `feynman packages install <preset>` | Install an optional package preset |
+| `feynman packages remove <preset>` | Remove an installed optional package preset |
 | `feynman update [package]` | Update optional Pi packages you installed, or one of them; core packages update with Feynman |
 
 See [Package Stack](/docs/reference/package-stack) for the core packages and optional presets.

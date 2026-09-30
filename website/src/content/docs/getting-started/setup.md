@@ -78,7 +78,7 @@ Feynman ships with alphaXiv access, web access, document parsing, subagents, and
 - **memory**: preference and correction memory across research sessions
 - **hindsight**: Hindsight-backed memory; requires a Hindsight server or Hindsight Cloud account
 
-Skip this step and install later with `feynman packages install <preset>`. `feynman packages list` shows both.
+Skip this step and install later with `feynman packages install <preset>`; remove one with `feynman packages remove <preset>`. `feynman packages list` shows both.
 
 ## alphaXiv and preview
 
