@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { copyFileSync, existsSync, readFileSync, renameSync, rmSync } from "node:fs";
+import { constants, copyFileSync, existsSync, readFileSync, renameSync, rmSync } from "node:fs";
 import { resolve } from "node:path";
 
 import { getBootstrapStatePath } from "../config/paths.js";
@@ -44,6 +44,11 @@ export function ensureFeynmanAgentDir(appRoot: string, home: string, agentDir: s
 	}
 	const keybindingsPath = resolve(agentDir, "keybindings.json");
 	if (!existsSync(keybindingsPath)) {
-		copyFileSync(resolve(appRoot, ".feynman", "config", "keybindings.json"), keybindingsPath);
+		try {
+			copyFileSync(resolve(appRoot, ".feynman", "config", "keybindings.json"), keybindingsPath, constants.COPYFILE_EXCL);
+		} catch {
+			// Another Feynman start may be writing it (Windows reports EBUSY). Pi
+			// uses its default keys without the file, and the next start copies it.
+		}
 	}
 }
