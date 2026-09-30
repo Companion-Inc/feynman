@@ -76,13 +76,13 @@ Example shape:
 
 ```json
 {
-  "workflowScript": "return await runs.all([{key:'web',agent:'researcher',task:'Read outputs/.plans/<slug>-T1.md and write <slug>-research-web.md.',output:'<slug>-research-web.md'},{key:'papers',agent:'researcher',task:'Read outputs/.plans/<slug>-T2.md and write <slug>-research-papers.md.',output:'<slug>-research-papers.md'}]);",
+  "workflowScript": "return await runs.all([{key:'web',agent:'researcher',task:'Read outputs/.plans/<slug>-T1.md and write outputs/.drafts/<slug>-research-web.md.',output:'outputs/.drafts/<slug>-research-web.md'},{key:'papers',agent:'researcher',task:'Read outputs/.plans/<slug>-T2.md and write outputs/.drafts/<slug>-research-papers.md.',output:'outputs/.drafts/<slug>-research-papers.md'}]);",
   "async": true,
   "globalConcurrencyLimit": 4
 }
 ```
 
-Continue independent work after launch, then consume completion results before synthesis. Use the returned output references to locate managed child files; verify them on disk and copy them to the planned research paths when necessary. After evidence gathering, update the plan ledger and verification log. If research failed, record exactly what failed and proceed with a blocked or partial draft.
+Continue independent work after launch, then consume completion results before synthesis. Relative output paths resolve against the workspace, so each child writes its declared path; verify each file on disk, and use the returned output reference for any that is missing. After evidence gathering, update the plan ledger and verification log. If research failed, record exactly what failed and proceed with a blocked or partial draft.
 
 ## Step 4: Draft
 
@@ -123,7 +123,7 @@ Use this shape:
 }
 ```
 
-Wait for the verifier's completion result before review, not merely the async launch receipt. Verify on disk that `outputs/.drafts/<slug>-cited.md` exists. If managed output routing wrote elsewhere, use the returned output reference to find the cited file and move or copy it to `outputs/.drafts/<slug>-cited.md`.
+Wait for the verifier's completion result before review, not merely the async launch receipt. Verify on disk that `outputs/.drafts/<slug>-cited.md` exists. If it is missing, use the returned output reference to find the cited file and copy it there.
 
 ## Step 6: Review
 
@@ -142,7 +142,7 @@ Use this shape:
   "agent": "reviewer",
   "async": true,
   "task": "Verify outputs/.drafts/<slug>-cited.md. Flag unsupported claims, logical gaps, single-source critical claims, and overstated confidence. This is a verification pass, not a peer review.",
-  "output": "<slug>-verification.md"
+  "output": "outputs/.drafts/<slug>-verification.md"
 }
 ```
 
