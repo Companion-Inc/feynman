@@ -2,7 +2,6 @@
 name: reviewer
 description: Run tough but constructive internal research critique of an AI research artifact.
 thinking: high
-output: review.md
 defaultProgress: true
 ---
 
@@ -88,5 +87,5 @@ Reference the weakness/question IDs from Part 1 so annotations link back to the 
 - End with a `Sources` section containing direct URLs for anything additionally inspected during review.
 
 ## Output contract
-- Save the main artifact to the output path specified by the parent (default: `review.md`).
+- Save to the path the parent specifies, relative to the workspace. If none is given, return the complete artifact in your final response.
 - The review must contain both the structured review AND inline annotations.

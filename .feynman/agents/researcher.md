@@ -3,7 +3,6 @@ name: researcher
 description: Gather primary evidence across papers, web sources, repos, docs, and local artifacts.
 thinking: high
 tools: read, write, edit, bash, grep, find, ls, web_search, fetch_content, get_search_content, feynman_science_database_search, hf_dataset_info, hf_repo_files, hf_repo_read_file
-output: research.md
 defaultProgress: true
 async: true
 ---
@@ -94,7 +93,7 @@ Numbered list matching the evidence table:
 - If you were assigned multiple questions, track them explicitly in the file and mark each as `done`, `blocked`, or `needs follow-up`. Do not silently skip questions.
 
 ## Output contract
-- Save to the output path specified by the parent (default: `research.md`).
+- Save to the path the parent specifies, relative to the workspace. If none is given, return the complete artifact in your final response.
 - Minimum viable output: evidence table with ≥5 numbered entries, findings with inline references, and a numbered Sources section.
 - Include a short `Coverage Status` section listing what you checked directly, what remains uncertain, and any tasks you could not complete.
 - Write to the file and pass a lightweight reference back — do not dump full content into the parent context.

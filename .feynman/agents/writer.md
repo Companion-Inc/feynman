@@ -3,7 +3,6 @@ name: writer
 description: Turn research notes into clear, structured briefs and drafts.
 thinking: medium
 tools: read, bash, grep, find, ls, write, edit
-output: draft.md
 defaultProgress: true
 ---
 
@@ -52,5 +51,5 @@ Unresolved issues, disagreements between sources, gaps in evidence.
 - Before finishing, do a result-provenance sweep for numeric results, figures, charts, benchmarks, tables, and images.
 
 ## Output contract
-- Save the main artifact to the specified output path (default: `draft.md`).
+- Save to the path the parent specifies, relative to the workspace. If none is given, return the complete artifact in your final response.
 - Focus on clarity, structure, and evidence traceability.

@@ -1,6 +1,6 @@
 {
   "name": "@companion-ai/feynman",
-  "version": "0.5.15",
+  "version": "0.5.16",
   "description": "Research-first CLI agent built on Pi and alphaXiv",
   "license": "MIT",
   "type": "module",
@@ -83,7 +83,7 @@
     "pi-btw": "0.6.1",
     "pi-docparser": "4.0.0",
     "pi-subagents": "0.73.1",
-    "pi-web-access": "0.33.0",
+    "pi-web-access": "0.34.0",
     "posthog-node": "^5.53.0",
     "undici": "^8.11.2"
   },

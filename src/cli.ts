@@ -27,6 +27,7 @@ import { ensureFeynmanHome, getDefaultSessionDir, getFeynmanAgentDir, getFeynman
 import { getLastPiStderr, launchPiChat, runPi } from "./pi/launch.js";
 import {
 	installPiPackage,
+	removePiPackage,
 	listOptionalPackagePresets,
 	normalizeOptionalPackagePresetName,
 	resolvePackageSource,
@@ -350,13 +351,14 @@ async function handlePackagesCommand(subcommand: string | undefined, args: strin
 		return;
 	}
 
-	if (subcommand !== "install") {
-		throw new Error(`Unknown packages command: ${subcommand}`);
+	const remove = subcommand === "remove" || subcommand === "rm" || subcommand === "uninstall";
+	if (subcommand !== "install" && !remove) {
+		throw new Error(`Unknown packages command: ${subcommand}\nUse: feynman packages list, install <preset>, or remove <preset>.`);
 	}
 
 	const target = args[0];
 	if (!target) {
-		throw new Error(`Usage: feynman packages install <${listOptionalPackagePresets().map((preset) => preset.name).join("|")}>`);
+		throw new Error(`Usage: feynman packages ${remove ? "remove" : "install"} <${listOptionalPackagePresets().map((preset) => preset.name).join("|")}>`);
 	}
 
 	const presetName = normalizeOptionalPackagePresetName(target);
@@ -364,6 +366,14 @@ async function handlePackagesCommand(subcommand: string | undefined, args: strin
 		throw new Error(`Unknown package preset: ${target}`);
 	}
 	const source = resolvePackageSource(presetName);
+	if (remove) {
+		if (!configuredSources.has(source)) {
+			console.log(`${source} is not installed`);
+			return;
+		}
+		process.exitCode = await removePiPackage(piOptions, source);
+		return;
+	}
 	if (configuredSources.has(source)) {
 		console.log(`${source} already installed`);
 		return;

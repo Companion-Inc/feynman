@@ -17,8 +17,17 @@ const PI_SUBAGENTS_UNDICI = {
 	reason: "undici 8.10.0 pinned by pi-subagents",
 	nodes: /(^|\/)node_modules\/pi-subagents\/node_modules\/undici$/,
 };
-const ALLOWED_ADVISORIES = Object.fromEntries(
-	[
+// Pi 0.99.1's npm-shrinkwrap locks brace-expansion 5.0.9, and npm keeps a
+// dependency's shrinkwrap over Feynman's overrides. Pi expands brace patterns only
+// through minimatch for package resource filters and model patterns, both from
+// the user's own settings or flags. Remove once a Pi release ships 5.0.12.
+const PI_BRACE_EXPANSION = {
+	reason: "brace-expansion 5.0.9 locked by Pi's shrinkwrap",
+	nodes: /(^|\/)node_modules\/@earendil-works\/pi-coding-agent\/node_modules\/brace-expansion$/,
+};
+const ALLOWED_ADVISORIES = Object.fromEntries([
+	...["GHSA-q2hr-2g5m-vwhr", "GHSA-qhr7-859c-m2p7", "GHSA-6j4f-fj2g-mc7p"].map((id) => [id, PI_BRACE_EXPANSION]),
+	...[
 		"GHSA-3wwx-pv8p-q78v",
 		"GHSA-pmjh-fq2x-6v4x",
 		"GHSA-r53p-7pc4-xj5r",
@@ -31,7 +40,7 @@ const ALLOWED_ADVISORIES = Object.fromEntries(
 		"GHSA-vp8m-p9jh-q5pm",
 		"GHSA-rx4f-c7p8-82vq",
 	].map((id) => [id, PI_SUBAGENTS_UNDICI]),
-);
+]);
 
 const result = spawnSync("npm", ["audit", "--omit=dev", "--json", ...process.argv.slice(2)], {
 	encoding: "utf8",

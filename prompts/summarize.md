@@ -126,7 +126,7 @@ Use one async workflow with a stable key for each chunk and a concurrency limit 
 }
 ```
 
-Consume completion results before aggregation. `runs.all` returns an ordered array including ordinary child failures; inspect each `ok` and error. A validation or infrastructure failure can still fail the workflow. Use actual returned output/artifact references to locate child files, verify them on disk, and copy them to the expected chunk-summary paths when necessary. Record missing or failed chunks rather than treating an async launch receipt as a finished summary.
+Consume completion results before aggregation. `runs.all` returns an ordered array including ordinary child failures; inspect each `ok` and error. A validation or infrastructure failure can still fail the workflow. Relative output paths resolve against the workspace; verify each chunk summary on disk, and use the returned output reference for any that is missing. Record missing or failed chunks rather than treating an async launch receipt as a finished summary.
 
 ### 3d. Aggregate
 

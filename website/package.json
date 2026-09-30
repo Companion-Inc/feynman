@@ -41,8 +41,8 @@
     "hono": "4.13.7",
     "qs": "6.16.0",
     "express-rate-limit": "8.7.0",
-    "ip-address": "10.7.0",
-    "brace-expansion": "5.0.9",
+    "ip-address": "10.7.2",
+    "brace-expansion": "5.0.12",
     "postcss": "8.5.28",
     "router": {
       "path-to-regexp": "8.4.2"
@@ -54,7 +54,7 @@
     "js-yaml": "4.3.2",
     "nanoid": "3.3.18",
     "yaml": "2.9.0",
-    "fast-uri": "3.1.7",
+    "fast-uri": "3.1.8",
     "browserslist": "4.28.9",
     "sharp": "0.35.4",
     "svgo": "4.1.0"

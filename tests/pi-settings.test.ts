@@ -154,7 +154,7 @@ test("subagent defaults follow settingsPath, not HOME, authPath, or the Pi envir
 	}
 	const configPath = join(agentDir, "extensions", "subagent", "config.json");
 	assert.deepEqual(JSON.parse(readFileSync(configPath, "utf8")), {
-		missions: { enabled: false }, fleetView: false, asyncByDefault: true,
+		missions: { enabled: false }, fleetView: false, asyncByDefault: true, singleRunOutputBaseDir: ".",
 	});
 	assert.equal(statSync(configPath).mode & 0o777, 0o600);
 	assert.equal(existsSync(join(decoyDir, "extensions")), false);
@@ -170,7 +170,7 @@ test("subagent defaults preserve explicit custom values and complete config byte
 	t.after(() => rmSync(root, { recursive: true, force: true }));
 	const configPath = join(root, "extensions", "subagent", "config.json");
 	mkdirSync(join(root, "extensions", "subagent"), { recursive: true });
-	const original = '{"missions":{"enabled":true,"globalIndex":false},"fleetView":true,"asyncByDefault":false,"maxSubagentDepth":1}\n';
+	const original = '{"missions":{"enabled":true,"globalIndex":false},"fleetView":true,"asyncByDefault":false,"singleRunOutputBaseDir":"~/research-out","maxSubagentDepth":1}\n';
 	writeFileSync(configPath, original, { mode: 0o640 });
 	writeFileSync(join(root, "auth.json"), "{}\n");
 	await ensureFeynmanSettings(join(root, "settings.json"), bundledSettingsPath, appRoot, "medium", join(root, "auth.json"));
@@ -192,6 +192,7 @@ test("subagent defaults merge only missing fields while preserving nested config
 	assert.deepEqual(JSON.parse(readFileSync(configPath, "utf8")), {
 		missions: { directory: join(root, "custom-missions"), retainTerminal: 12, enabled: false },
 		asyncByDefault: false, asyncWidget: true, custom: { nested: ["preserved"] }, fleetView: false,
+		singleRunOutputBaseDir: ".",
 	});
 });
 
@@ -200,6 +201,7 @@ for (const invalid of [
 	'{"missions":null}', '{"missions":[]}', '{"missions":false}',
 	'{"missions":{"enabled":"false"}}', '{"missions":{"enabled":null}}',
 	'{"fleetView":0}', '{"fleetView":null}', '{"asyncByDefault":"true"}', '{"asyncByDefault":null}',
+	'{"singleRunOutputBaseDir":1}',
 ]) {
 	test(`subagent defaults reject invalid config without rewriting any settings: ${invalid}`, async (t) => {
 		const root = mkdtempSync(join(tmpdir(), "feynman-subagent-invalid-"));
@@ -305,7 +307,7 @@ test("concurrent Feynman starts share one subagent config instead of failing", a
 		ensureFeynmanSettings(settingsPath, resolve(".feynman", "settings.json"), process.cwd(), "medium", authPath),
 	]);
 	assert.deepEqual(JSON.parse(readFileSync(join(root, "agent", "extensions", "subagent", "config.json"), "utf8")), {
-		missions: { enabled: false }, fleetView: false, asyncByDefault: true,
+		missions: { enabled: false }, fleetView: false, asyncByDefault: true, singleRunOutputBaseDir: ".",
 	});
 });
 

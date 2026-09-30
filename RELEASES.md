@@ -6,6 +6,14 @@ GitHub release notes are generated from the matching `## vX.Y.Z` section in this
 
 ## Unreleased
 
+## v0.5.16 - 2026-09-30
+
+- **Subagent research files land in the workspace.** When a workflow gave a subagent a relative output path such as `outputs/.drafts/<slug>-research-web.md`, pi-subagents saved it under `~/.feynman/sessions/subagent-artifacts/outputs/<run>/` instead, so the lead agent could not find the research notes, citations, or verification it asked for (about one in seven installs running research workflows hit this in the last week). Relative subagent outputs now resolve against the workspace, the researcher, reviewer, verifier, and writer no longer default to generic file names such as `research.md`, and `/deepresearch` and `/lit` name every subagent file under `outputs/.drafts/`. If you set `singleRunOutputBaseDir` in `~/.feynman/agent/extensions/subagent/config.json`, Feynman keeps your value.
+- `feynman packages remove <preset>` (also `rm` and `uninstall`) removes an optional package such as `memory`.
+- On Windows, Feynman no longer fails to start when another Feynman start is copying `keybindings.json` (`EBUSY: resource busy or locked`).
+- pi-web-access 0.34.0: `fetch_content` falls back to your other fetch providers on Cloudflare "Just a moment..." pages, web tools start available on models such as DeepSeek without costing a prompt-cache miss, and its undici moves to 8.11.2.
+- Security: three brace-expansion advisories published on 2026-09-29 affect the 5.0.9 that Pi 0.99.1's shrinkwrap locks, which Feynman cannot override. Pi uses it only for package filters and model patterns from your own settings and flags; the next Pi release that ships 5.0.12 replaces it. pi-subagents has still not released its undici fix.
+
 ## v0.5.15 - 2026-09-29
 
 - **Pi 0.99.1, pinned.** Feynman accepted any Pi version, so npm installs picked up Pi 0.99.1 the day it was released, untested, and Pi 0.99 warns on every launch about how Feynman declared it. Feynman now runs on Pi 0.99.1, which adds MCP server support (`/mcp`), declared the way Pi asks, and pinned so new Pi releases arrive only after they pass Feynman's checks. If npm has `legacy-peer-deps` on, it skips Pi; `feynman` now says to reinstall with `--legacy-peer-deps=false` instead of failing on a missing package.

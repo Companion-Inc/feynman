@@ -204,6 +204,27 @@ test("unknown CLI flags point users to Feynman help", () => {
 	assert.match(`${result.stdout}\n${result.stderr}`, /Run `feynman help` to see available commands and flags/);
 });
 
+test("packages remove accepts rm and uninstall and skips presets that are not installed", () => {
+	const workingDir = mkdtempSync(join(tmpdir(), "feynman-packages-remove-cwd-"));
+	const homeDir = mkdtempSync(join(tmpdir(), "feynman-packages-remove-home-"));
+	const run = (args: string[]) =>
+		spawnSync(process.execPath, ["--import", "tsx", "src/index.ts", "--cwd", workingDir, "packages", ...args], {
+			cwd: process.cwd(),
+			encoding: "utf8",
+			env: { ...process.env, FEYNMAN_HOME: homeDir, FEYNMAN_TELEMETRY: "0", NO_COLOR: "1" },
+			maxBuffer: 1024 * 1024,
+		});
+
+	for (const command of ["remove", "rm", "uninstall"]) {
+		const result = run([command, "memory"]);
+		assert.equal(result.status, 0, result.stderr);
+		assert.match(result.stdout, /is not installed/);
+	}
+	const unknown = run(["prune"]);
+	assert.equal(unknown.status, 1);
+	assert.match(unknown.stderr, /Unknown packages command: prune\nUse: feynman packages list, install <preset>, or remove <preset>\./);
+});
+
 test("packages CLI hides removed UI and bulk extras", () => {
 	const workingDir = mkdtempSync(join(tmpdir(), "feynman-packages-cwd-"));
 	const homeDir = mkdtempSync(join(tmpdir(), "feynman-packages-home-"));

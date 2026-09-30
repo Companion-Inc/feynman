@@ -40,6 +40,10 @@ export async function installPiPackage(options: PiRuntimeOptions, source: string
 	return runPi(options, ["install", source], buildPiEnv(options));
 }
 
+export async function removePiPackage(options: PiRuntimeOptions, source: string): Promise<number> {
+	return runPi(options, ["remove", source], buildPiEnv(options));
+}
+
 export async function updatePiPackages(options: PiRuntimeOptions, source?: string): Promise<number> {
 	return runPi(options, source ? ["update", source] : ["update", "--extensions"], buildPiEnv(options));
 }

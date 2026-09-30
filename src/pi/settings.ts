@@ -118,7 +118,15 @@ function prepareSubagentDefaults(settingsPath: string) {
 			throw new Error(`Invalid subagent config at ${path}: ${key} must be a boolean. The file was not changed.`);
 		}
 	}
-	if (missions.enabled !== undefined && config.fleetView !== undefined && config.asyncByDefault !== undefined) {
+	if (config.singleRunOutputBaseDir !== undefined && typeof config.singleRunOutputBaseDir !== "string") {
+		throw new Error(`Invalid subagent config at ${path}: singleRunOutputBaseDir must be a string. The file was not changed.`);
+	}
+	if (
+		missions.enabled !== undefined &&
+		config.fleetView !== undefined &&
+		config.asyncByDefault !== undefined &&
+		config.singleRunOutputBaseDir !== undefined
+	) {
 		return undefined;
 	}
 	const next = {
@@ -126,6 +134,10 @@ function prepareSubagentDefaults(settingsPath: string) {
 		missions: { ...missions, enabled: missions.enabled ?? false },
 		fleetView: config.fleetView ?? false,
 		asyncByDefault: config.asyncByDefault ?? true,
+		// pi-subagents otherwise saves a relative `output` such as
+		// outputs/.drafts/x.md under the session's subagent-artifacts folder, where
+		// the lead agent never looks. "." resolves against Pi's cwd, the workspace.
+		singleRunOutputBaseDir: config.singleRunOutputBaseDir ?? ".",
 	};
 	return { path, original: existing?.source, content: `${JSON.stringify(next, null, 2)}\n` };
 }
