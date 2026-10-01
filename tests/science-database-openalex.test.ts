@@ -302,7 +302,9 @@ test("OpenAlex semantic searches are paced and a short 429 is retried once", asy
 test("OpenAlex does not wait out a long 429", async () => {
 	delete process.env.OPENALEX_API_KEY;
 	let calls = 0;
-	globalThis.fetch = async () => {
+	globalThis.fetch = async (input) => {
+		// The topic search falls back to Semantic Scholar; make that fail fast too.
+		if (new URL(String(input)).hostname !== "api.openalex.org") return new Response("down", { status: 503 });
 		calls += 1;
 		return new Response("Please retry in 30s", { status: 429, statusText: "Too Many Requests", headers: { "retry-after": "30" } });
 	};

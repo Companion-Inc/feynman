@@ -130,8 +130,8 @@ test("semanticscholar retries one 429 and then succeeds", async () => {
 test("semanticscholar stops after one retry and explains how to get a key", async () => {
 	delete process.env.SEMANTIC_SCHOLAR_API_KEY;
 	let calls = 0;
-	globalThis.fetch = async () => {
-		calls += 1;
+	globalThis.fetch = async (input) => {
+		if (new URL(String(input)).hostname === "api.semanticscholar.org") calls += 1;
 		return jsonResponse({ message: "Too Many Requests.", code: "429" }, 429, { "retry-after": "0" });
 	};
 
@@ -172,8 +172,8 @@ test("anonymous semanticscholar relevance search falls back to citation-sorted b
 test("keyed semanticscholar relevance search still fails after a 429", async () => {
 	process.env.SEMANTIC_SCHOLAR_API_KEY = "s2-test-key";
 	let calls = 0;
-	globalThis.fetch = async () => {
-		calls += 1;
+	globalThis.fetch = async (input) => {
+		if (new URL(String(input)).hostname === "api.semanticscholar.org") calls += 1;
 		return jsonResponse({ message: "Too Many Requests.", code: "429" }, 429, { "retry-after": "0" });
 	};
 
@@ -198,4 +198,57 @@ test("Semantic Scholar accepts the OpenAlex-style semantic: prefix and year flag
 	assert.deepEqual(parseSemanticScholarQuery("semantic: test-time compute scaling year_from=2024"), { query: "test-time compute scaling", year: "2024-" });
 	assert.deepEqual(parseSemanticScholarQuery("RLHF alternatives year_from=2020 year_to=2023"), { query: "RLHF alternatives", year: "2020-2023" });
 	assert.deepEqual(parseSemanticScholarQuery("attention is all you need"), { query: "attention is all you need" });
+});
+
+const openAlexWork = {
+	id: "https://openalex.org/W4406492615",
+	title: "Scaling LLM Test-Time Compute Optimally",
+	publication_year: 2024,
+	authorships: [],
+};
+
+test("a rate-limited Semantic Scholar search is answered from OpenAlex and says so", async () => {
+	delete process.env.SEMANTIC_SCHOLAR_API_KEY;
+	globalThis.fetch = async (input) => {
+		const url = new URL(String(input));
+		if (url.hostname === "api.semanticscholar.org") return jsonResponse({ message: "Too Many Requests" }, 429, { "retry-after": "0" });
+		return jsonResponse({ meta: { count: 1 }, results: [openAlexWork] });
+	};
+
+	const result = await searchTool().execute("s2-fallback", { source: "semanticscholar", query: "test-time compute scaling" });
+	const details = result.details as { fallbackNote?: string; results: Array<{ openalexId?: string }> };
+	assert.match(details.fallbackNote ?? "", /^Semantic Scholar was unavailable \(.*429.*\); these results are from OpenAlex\.$/);
+	assert.equal(details.results[0]?.openalexId, "W4406492615");
+	assert.ok(result.content[0]!.text.startsWith('{\n  "fallbackNote"'));
+});
+
+test("an overloaded OpenAlex topic search is answered from Semantic Scholar, but lookups are not", async () => {
+	delete process.env.SEMANTIC_SCHOLAR_API_KEY;
+	delete process.env.OPENALEX_API_KEY;
+	const hosts: string[] = [];
+	globalThis.fetch = async (input) => {
+		const url = new URL(String(input));
+		hosts.push(url.hostname);
+		if (url.hostname === "api.openalex.org") return new Response("Please retry in 30s", { status: 429, statusText: "Too Many Requests" });
+		return jsonResponse(bulkFixture);
+	};
+
+	const result = await searchTool().execute("oa-fallback", { source: "openalex", query: "semantic: test-time compute scaling year_from=2024" });
+	const details = result.details as { fallbackNote?: string; source: string; returned: number };
+	assert.match(details.fallbackNote ?? "", /^OpenAlex was unavailable \(OpenAlex request failed: 429/);
+	assert.equal(details.source, "semanticscholar");
+	assert.ok(details.returned > 0);
+
+	hosts.length = 0;
+	await assert.rejects(searchTool().execute("oa-lookup", { source: "openalex", query: "openalex_get_work:W4406492615" }), /OpenAlex request failed: 429/);
+	assert.deepEqual([...new Set(hosts)], ["api.openalex.org"]);
+});
+
+test("when both indexes are down the original error is reported", async () => {
+	delete process.env.SEMANTIC_SCHOLAR_API_KEY;
+	globalThis.fetch = async () => new Response("down", { status: 503, statusText: "Service Unavailable" });
+	await assert.rejects(
+		searchTool().execute("both-down", { source: "semanticscholar", query: "sparse autoencoders" }),
+		/api\.semanticscholar\.org request failed: 503/,
+	);
 });

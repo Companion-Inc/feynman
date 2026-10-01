@@ -6,6 +6,12 @@ GitHub release notes are generated from the matching `## vX.Y.Z` section in this
 
 ## Unreleased
 
+## v0.5.18 - 2026-09-30
+
+- **A rate-limited paper index no longer ends a research step.** When Semantic Scholar is rate-limited or down, a search is answered from OpenAlex, and an OpenAlex topic search that hits OpenAlex's anonymous rate limit or an outage is answered from Semantic Scholar. The result says first which index answered and why. Lookups by OpenAlex ID, DOI, author, venue, or citation still report the error, since the other index has no equivalent.
+- **alphaXiv tools answer when alphaXiv cannot.** If your alphaXiv login expired or alphaXiv does not respond, `alpha_search` returns OpenAlex semantic search results and `alpha_get_paper` returns the arXiv metadata and abstract for an arXiv ID, each marked as a fallback. Run `feynman alpha login` to get alphaXiv's reports back.
+- pi-web-access 0.35.0: OpenAI web search works when you signed in with ChatGPT (`feynman model login openai`), and Brave search keeps to its rate limits. The researcher is told to pass a search provider as a plain string, since some models sent `provider: "[\"parallel-mcp\"]"`, which `web_search` rejects; nicobailon/pi-web-access#491 makes `web_search` accept that form too.
+
 ## v0.5.17 - 2026-09-30
 
 - **`feynman model login openai` works again.** Since Pi 0.99, Sign in with ChatGPT needs a stable ID for the installation, which Feynman did not pass, so the login failed at once with "requires a device ID (UUID)". Feynman now shares the `deviceId` Pi's own `/login` keeps in `~/.feynman/agent/settings.json`.

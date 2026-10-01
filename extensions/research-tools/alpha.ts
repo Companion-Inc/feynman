@@ -13,6 +13,8 @@ import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { Type } from "typebox";
 
 import { extractPaperSections } from "./alpha-sections.js";
+import { searchArxiv } from "./science-database-arxiv.js";
+import { searchOpenAlex } from "./science-database-openalex.js";
 
 function formatText(value: unknown): string {
 	if (typeof value === "string") return value;
@@ -21,11 +23,23 @@ function formatText(value: unknown): string {
 
 // alphaXiv's API has changed without notice before; when a call fails, point
 // the model at the other paper sources instead of leaving it on a broken tool.
-async function withPaperFallback<T>(run: () => Promise<T>): Promise<T> {
+const ARXIV_ID = /(?:^|arxiv\.org\/(?:abs|pdf)\/|alphaxiv\.org\/(?:abs|overview)\/)(\d{4}\.\d{4,5}(?:v\d+)?|[a-z-]+(?:\.[A-Z]{2})?\/\d{7}(?:v\d+)?)/i;
+
+// When alphaXiv does not answer (expired login, outage), answer from another
+// paper source and say so first, instead of failing the research step.
+async function withPaperFallback<T>(
+	run: () => Promise<T>,
+	fallback?: { source: string; run: () => Promise<Record<string, unknown>> },
+): Promise<T | Record<string, unknown>> {
 	try {
 		return await run();
 	} catch (error) {
 		const message = (error instanceof Error ? error.message : String(error)).replace("`alpha login`", "`feynman alpha login`");
+		if (fallback) {
+			try {
+				return { fallbackNote: `alphaXiv did not answer (${message}); these results are from ${fallback.source}.`, ...(await fallback.run()) };
+			} catch {}
+		}
 		throw new Error(
 			`${message}\nalphaXiv did not answer this call. Use feynman_science_database_search (source "arxiv" or "semanticscholar") or fetch_content on https://arxiv.org/abs/<id> instead.`,
 		);
@@ -65,7 +79,10 @@ export function registerAlphaTools(pi: ExtensionAPI, signedIn = isLoggedIn()): v
 			),
 		}),
 		async execute(_toolCallId, params) {
-			const result = await withPaperFallback(() => searchPapers(params.query, params.mode?.trim() || "semantic"));
+			const result = await withPaperFallback(() => searchPapers(params.query, params.mode?.trim() || "semantic"), {
+				source: "OpenAlex semantic search",
+				run: () => searchOpenAlex({ source: "openalex", query: `semantic: ${params.query}`, limit: 10 }),
+			});
 			return { content: [{ type: "text", text: formatText(result) }], details: result };
 		},
 	});
@@ -87,7 +104,14 @@ export function registerAlphaTools(pi: ExtensionAPI, signedIn = isLoggedIn()): v
 			sections: Type.Optional(paperSectionsSchema),
 		}),
 		async execute(_toolCallId, params) {
-			const result = await withPaperFallback(() => getPaper(params.paper, { fullText: params.fullText }));
+			const arxivId = ARXIV_ID.exec(params.paper.trim())?.[1];
+			const result = await withPaperFallback(() => getPaper(params.paper, { fullText: params.fullText }), arxivId ? {
+				source: "arXiv metadata and abstract (no full text or sections)",
+				run: () => searchArxiv({ query: arxivId }),
+			} : undefined);
+			if ("fallbackNote" in result) {
+				return { content: [{ type: "text", text: formatText(result) }], details: result };
+			}
 			const extracted = extractPaperSections(result.content, params.section, params.sections);
 			const filteredResult = extracted.requested.length
 				? {

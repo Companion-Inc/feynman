@@ -380,19 +380,54 @@ async function searchSemanticScholar(params: ScienceDatabaseSearchParams): Promi
 	};
 }
 
+// OpenAlex lookups by ID, DOI, author, venue, or citation have no Semantic
+// Scholar equivalent; only plain topic searches fall back.
+const OPENALEX_LOOKUP_QUERY =
+	/^(?:openalex_\w+|rate-limit|authors?|author-search|sources?|venues?|citations?|references?|work|detail)(?::|\s|$)|^(?:W\d+|doi:\s*10\.|10\.\S+\/)/i;
+
+function isIndexUnavailable(error: unknown): boolean {
+	if (error instanceof ScienceDatabaseRequestError) return error.status === 429 || error.status >= 500;
+	return error instanceof Error && /^OpenAlex request failed: (?:429|5\d\d)\b/.test(error.message);
+}
+
+// A rate-limited or overloaded index should not end a research step: answer a
+// topic search from the other general index, and say so first in the result.
+async function withIndexFallback(
+	run: () => Promise<Record<string, unknown>>,
+	fallback: (() => Promise<Record<string, unknown>>) | undefined,
+	describe: (reason: string) => string,
+): Promise<Record<string, unknown>> {
+	try {
+		return await run();
+	} catch (error) {
+		if (!fallback || !isIndexUnavailable(error)) throw error;
+		let result: Record<string, unknown>;
+		try {
+			result = await fallback();
+		} catch {
+			throw error;
+		}
+		return { fallbackNote: describe(error instanceof Error ? error.message : String(error)), ...result };
+	}
+}
+
 async function scienceDatabaseSearch(params: ScienceDatabaseSearchParams): Promise<Record<string, unknown>> {
 	if (params.source === "arxiv") return searchArxiv(params);
 	if (params.source === "biorxiv") return searchPreprints(params, "biorxiv");
 	if (params.source === "medrxiv") return searchPreprints(params, "medrxiv");
 	if (params.source === "pubmed") return searchPubMed(params);
 	if (params.source === "crossref") return searchCrossref(params);
-	if (params.source === "semanticscholar") return searchSemanticScholar(params);
+	const openAlex = () => searchOpenAlex({ limit: params.limit, query: params.query, source: "openalex" });
+	const semanticScholar = () => searchSemanticScholar({ ...params, source: "semanticscholar" });
+	if (params.source === "semanticscholar") {
+		return withIndexFallback(semanticScholar, openAlex, (reason) => `Semantic Scholar was unavailable (${reason}); these results are from OpenAlex.`);
+	}
 	if (params.source === "openalex") {
-		return searchOpenAlex({
-			limit: params.limit,
-			query: params.query,
-			source: params.source,
-		});
+		return withIndexFallback(
+			openAlex,
+			OPENALEX_LOOKUP_QUERY.test(params.query.trim()) ? undefined : semanticScholar,
+			(reason) => `OpenAlex was unavailable (${reason}); these results are from Semantic Scholar.`,
+		);
 	}
 	return searchEuropePmc(params);
 }
