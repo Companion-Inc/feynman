@@ -1,7 +1,6 @@
-import { readFileSync } from "node:fs";
-
 import { getEnvApiKey } from "@earendil-works/pi-ai/compat";
 
+import { readJsonFile } from "../config/json-file.js";
 import { createModelRuntime } from "./registry.js";
 
 type ModelRecord = {
@@ -391,7 +390,7 @@ export async function getSupportedModelRecords(authPath: string): Promise<ModelR
 function readExpiredOAuthProviders(authPath: string): Set<string> {
 	const expired = new Set<string>();
 	try {
-		const parsed = JSON.parse(readFileSync(authPath, "utf8")) as Record<string, unknown>;
+		const parsed = readJsonFile(authPath) as Record<string, unknown>;
 		for (const [provider, credential] of Object.entries(parsed)) {
 			if (!credential || typeof credential !== "object") continue;
 			const typedCredential = credential as { type?: unknown; expires?: unknown };
