@@ -15,7 +15,7 @@ import {
 	shouldRunInteractiveSetup,
 } from "../src/cli.js";
 import { buildModelStatusSnapshotFromRecords, choosePreferredModelRecord, chooseRecommendedModel, getAvailableModelRecords, isProClassModelSpec } from "../src/model/catalog.js";
-import { isLocalModelProvider, resolveModelProviderForCommand, setDefaultModelSpec } from "../src/model/commands.js";
+import { getOrCreateDeviceId, isLocalModelProvider, resolveModelProviderForCommand, setDefaultModelSpec } from "../src/model/commands.js";
 import { createModelRegistry } from "../src/model/registry.js";
 import { canonicalizeModelSpec, parseModelSpec } from "../src/pi/settings.js";
 
@@ -448,6 +448,17 @@ test("model help lists model commands, and -h is an alias for --help", () => {
 	const shortHelp = run(["-h"]);
 	assert.equal(shortHelp.status, 0);
 	assert.match(shortHelp.stdout, /feynman model list/);
+});
+
+test("OAuth login reuses one device ID stored in the agent settings", () => {
+	const authPath = createAuthPath({});
+	const settingsPath = join(dirname(authPath), "settings.json");
+	writeFileSync(settingsPath, JSON.stringify({ defaultProvider: "openai", defaultModel: "gpt-5.6-terra" }));
+
+	const first = getOrCreateDeviceId(authPath);
+	assert.match(first, /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
+	assert.equal(getOrCreateDeviceId(authPath), first);
+	assert.deepEqual(JSON.parse(readFileSync(settingsPath, "utf8")), { defaultProvider: "openai", defaultModel: "gpt-5.6-terra", deviceId: first });
 });
 
 test("resolveModelProviderForCommand falls back to API-key providers when OAuth is unavailable", async () => {

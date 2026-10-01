@@ -1,10 +1,12 @@
 import type { AuthEvent, AuthPrompt } from "@earendil-works/pi-ai";
 import { readFileSync, writeFileSync } from "node:fs";
 import { exec as execCallback } from "node:child_process";
+import { randomUUID } from "node:crypto";
+import { dirname, resolve } from "node:path";
 import { promisify } from "node:util";
 
 import { readJson } from "../pi/settings.js";
-import { promptChoice, promptSelect, promptText, type PromptSelectOption } from "../setup/prompts.js";
+import { promptChoice, promptSecret, promptSelect, promptText, validateApiKeyInput, type PromptSelectOption } from "../setup/prompts.js";
 import { openUrl } from "../system/open-url.js";
 import { printInfo, printSection, printSuccess, printWarning } from "../ui/terminal.js";
 import {
@@ -741,7 +743,7 @@ async function configureApiKeyProvider(authPath: string, providerId?: string): P
 		printInfo(`Tip: to avoid writing secrets to disk, set ${provider.envVar} in your shell or .env.`);
 	}
 
-	const apiKey = await promptText("Paste API key (leave empty to use env var instead)", "");
+	const apiKey = await promptSecret("Paste API key (leave empty to use env var instead)", undefined, validateApiKeyInput);
 	if (!apiKey) {
 		if (provider.envVar) {
 			printInfo(`Set ${provider.envVar} and rerun setup (or run \`feynman model list\`).`);
@@ -860,6 +862,17 @@ export async function authenticateModelProvider(authPath: string, settingsPath?:
 	return false;
 }
 
+// Sign in with ChatGPT sends a stable installation ID. Pi's own /login keeps it
+// as `deviceId` in the agent settings.json; share that one.
+export function getOrCreateDeviceId(authPath: string): string {
+	const settingsPath = resolve(dirname(authPath), "settings.json");
+	const settings = readJson(settingsPath);
+	if (typeof settings.deviceId === "string" && settings.deviceId) return settings.deviceId;
+	const deviceId = randomUUID();
+	writeFileSync(settingsPath, `${JSON.stringify({ ...settings, deviceId }, null, 2)}\n`, "utf8");
+	return deviceId;
+}
+
 export async function loginModelProvider(authPath: string, providerId?: string, settingsPath?: string): Promise<boolean> {
 	if (providerId) {
 		const resolvedProvider = await resolveModelProviderForCommand(authPath, providerId);
@@ -901,7 +914,13 @@ export async function loginModelProvider(authPath: string, providerId?: string, 
 					prompt.signal,
 				);
 			}
-			return promptText(prompt.message, "", prompt.placeholder, prompt.signal);
+			if (prompt.type === "secret") {
+				return promptSecret(prompt.message, prompt.signal);
+			}
+			// An empty answer here fails the login with "Missing authorization code";
+			// keep asking, since the browser callback can still finish meanwhile.
+			const required = prompt.type === "manual_code" ? "Paste the redirect URL or code, or finish signing in in the browser." : undefined;
+			return promptText(prompt.message, "", prompt.placeholder, prompt.signal, required);
 		},
 		notify: (event: AuthEvent) => {
 			if (event.type === "auth_url") {
@@ -928,7 +947,7 @@ export async function loginModelProvider(authPath: string, providerId?: string, 
 			}
 		},
 		signal: abortController.signal,
-	});
+	}, { getDeviceId: () => getOrCreateDeviceId(authPath) });
 
 	printSuccess(`Model provider login complete: ${provider.id}`);
 
