@@ -6,6 +6,13 @@ GitHub release notes are generated from the matching `## vX.Y.Z` section in this
 
 ## Unreleased
 
+## v0.5.19 - 2026-10-01
+
+- **Word drafts open without LibreOffice.** `document_parse` needs LibreOffice for `.docx` files, which most machines lack, so reviewing a thesis or draft in Word format failed. When LibreOffice is missing, Feynman now reads the document's paragraph text directly from the `.docx` and says so; install LibreOffice for page layout, tables, footnotes, and images.
+- `feynman_science_database_search` accepts the `"null"` some models send for an omitted `sort` or `limit`, which failed validation before the search ran.
+- **Pi 0.99.2** (faster prompt submission in long sessions; saved default models with extension providers load reliably), **pi-subagents 0.74.0**, and **pi-btw 0.7.0**. pi-subagents now ships the patched undici 8.10.2, so the undici security exceptions and Feynman's own undici pin are gone. It removed the `workflowScript` parameter; `/deepresearch` and `/summarize` now write the workflow script to `outputs/.plans/<slug>-workflow.js` and run it by path. Its other new form, an inline ```` ```js workflow ```` block, failed in testing when Claude put the block in its hidden reasoning, while a script file worked with every model, and the file stays next to the plan as a record of the run. Subagent children also follow the project's trust setting, and `/reload` no longer stops running background workflows.
+- Security: Pi 0.99.2 still locks brace-expansion 5.0.9; the exception for it stays until Pi ships 5.0.12.
+
 ## v0.5.18 - 2026-09-30
 
 - **A rate-limited paper index no longer ends a research step.** When Semantic Scholar is rate-limited or down, a search is answered from OpenAlex, and an OpenAlex topic search that hits OpenAlex's anonymous rate limit or an outage is answered from Semantic Scholar. The result says first which index answered and why. Lookups by OpenAlex ID, DOI, author, venue, or citation still report the error, since the other index has no equivalent.
