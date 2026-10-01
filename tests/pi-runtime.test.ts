@@ -10,6 +10,7 @@ import {
 	buildPiArgs,
 	buildPiEnv,
 	ensureFeynmanCommandShim,
+	findWindowsBash,
 	ensureFeynmanWorkspaceScaffold,
 	getFeynmanCommandShimDir,
 	getFeynmanPackageSources,
@@ -264,4 +265,28 @@ test("resolveBundledAlphaCliPath prefers package-local alpha", () => {
 	mkdirSync(join(appRoot, "node_modules", "@companion-ai", "alpha-hub", "bin"), { recursive: true });
 	writeFileSync(packageLocalAlpha, "", "utf8");
 	assert.equal(resolveBundledAlphaCliPath(appRoot), packageLocalAlpha);
+});
+
+test("findWindowsBash finds per-user Git for Windows installs that Pi misses", () => {
+	const user = "C:\\Users\\ada\\AppData\\Local";
+	const perUserBash = `${user}\\Programs\\Git\\bin\\bash.exe`;
+	const find = (env: NodeJS.ProcessEnv, files: string[]) => findWindowsBash(env, (path) => files.includes(path));
+
+	assert.deepEqual(
+		find({ ProgramFiles: "C:\\Program Files", PATH: "C:\\Windows" }, ["C:\\Program Files\\Git\\bin\\bash.exe"]),
+		{ path: "C:\\Program Files\\Git\\bin\\bash.exe" },
+	);
+	assert.deepEqual(find({ PATH: "C:\\msys64\\usr\\bin" }, ["C:\\msys64\\usr\\bin\\bash.exe"]), { path: "C:\\msys64\\usr\\bin\\bash.exe" });
+	// The Git installer puts only Git\cmd (or Git\mingw64\bin) on PATH.
+	for (const gitDir of [`${user}\\Programs\\Git\\cmd`, `${user}\\Programs\\Git\\mingw64\\bin`]) {
+		assert.deepEqual(find({ Path: `C:\\Windows;${gitDir}` }, [`${gitDir}\\git.exe`, perUserBash]), {
+			path: perUserBash,
+			addDir: `${user}\\Programs\\Git\\bin`,
+		});
+	}
+	assert.deepEqual(find({ PATH: "C:\\Windows", LOCALAPPDATA: user }, [perUserBash]), {
+		path: perUserBash,
+		addDir: `${user}\\Programs\\Git\\bin`,
+	});
+	assert.equal(find({ PATH: "C:\\Windows", LOCALAPPDATA: user, ProgramFiles: "C:\\Program Files" }, []), undefined);
 });

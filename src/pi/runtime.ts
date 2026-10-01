@@ -1,6 +1,6 @@
 import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
-import { delimiter, dirname, resolve } from "node:path";
+import { delimiter, dirname, resolve, win32 } from "node:path";
 
 import {
 	BROWSER_FALLBACK_PATHS,
@@ -149,6 +149,35 @@ export function buildPiArgs(options: PiRuntimeOptions): string[] {
 	return args;
 }
 
+// Pi looks for Git Bash only under Program Files and for bash.exe on PATH. A
+// per-user Git for Windows install (%LOCALAPPDATA%\Programs\Git) puts only
+// Git\cmd on PATH, so Pi reports "No bash shell found" although Git Bash is
+// installed. `addDir` is the Git\bin directory to add to Pi's PATH in that case.
+export function findWindowsBash(
+	env: NodeJS.ProcessEnv = process.env,
+	exists: (path: string) => boolean = existsSync,
+): { path: string; addDir?: string } | undefined {
+	const pathDirs = (env.PATH ?? env.Path ?? "").split(";").filter(Boolean);
+	const known = [env.ProgramFiles, env["ProgramFiles(x86)"]]
+		.filter((dir): dir is string => Boolean(dir))
+		.map((dir) => win32.join(dir, "Git", "bin", "bash.exe"));
+	const found = [...known, ...pathDirs.map((dir) => win32.join(dir, "bash.exe"))].find(exists);
+	if (found) return { path: found };
+	const gitRoots = [
+		// git.exe lives in Git\cmd or Git\mingw64\bin.
+		...pathDirs.filter((dir) => exists(win32.join(dir, "git.exe"))).flatMap((dir) => [win32.dirname(dir), win32.dirname(win32.dirname(dir))]),
+		...(env.LOCALAPPDATA ? [win32.join(env.LOCALAPPDATA, "Programs", "Git")] : []),
+	];
+	for (const root of gitRoots) {
+		const bash = win32.join(root, "bin", "bash.exe");
+		if (exists(bash)) return { path: bash, addDir: win32.join(root, "bin") };
+	}
+	return undefined;
+}
+
+export const WINDOWS_BASH_MISSING_NOTICE =
+	"No Bash found: Feynman runs shell commands with Bash, so they will fail. Install Git for Windows (https://git-scm.com/download/win), or set shellPath in ~/.feynman/agent/settings.json to another bash.exe.";
+
 export function buildPiEnv(options: PiRuntimeOptions, executables?: ResolvedExecutables): NodeJS.ProcessEnv {
 	const binPath = [getFeynmanCommandShimDir(options.feynmanAgentDir), resolve(options.appRoot, "node_modules", ".bin")].join(delimiter);
 	const pandocPath = process.env.PANDOC_PATH ?? executables?.pandoc ?? resolveExecutable("pandoc", PANDOC_FALLBACK_PATHS);
@@ -157,7 +186,9 @@ export function buildPiEnv(options: PiRuntimeOptions, executables?: ResolvedExec
 		process.env.PUPPETEER_EXECUTABLE_PATH ?? executables?.browser ?? resolveExecutable("google-chrome", BROWSER_FALLBACK_PATHS);
 	return {
 		...process.env,
-		PATH: `${binPath}${delimiter}${process.env.PATH ?? ""}`,
+		PATH: [binPath, process.env.PATH ?? "", process.platform === "win32" ? findWindowsBash()?.addDir : undefined]
+			.filter(Boolean)
+			.join(delimiter),
 		FEYNMAN_VERSION: options.feynmanVersion,
 		FEYNMAN_NODE_EXECUTABLE: process.execPath,
 		FEYNMAN_BIN_PATH: getFeynmanCliBinPath(options.appRoot),

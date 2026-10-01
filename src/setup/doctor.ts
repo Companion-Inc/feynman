@@ -7,7 +7,7 @@ import { verifyAlphaAuthStatus } from "../alpha-auth-status.js";
 import { formatPiWebAccessDoctorLines, getPiWebAccessStatus } from "../pi/web-access.js";
 import { BROWSER_FALLBACK_PATHS, PANDOC_FALLBACK_PATHS, resolveExecutable } from "../system/executables.js";
 import { readJson } from "../pi/settings.js";
-import { validatePiInstallation } from "../pi/runtime.js";
+import { findWindowsBash, validatePiInstallation, WINDOWS_BASH_MISSING_NOTICE } from "../pi/runtime.js";
 import { isTelemetryDisabled } from "../telemetry/posthog.js";
 import { printInfo, printPanel, printSection } from "../ui/terminal.js";
 import { getCurrentModelSpec } from "../model/commands.js";
@@ -201,6 +201,10 @@ export async function runDoctor(options: DoctorOptions): Promise<void> {
 		}
 	}
 	console.log(`pandoc: ${pandocPath ?? "missing"}`);
+	if (process.platform === "win32") {
+		const shellPath = settings.shellPath;
+		console.log(`bash: ${typeof shellPath === "string" ? `${shellPath} (shellPath)` : findWindowsBash()?.path ?? `missing. ${WINDOWS_BASH_MISSING_NOTICE}`}`);
+	}
 	console.log(`browser preview runtime: ${browserPath ?? "missing"}`);
 	for (const line of formatPiWebAccessDoctorLines()) {
 		console.log(line);
