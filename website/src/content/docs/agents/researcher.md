@@ -11,7 +11,7 @@ The researcher is Feynman's evidence-gathering subagent. It searches paper datab
 
 The researcher receives a task brief from a workflow, searches broadly, then narrows using the terminology and names it finds. It runs 2–4 reworded queries for each question and merges the results instead of trusting one query's ranking.
 
-For broad deep research and literature review tasks, workflow prompts can run several researchers in parallel through one async `workflowScript` using `await runs.all([{key, agent, task, output}, ...])`, each covering a different angle. The lead agent consumes the ordered results and verifies the declared output files before synthesis. Narrow tasks skip the researcher and stay lead-owned.
+For broad deep research and literature review tasks, workflow prompts can run several researchers in parallel through one async workflow script, `outputs/.plans/<slug>-workflow.js`, using `await runs.all([{key, agent, task, output}, ...])` and run with `subagent({ workflow: "./outputs/.plans/<slug>-workflow.js" })`, each covering a different angle. The lead agent consumes the ordered results and verifies the declared output files before synthesis. Narrow tasks skip the researcher and stay lead-owned.
 
 ## Tools
 

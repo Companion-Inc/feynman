@@ -68,18 +68,23 @@ If subagents were chosen:
 - Keep `subagent` tool-call JSON small and valid.
 - Do not place multi-paragraph instructions inside the `subagent` JSON.
 - Use only supported `subagent` keys. Do not add extra keys such as `artifacts` unless the tool schema explicitly exposes them.
-- Use one async `workflowScript` with `await runs.all(...)` for parallel evidence gathering. Each item needs a unique stable `key`, plus its agent, short task, and output path. Set `globalConcurrencyLimit: 4` on the outer call.
+- For parallel evidence gathering, write a workflow script that returns `await runs.all(...)` to `outputs/.plans/<slug>-workflow.js` with the write tool. After the write succeeds, call `subagent` with `workflow: "./outputs/.plans/<slug>-workflow.js"`, `async: true`, and `globalConcurrencyLimit: 4`. Each item needs a unique stable `key`, plus its agent, short task, and output path. Do not pass the script text inside the tool call.
 - Read the ordered result array and record each child's `ok`, error, and returned output/artifact paths. Ordinary child failures are collected by `runs.all`; validation or infrastructure failure can still fail the workflow. Do not assume every output exists.
 - Prefer broad guidance such as "use paper search and web search"; if a PDF parser or paper fetch fails, the researcher must continue from metadata, abstracts, and web sources and mark PDF parsing as blocked.
 
-Example shape:
+Example shape: `outputs/.plans/<slug>-workflow.js` contains
+
+```js
+return await runs.all([
+  { key: "web", agent: "researcher", task: "Read outputs/.plans/<slug>-T1.md and write outputs/.drafts/<slug>-research-web.md.", output: "outputs/.drafts/<slug>-research-web.md" },
+  { key: "papers", agent: "researcher", task: "Read outputs/.plans/<slug>-T2.md and write outputs/.drafts/<slug>-research-papers.md.", output: "outputs/.drafts/<slug>-research-papers.md" },
+]);
+```
+
+and the `subagent` call is:
 
 ```json
-{
-  "workflowScript": "return await runs.all([{key:'web',agent:'researcher',task:'Read outputs/.plans/<slug>-T1.md and write outputs/.drafts/<slug>-research-web.md.',output:'outputs/.drafts/<slug>-research-web.md'},{key:'papers',agent:'researcher',task:'Read outputs/.plans/<slug>-T2.md and write outputs/.drafts/<slug>-research-papers.md.',output:'outputs/.drafts/<slug>-research-papers.md'}]);",
-  "async": true,
-  "globalConcurrencyLimit": 4
-}
+{ "workflow": "./outputs/.plans/<slug>-workflow.js", "async": true, "globalConcurrencyLimit": 4 }
 ```
 
 Continue independent work after launch, then consume completion results before synthesis. Relative output paths resolve against the workspace, so each child writes its declared path; verify each file on disk, and use the returned output reference for any that is missing. After evidence gathering, update the plan ledger and verification log. If research failed, record exactly what failed and proceed with a blocked or partial draft.
