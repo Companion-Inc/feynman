@@ -300,3 +300,16 @@ test("a failed database request names the service that failed", async () => {
 		globalThis.fetch = originalFetch;
 	}
 });
+
+test("science search accepts the \"null\" some models send for omitted optional fields", async () => {
+	const { validateToolArguments } = await import("@earendil-works/pi-ai");
+	const tools = new Map<string, { prepareArguments: (args: unknown) => unknown; parameters: unknown; name: string }>();
+	registerScienceDatabaseTools({ registerTool: (tool: never) => tools.set((tool as { name: string }).name, tool), on: () => () => {} } as never);
+	const tool = tools.get("feynman_science_database_search")!;
+	const validate = (args: Record<string, unknown>) =>
+		validateToolArguments(tool as never, { type: "toolCall", id: "t", name: tool.name, arguments: tool.prepareArguments(args) as never });
+
+	assert.deepEqual(validate({ source: "openalex", query: "x", sort: "null" }), { source: "openalex", query: "x" });
+	assert.deepEqual(validate({ source: "pubmed", query: "x", sort: " Relevance ", limit: "5" }), { source: "pubmed", query: "x", sort: "relevance", limit: 5 });
+	assert.throws(() => validate({ source: "pubmed", query: "x", sort: "newest" }), /sort/);
+});
