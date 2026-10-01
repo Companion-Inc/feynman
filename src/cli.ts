@@ -40,7 +40,7 @@ import {
 	readJson,
 	type ThinkingLevel,
 } from "./pi/settings.js";
-import { BUNDLED_PI_PACKAGES, buildPiEnv, type PiRuntimeOptions } from "./pi/runtime.js";
+import { BUNDLED_PI_PACKAGES, buildPiEnv, findWindowsBash, WINDOWS_BASH_MISSING_NOTICE, type PiRuntimeOptions } from "./pi/runtime.js";
 import { getConfiguredServiceTier, normalizeServiceTier, setConfiguredServiceTier } from "./model/service-tier.js";
 import {
 	authenticateModelProvider,
@@ -834,6 +834,12 @@ async function runMain(input: { here: string; appRoot: string; feynmanVersion: s
 		const providerId = effectiveSpec?.split("/")[0] ?? "";
 		if (effectiveSpec && isLocalModelProvider(feynmanAuthPath, providerId)) {
 			preLaunchNotice = buildLocalModelWorkflowNotice(effectiveSpec, command);
+		}
+	}
+	if (process.platform === "win32" && mode !== "rpc" && mode !== "json" && process.stdout.isTTY) {
+		const shellPath = readJson(feynmanSettingsPath).shellPath;
+		if (typeof shellPath !== "string" && !findWindowsBash()) {
+			preLaunchNotice = [preLaunchNotice, WINDOWS_BASH_MISSING_NOTICE].filter(Boolean).join("\n");
 		}
 	}
 

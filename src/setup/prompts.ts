@@ -5,6 +5,7 @@ import {
 	isCancel,
 	multiselect as clackMultiselect,
 	outro as clackOutro,
+	password as clackPassword,
 	select as clackSelect,
 	text as clackText,
 	type Option,
@@ -66,6 +67,7 @@ export async function promptText(
 	defaultValue = "",
 	placeholder?: string,
 	signal?: AbortSignal,
+	requiredMessage?: string,
 ): Promise<string> {
 	ensureInteractiveTerminal();
 
@@ -75,11 +77,32 @@ export async function promptText(
 			initialValue: defaultValue || undefined,
 			placeholder: placeholder ?? (defaultValue || undefined),
 			signal,
+			validate: requiredMessage ? (input) => (input?.trim() ? undefined : requiredMessage) : undefined,
 		}),
 	);
 
 	const normalized = String(value ?? "").trim();
 	return normalized || defaultValue;
+}
+
+export async function promptSecret(
+	question: string,
+	signal?: AbortSignal,
+	validate?: (value: string) => string | undefined,
+): Promise<string> {
+	ensureInteractiveTerminal();
+	const value = guardCancelled(
+		await clackPassword({ message: question, signal, validate: validate ? (input) => validate((input ?? "").trim()) : undefined }),
+	);
+	return String(value ?? "").trim();
+}
+
+// API keys are printable ASCII. A key typed with a non-Latin keyboard layout
+// fails every request with "Cannot convert argument to a ByteString".
+export function validateApiKeyInput(value: string): string | undefined {
+	return /^[\x21-\x7e]*$/.test(value)
+		? undefined
+		: "API keys contain only ASCII letters, digits, and symbols. Check your keyboard input language and paste the key again.";
 }
 
 export async function promptSelect<T>(

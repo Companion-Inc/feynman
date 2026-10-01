@@ -270,6 +270,9 @@ async function fetchSemanticScholar(url: URL): Promise<unknown> {
 		try {
 			return await fetchJson(url, headers);
 		} catch (error) {
+			if (apiKey && error instanceof ScienceDatabaseRequestError && error.status === 403) {
+				throw new ScienceDatabaseRequestError("Semantic Scholar rejected SEMANTIC_SCHOLAR_API_KEY (HTTP 403). Check the key, or unset it to use the shared pool; search with source openalex meanwhile.", 403);
+			}
 			if (!(error instanceof ScienceDatabaseRequestError) || error.status !== 429) throw error;
 			if (attempt >= 1) {
 				throw new ScienceDatabaseRequestError(apiKey

@@ -184,6 +184,16 @@ test("keyed semanticscholar relevance search still fails after a 429", async () 
 	assert.equal(calls, 2);
 });
 
+test("a rejected Semantic Scholar key says so instead of a bare 403", async () => {
+	process.env.SEMANTIC_SCHOLAR_API_KEY = "s2-bad-key";
+	globalThis.fetch = async () => jsonResponse({ message: "Forbidden" }, 403);
+
+	await assert.rejects(
+		searchTool().execute("s2-bad-key", { source: "semanticscholar", query: "speculative decoding" }),
+		/Semantic Scholar rejected SEMANTIC_SCHOLAR_API_KEY \(HTTP 403\)/,
+	);
+});
+
 test("Semantic Scholar accepts the OpenAlex-style semantic: prefix and year flags", () => {
 	assert.deepEqual(parseSemanticScholarQuery("semantic: test-time compute scaling year_from=2024"), { query: "test-time compute scaling", year: "2024-" });
 	assert.deepEqual(parseSemanticScholarQuery("RLHF alternatives year_from=2020 year_to=2023"), { query: "RLHF alternatives", year: "2020-2023" });
