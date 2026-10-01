@@ -96,7 +96,7 @@ Feynman reads these environment variables. `FEYNMAN_MODEL`, `FEYNMAN_THINKING`, 
 
 ## Telemetry
 
-Feynman collects anonymous usage telemetry by default and prints a one-time notice the first time it runs. Telemetry goes to Feynman's PostHog project under a random install ID stored in `~/.feynman/.state/telemetry.json`. Person profiles and GeoIP lookup are off.
+Feynman collects anonymous usage telemetry by default and shows a one-time notice the first time it runs: inside the interactive session (including Pi's fullscreen UI), or on stderr for a one-shot `--prompt` run. Telemetry goes to Feynman's PostHog project under a random install ID stored in `~/.feynman/.state/telemetry.json`. Person profiles and GeoIP lookup are off.
 
 Feynman never sends prompts, model output, paper or document content, or tool arguments. When something fails, it sends the error message and stack trace, the end of Pi's error output, and a failed tool's error text, with your home folder shown as `~`. These can include file paths inside your projects.
 
@@ -140,4 +140,4 @@ feynman --session-dir <path>          # store sessions somewhere else
 
 ## Diagnostics
 
-`feynman doctor` checks alphaXiv auth, the default model and authenticated providers, `models.json`, pandoc, web search config, and the Pi runtime, and prints next steps. `feynman status` prints a shorter summary.
+`feynman doctor` checks alphaXiv auth, the default model and authenticated providers, `models.json`, pandoc, web search config, and the Pi runtime, and prints next steps. It reports `quietStartup: "header"` as "header only". `feynman status` prints a shorter summary.

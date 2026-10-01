@@ -59,15 +59,10 @@ export async function runPi(
 }
 
 export async function launchPiChat(options: PiRuntimeOptions): Promise<void> {
+	let telemetryNotice: string | undefined;
 	if (process.stdout.isTTY && options.mode !== "rpc") {
 		process.stdout.write("\x1b[2J\x1b[3J\x1b[H");
-		// Clearing the screen erased the first-run notice printed at startup.
-		const telemetryNotice = telemetryFirstRunNotice();
-		if (telemetryNotice) process.stderr.write(`${telemetryNotice}\n`);
-	}
-
-	if (options.preLaunchNotice) {
-		process.stdout.write(`${options.preLaunchNotice}\n`);
+		telemetryNotice = telemetryFirstRunNotice();
 	}
 
 	const executables = await resolveAllExecutables();
@@ -78,5 +73,12 @@ export async function launchPiChat(options: PiRuntimeOptions): Promise<void> {
 	// explicit prompt forever.
 	const explicitPrompt = Boolean(options.oneShotPrompt || options.initialPrompt);
 	const stdin = explicitPrompt && options.mode !== "rpc" && !process.stdin.isTTY ? "ignore" : "inherit";
-	process.exitCode = await runPi(options, buildPiArgs(options), buildPiEnv(options, executables), stdin);
+	// Pi's fullscreen UI hides anything printed before it starts, so the TUI
+	// session shows these itself; one-shot and JSON runs print them as before.
+	const notice = [telemetryNotice, options.preLaunchNotice].filter(Boolean).join("\n");
+	const tui = options.mode !== "rpc" && options.mode !== "json" && !options.oneShotPrompt;
+	if (notice && !tui) process.stderr.write(`${notice}\n`);
+	const env = buildPiEnv(options, executables);
+	env.FEYNMAN_LAUNCH_NOTICE = notice && tui ? notice : undefined;
+	process.exitCode = await runPi(options, buildPiArgs(options), env, stdin);
 }
