@@ -9,6 +9,10 @@ This page summarizes what changed in recent Feynman releases. GitHub releases us
 
 ## Unreleased
 
+## v0.5.21 - 2026-10-01
+
+- **LiteLLM and custom providers that read their key from an environment variable work again.** Since Pi 0.99, `models.json` resolves an environment variable only when written as `$NAME`; a bare name is sent as the key itself. Feynman's LiteLLM setup wrote `LITELLM_MASTER_KEY`, so requests went out as `Authorization: Bearer LITELLM_MASTER_KEY` and the proxy rejected them, and custom providers set up with a variable name broke the same way. Feynman now writes `$NAME`, and on start rewrites any `apiKey` in `models.json` that is a bare all-caps variable name, such as `LITELLM_MASTER_KEY`, to `$LITELLM_MASTER_KEY`. Literal keys, placeholders such as `local`, and `!command` values are left alone.
+
 ## v0.5.20 - 2026-10-01
 
 - **Settings saved by Windows Notepad or PowerShell no longer stop Feynman.** Both can save UTF-8 with a byte-order mark, which JSON parsing rejects, so Feynman refused to start with "Invalid Feynman settings ... expected a JSON object", and other commands read the file as empty. Feynman now ignores the mark in `settings.json`, `auth.json`, and `web-search.json`, as Pi does. A settings file with a real JSON error now names the error, for example a trailing comma, instead of the generic message.

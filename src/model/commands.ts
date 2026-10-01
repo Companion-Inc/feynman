@@ -20,7 +20,7 @@ import {
 } from "./catalog.js";
 import { MODEL_API_KEY_PROVIDERS, type ApiKeyProviderInfo } from "./api-key-providers.js";
 import { createModelRegistry, createModelRuntime, getModelsJsonPath } from "./registry.js";
-import { upsertProviderBaseUrl, upsertProviderConfig } from "./models-json.js";
+import { apiKeyReference, upsertProviderBaseUrl, upsertProviderConfig } from "./models-json.js";
 
 const exec = promisify(execCallback);
 
@@ -227,7 +227,7 @@ async function resolveApiKeyConfig(apiKeyConfig: string): Promise<string | undef
 		}
 	}
 
-	const envValue = process.env[trimmed];
+	const envValue = process.env[trimmed.replace(/^\$\{?([A-Za-z_][A-Za-z0-9_]*)\}?$/, "$1")];
 	if (typeof envValue === "string" && envValue.trim()) {
 		return envValue.trim();
 	}
@@ -347,10 +347,10 @@ async function promptCustomProviderSetup(): Promise<CustomProviderSetup | undefi
 
 	printInfo("API key value supports:");
 	printInfo("  - literal secret (stored in models.json)");
-	printInfo("  - env var name (resolved at runtime)");
+	printInfo("  - env var name such as MY_API_KEY or $MY_API_KEY (resolved at runtime)");
 	printInfo("  - !command (executes and uses stdout)");
 	const apiKeyConfigRaw = (await promptText("API key / resolver", "")).trim();
-	const apiKeyConfig = apiKeyConfigRaw || "local";
+	const apiKeyConfig = apiKeyReference(apiKeyConfigRaw) || "local";
 	if (!apiKeyConfigRaw) {
 		printInfo("Using placeholder apiKey value (required by Pi for custom providers).");
 	}
@@ -437,7 +437,7 @@ async function promptLiteLlmProviderSetup(): Promise<CustomProviderSetup | undef
 	}
 
 	const hasKey = keySelection === 0;
-	const apiKeyConfig = hasKey ? "LITELLM_MASTER_KEY" : "local";
+	const apiKeyConfig = hasKey ? "$LITELLM_MASTER_KEY" : "local";
 	const authHeader = hasKey;
 	if (hasKey) {
 		printInfo("Set LITELLM_MASTER_KEY in your shell or .env before using Feynman.");
