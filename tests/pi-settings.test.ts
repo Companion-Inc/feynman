@@ -11,7 +11,7 @@ import {
 } from "../src/pi/packages.js";
 import { BUNDLED_PI_PACKAGES, getFeynmanPackageSources } from "../src/pi/runtime.js";
 import { chooseRecommendedModel } from "../src/model/catalog.js";
-import { ensureFeynmanSettings, feynmanSubagentExtensions, normalizeThinkingLevel } from "../src/pi/settings.js";
+import { ensureFeynmanSettings, feynmanSubagentExtensions, normalizeThinkingLevel, readJson } from "../src/pi/settings.js";
 
 const appRoot = process.cwd();
 const bundledSettingsPath = resolve(appRoot, ".feynman", "settings.json");
@@ -233,6 +233,30 @@ test("invalid main settings fail closed before creating subagent defaults", asyn
 	);
 	assert.equal(readFileSync(settingsPath, "utf8"), "{");
 	assert.equal(existsSync(join(root, "extensions")), false);
+});
+
+test("settings saved with a UTF-8 byte-order mark still load and keep their values", async (t) => {
+	// Notepad and PowerShell 5.1 write UTF-8 with a BOM; Feynman refused to start on it.
+	const root = mkdtempSync(join(tmpdir(), "feynman-settings-bom-"));
+	t.after(() => rmSync(root, { recursive: true, force: true }));
+	const settingsPath = join(root, "settings.json");
+	writeFileSync(settingsPath, "\uFEFF" + JSON.stringify({ defaultProvider: "anthropic", defaultModel: "claude-opus-5-5", theme: "feynman" }));
+	assert.equal(readJson(settingsPath).defaultModel, "claude-opus-5-5");
+	await ensureFeynmanSettings(settingsPath, bundledSettingsPath, appRoot, "medium", join(root, "absent-auth.json"));
+	const saved = JSON.parse(readFileSync(settingsPath, "utf8").replace(/^\uFEFF/, "")) as Record<string, unknown>;
+	assert.equal(saved.defaultProvider, "anthropic");
+	assert.equal(saved.defaultModel, "claude-opus-5-5");
+});
+
+test("invalid settings name the JSON error", async (t) => {
+	const root = mkdtempSync(join(tmpdir(), "feynman-settings-syntax-"));
+	t.after(() => rmSync(root, { recursive: true, force: true }));
+	const settingsPath = join(root, "settings.json");
+	writeFileSync(settingsPath, '{ "theme": "feynman", }');
+	await assert.rejects(
+		ensureFeynmanSettings(settingsPath, bundledSettingsPath, appRoot, "medium", join(root, "absent-auth.json")),
+		/Invalid Feynman settings at .*settings\.json: .*JSON.*\. Fix the JSON or delete the file\. The file was not changed\./,
+	);
 });
 
 test("ensureFeynmanSettings seeds the newest OpenAI GPT default exposed by Pi", async () => {

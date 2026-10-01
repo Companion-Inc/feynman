@@ -9,6 +9,10 @@ This page summarizes what changed in recent Feynman releases. GitHub releases us
 
 ## Unreleased
 
+## v0.5.20 - 2026-10-01
+
+- **Settings saved by Windows Notepad or PowerShell no longer stop Feynman.** Both can save UTF-8 with a byte-order mark, which JSON parsing rejects, so Feynman refused to start with "Invalid Feynman settings ... expected a JSON object", and other commands read the file as empty. Feynman now ignores the mark in `settings.json`, `auth.json`, and `web-search.json`, as Pi does. A settings file with a real JSON error now names the error, for example a trailing comma, instead of the generic message.
+
 ## v0.5.19 - 2026-10-01
 
 - **Word drafts open without LibreOffice.** `document_parse` needs LibreOffice for `.docx` files, which most machines lack, so reviewing a thesis or draft in Word format failed. When LibreOffice is missing, Feynman now reads the document's paragraph text directly from the `.docx` and says so; install LibreOffice for page layout, tables, footnotes, and images.

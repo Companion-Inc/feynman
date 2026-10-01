@@ -1,5 +1,7 @@
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
+
+import { readJsonFile } from "../config/json-file.js";
 
 export const FEYNMAN_SERVICE_TIERS = [
 	"auto",
@@ -17,7 +19,7 @@ const ANTHROPIC_SERVICE_TIERS = new Set<FeynmanServiceTier>(["auto", "standard_o
 
 function readSettings(settingsPath: string): Record<string, unknown> {
 	try {
-		return JSON.parse(readFileSync(settingsPath, "utf8")) as Record<string, unknown>;
+		return readJsonFile(settingsPath) as Record<string, unknown>;
 	} catch {
 		return {};
 	}

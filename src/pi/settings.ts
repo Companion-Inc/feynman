@@ -3,6 +3,7 @@ import { dirname, join } from "node:path";
 
 import type { ModelRegistry, ModelRuntime, PackageSource } from "@earendil-works/pi-coding-agent";
 
+import { parseJsonText, readJsonFile } from "../config/json-file.js";
 import { BUNDLED_PI_PACKAGES, getFeynmanPackageSources, resolvePackageRoot } from "./runtime.js";
 import { choosePreferredModelRecord, getAvailableModelRecords } from "../model/catalog.js";
 
@@ -70,7 +71,7 @@ export function readJson(path: string): Record<string, unknown> {
 	}
 
 	try {
-		return JSON.parse(readFileSync(path, "utf8"));
+		return readJsonFile(path) as Record<string, unknown>;
 	} catch (error) {
 		if (process.env.FEYNMAN_DEBUG === "1") {
 			process.stderr.write(
@@ -89,9 +90,10 @@ function readConfigObject(path: string, label: string): { source: string; value:
 	const source = readFileSync(path, "utf8");
 	let value: unknown;
 	try {
-		value = JSON.parse(source);
-	} catch {
-		throw new Error(`Invalid ${label} at ${path}: expected a JSON object. The file was not changed.`);
+		value = parseJsonText(source);
+	} catch (error) {
+		const reason = error instanceof Error ? error.message : String(error);
+		throw new Error(`Invalid ${label} at ${path}: ${reason}. Fix the JSON or delete the file. The file was not changed.`);
 	}
 	if (!isRecord(value)) {
 		throw new Error(`Invalid ${label} at ${path}: expected a JSON object. The file was not changed.`);

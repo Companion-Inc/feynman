@@ -1,5 +1,6 @@
-import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
+import { readJsonFile } from "../config/json-file.js";
 import { getFeynmanAgentDir, getFeynmanHome } from "../config/paths.js";
 
 export type PiWebSearchProvider = "auto" | "perplexity" | "exa" | "gemini";
@@ -56,7 +57,7 @@ export function loadPiWebAccessConfig(configPath = getPiWebSearchConfigPath()): 
 	}
 
 	try {
-		const parsed = JSON.parse(readFileSync(configPath, "utf8")) as PiWebAccessConfig;
+		const parsed = readJsonFile(configPath) as PiWebAccessConfig;
 		return parsed && typeof parsed === "object" ? parsed : {};
 	} catch {
 		return {};
