@@ -209,7 +209,7 @@ export async function runDoctor(options: DoctorOptions): Promise<void> {
 	for (const line of formatPiWebAccessDoctorLines()) {
 		console.log(line);
 	}
-	console.log(`quiet startup: ${settings.quietStartup === true ? "enabled" : "disabled"}`);
+	console.log(`quiet startup: ${settings.quietStartup === "header" ? "header only" : settings.quietStartup === true ? "enabled" : "disabled"}`);
 	console.log(`theme: ${typeof settings.theme === "string" ? settings.theme : "not set"}`);
 	if (missingPiBits.length > 0) {
 		console.log("pi runtime: missing files");
