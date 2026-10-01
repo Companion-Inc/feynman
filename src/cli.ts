@@ -593,6 +593,7 @@ async function runMain(input: { here: string; appRoot: string; feynmanVersion: s
 				"new-session": { type: "boolean" },
 				"no-session": { type: "boolean" },
 				"no-themes": { type: "boolean" },
+				"tui-mode": { type: "string" },
 				prompt: { type: "string" },
 				resume: { type: "boolean", short: "r" },
 				"service-tier": { type: "string" },
@@ -850,7 +851,11 @@ async function runMain(input: { here: string; appRoot: string; feynmanVersion: s
 		explicitModelSpec,
 		resumeRecentSession,
 		// ACP adapters such as pi-acp pass --no-themes with --mode rpc.
-		piArgs: values["no-themes"] ? [...piArgs, "--no-themes"] : piArgs,
+		piArgs: [
+			...piArgs,
+			...(values["no-themes"] ? ["--no-themes"] : []),
+			...(values["tui-mode"] ? ["--tui-mode", values["tui-mode"]] : []),
+		],
 		preLaunchNotice,
 		...promptOptions,
 	});
