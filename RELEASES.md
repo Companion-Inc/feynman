@@ -6,6 +6,11 @@ GitHub release notes are generated from the matching `## vX.Y.Z` section in this
 
 ## Unreleased
 
+## v0.5.22 - 2026-10-01
+
+- **Launch warnings and the first-run telemetry notice show inside the session.** Feynman printed them to the terminal just before starting Pi, where Pi 1.0's fullscreen interface (coming in a later Feynman release) hides them for the whole session. They now appear in Pi's own interface: the Windows "No Bash found" warning, the small-local-model warning for research workflows, and the one-time telemetry disclosure. A one-shot `--prompt` run still prints them to stderr.
+- `feynman doctor` reports Pi's new `quietStartup: "header"` setting as "header only" instead of "disabled".
+
 ## v0.5.21 - 2026-10-01
 
 - **LiteLLM and custom providers that read their key from an environment variable work again.** Since Pi 0.99, `models.json` resolves an environment variable only when written as `$NAME`; a bare name is sent as the key itself. Feynman's LiteLLM setup wrote `LITELLM_MASTER_KEY`, so requests went out as `Authorization: Bearer LITELLM_MASTER_KEY` and the proxy rejected them, and custom providers set up with a variable name broke the same way. Feynman now writes `$NAME`, and on start rewrites any `apiKey` in `models.json` that is a bare all-caps variable name, such as `LITELLM_MASTER_KEY`, to `$LITELLM_MASTER_KEY`. Literal keys, placeholders such as `local`, and `!command` values are left alone.
