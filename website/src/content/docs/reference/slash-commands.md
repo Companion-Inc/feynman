@@ -49,14 +49,17 @@ Workflow prompts can call the bundled agents (researcher, reviewer, writer, veri
 
 ## Research delegation
 
-The current runtime does not provide `/chain` or `/parallel` commands. Research workflows call `subagent` directly for one child or use `workflowScript` for parallel or sequential work:
+The current runtime does not provide `/chain` or `/parallel` commands. Research workflows call `subagent` directly for one child, or write a workflow script for parallel or sequential work to `outputs/.plans/<slug>-workflow.js` and run it by calling `subagent` with that path. A file works with every model; an inline ```` ```js workflow ```` block with `workflow: true` fails when a model puts the block in its hidden reasoning instead of the reply.
+
+```js
+return await runs.all([
+  { key: "papers", agent: "researcher", task: "Read outputs/.plans/<slug>-papers.md.", output: "outputs/.drafts/<slug>-research-papers.md" },
+  { key: "web", agent: "researcher", task: "Read outputs/.plans/<slug>-web.md.", output: "outputs/.drafts/<slug>-research-web.md" },
+]);
+```
 
 ```json
-{
-  "workflowScript": "return await runs.all([{key:'papers',agent:'researcher',task:'Read outputs/.plans/<slug>-papers.md.',output:'<slug>-research-papers.md'},{key:'web',agent:'researcher',task:'Read outputs/.plans/<slug>-web.md.',output:'<slug>-research-web.md'}]);",
-  "async": true,
-  "globalConcurrencyLimit": 4
-}
+{ "workflow": "./outputs/.plans/<slug>-workflow.js", "async": true, "globalConcurrencyLimit": 4 }
 ```
 
 For sequential work, await `runs.run(key, {agent, task, output})` before starting the next step. Legacy top-level `tasks`, `chain`, and `parallel` inputs are rejected. `runs.all` returns an ordered array, including ordinary child failures; inspect each result's `ok` and returned output references.

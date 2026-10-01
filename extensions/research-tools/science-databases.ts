@@ -445,6 +445,17 @@ export function registerScienceDatabaseTools(pi: ExtensionAPI): void {
 			"Preserve returned PMIDs, PMCIDs, DOIs, arXiv IDs, Semantic Scholar paper IDs, preprint DOIs, OpenAlex W/A/S IDs, author ORCIDs, citation/reference counts, OA status, Europe PMC full-text statuses and section inventories, source URLs, and endpoint provenance in research artifacts and answers.",
 			"Treat database summaries as retrieval evidence, then verify decisive claims against the full paper when needed.",
 		],
+		// Some models fill omitted optional fields with "null", which fails validation.
+		prepareArguments: (args) => {
+			if (!args || typeof args !== "object" || Array.isArray(args)) return args as never;
+			const input = { ...(args as Record<string, unknown>) };
+			for (const key of ["sort", "limit"]) {
+				if (input[key] === null || input[key] === "" || input[key] === "null") delete input[key];
+			}
+			if (typeof input.sort === "string") input.sort = input.sort.trim().toLowerCase();
+			if (typeof input.limit === "string" && /^\d+$/.test(input.limit.trim())) input.limit = Number(input.limit);
+			return input as never;
+		},
 		parameters: Type.Object({
 			source: SCIENCE_DATABASE_SOURCE_SCHEMA,
 			query: Type.String({
