@@ -90,8 +90,10 @@ export function upsertProviderConfig(
 
 	providers[providerId] = nextProvider;
 
-	const next: ModelsJson = { ...value, providers };
+	return writeModelsJson(modelsJsonPath, { ...value, providers });
+}
 
+function writeModelsJson(modelsJsonPath: string, next: ModelsJson): { ok: true } | { ok: false; error: string } {
 	try {
 		mkdirSync(dirname(modelsJsonPath), { recursive: true });
 		writeFileSync(modelsJsonPath, JSON.stringify(next, null, 2) + "\n", "utf8");
@@ -105,4 +107,32 @@ export function upsertProviderConfig(
 	} catch (error) {
 		return { ok: false, error: `Failed to write models.json: ${error instanceof Error ? error.message : String(error)}` };
 	}
+}
+
+// Pi resolves an environment variable in `apiKey` only as $NAME or ${NAME}; a
+// bare name such as LITELLM_MASTER_KEY is sent as the key itself.
+const BARE_ENV_NAME = /^[A-Z][A-Z0-9_]*$/;
+
+export function apiKeyReference(value: string): string {
+	return BARE_ENV_NAME.test(value) ? `$${value}` : value;
+}
+
+// Feynman's setup wrote bare names before Pi 0.99 stopped resolving them, so a
+// LiteLLM or custom provider sent "LITELLM_MASTER_KEY" as its key. Returns the
+// providers it rewrote to $NAME.
+export function migrateBareEnvApiKeys(modelsJsonPath: string): string[] {
+	if (!existsSync(modelsJsonPath)) return [];
+	const read = readModelsJson(modelsJsonPath);
+	if (!read.ok) return [];
+	const providers = { ...(read.value.providers ?? {}) };
+	const migrated = Object.keys(providers).filter((id) => {
+		const apiKey = (providers[id] as { apiKey?: unknown } | undefined)?.apiKey;
+		return typeof apiKey === "string" && BARE_ENV_NAME.test(apiKey);
+	});
+	if (migrated.length === 0) return [];
+	for (const id of migrated) {
+		const provider = providers[id] as { apiKey: string };
+		providers[id] = { ...provider, apiKey: apiKeyReference(provider.apiKey) } as (typeof providers)[string];
+	}
+	return writeModelsJson(modelsJsonPath, { ...read.value, providers }).ok ? migrated : [];
 }

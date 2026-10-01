@@ -62,7 +62,7 @@ API key / resolver: local
 Model id(s): llama3.1:8b
 ```
 
-Custom providers are saved to `~/.feynman/agent/models.json`. Pi only lists a provider that has an `apiKey`, so if you edit that file by hand, keep a placeholder such as `"apiKey": "local"` for a local server. Then confirm and select the model:
+Custom providers are saved to `~/.feynman/agent/models.json`. Pi only lists a provider that has an `apiKey`, so if you edit that file by hand, keep a placeholder such as `"apiKey": "local"` for a local server. To read a key from an environment variable, write it as `"$MY_API_KEY"`; a bare name such as `MY_API_KEY` is sent as the key itself. Then confirm and select the model:
 
 ```bash
 feynman model list

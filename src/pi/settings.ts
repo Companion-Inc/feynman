@@ -6,6 +6,8 @@ import type { ModelRegistry, ModelRuntime, PackageSource } from "@earendil-works
 import { parseJsonText, readJsonFile } from "../config/json-file.js";
 import { BUNDLED_PI_PACKAGES, getFeynmanPackageSources, resolvePackageRoot } from "./runtime.js";
 import { choosePreferredModelRecord, getAvailableModelRecords } from "../model/catalog.js";
+import { migrateBareEnvApiKeys } from "../model/models-json.js";
+import { getModelsJsonPath } from "../model/registry.js";
 
 export type ThinkingLevel = "off" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max";
 
@@ -211,6 +213,7 @@ export async function ensureFeynmanSettings(
 	const existing = existsSync(settingsPath) ? readConfigObject(settingsPath, "Feynman settings") : undefined;
 	const settings: Record<string, unknown> = existing ? { ...existing.value } : {};
 	const defaults = readConfigObject(bundledSettingsPath, "bundled Feynman settings").value;
+	migrateBareEnvApiKeys(getModelsJsonPath(authPath));
 
 	for (const [key, value] of Object.entries({ ...defaults, defaultThinkingLevel })) {
 		if (settings[key] === undefined) settings[key] = value;

@@ -1,10 +1,11 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { mkdtempSync, readFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { upsertProviderConfig } from "../src/model/models-json.js";
+import { apiKeyReference, migrateBareEnvApiKeys, upsertProviderConfig } from "../src/model/models-json.js";
+import { createModelRegistry } from "../src/model/registry.js";
 
 test("upsertProviderConfig creates models.json and merges provider config", () => {
 	const dir = mkdtempSync(join(tmpdir(), "feynman-models-"));
@@ -87,4 +88,35 @@ test("upsertProviderConfig rejects provider ids with path traversal chars", () =
 		baseUrl: "http://localhost:11434/v1",
 	});
 	assert.equal(withSlash.ok, false);
+});
+
+test("bare environment variable names in apiKey become $NAME, which Pi resolves", async () => {
+	const dir = mkdtempSync(join(tmpdir(), "feynman-models-env-"));
+	const modelsJsonPath = join(dir, "models.json");
+	const provider = (apiKey: string) => ({ baseUrl: "http://localhost:4000/v1", api: "openai-completions", apiKey, models: [{ id: "m" }] });
+	writeFileSync(modelsJsonPath, JSON.stringify({
+		providers: {
+			litellm: provider("LITELLM_MASTER_KEY"),
+			local: provider("local"),
+			literal: provider("sk-proj-AbC123"),
+			dollar: provider("$MY_KEY"),
+			command: provider("!op read secret"),
+		},
+	}));
+	writeFileSync(join(dir, "auth.json"), "{}\n");
+
+	assert.deepEqual(migrateBareEnvApiKeys(modelsJsonPath), ["litellm"]);
+	const keys = Object.fromEntries(Object.entries(JSON.parse(readFileSync(modelsJsonPath, "utf8")).providers).map(([id, p]) => [id, (p as { apiKey: string }).apiKey]));
+	assert.deepEqual(keys, { litellm: "$LITELLM_MASTER_KEY", local: "local", literal: "sk-proj-AbC123", dollar: "$MY_KEY", command: "!op read secret" });
+	assert.deepEqual(migrateBareEnvApiKeys(modelsJsonPath), []);
+
+	process.env.LITELLM_MASTER_KEY = "sk-real-secret";
+	try {
+		const registry = await createModelRegistry(join(dir, "auth.json"));
+		assert.equal(await registry.getApiKeyForProvider("litellm"), "sk-real-secret");
+	} finally {
+		delete process.env.LITELLM_MASTER_KEY;
+	}
+	assert.equal(apiKeyReference("OPENAI_API_KEY"), "$OPENAI_API_KEY");
+	assert.equal(apiKeyReference("sk-abc"), "sk-abc");
 });
