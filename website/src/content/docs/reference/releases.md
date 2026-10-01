@@ -9,6 +9,14 @@ This page summarizes what changed in recent Feynman releases. GitHub releases us
 
 ## Unreleased
 
+## v0.5.17 - 2026-09-30
+
+- **`feynman model login openai` works again.** Since Pi 0.99, Sign in with ChatGPT needs a stable ID for the installation, which Feynman did not pass, so the login failed at once with "requires a device ID (UUID)". Feynman now shares the `deviceId` Pi's own `/login` keeps in `~/.feynman/agent/settings.json`.
+- **Windows finds per-user Git Bash.** Pi looks for Git Bash only under Program Files and on PATH, but a per-user Git for Windows install puts only `Git\cmd` on PATH, so shell commands failed with "No bash shell found" (about one in five Windows installs that run tools). Feynman now finds that Git Bash and gives it to Pi. When there is no Bash at all, Feynman says so before the session starts, and `feynman doctor` reports the `bash` it found.
+- Pressing Enter at the "paste the authorization code / redirect URL" login prompt no longer ends the login with "Missing authorization code"; Feynman asks again, and finishing in the browser still works.
+- API keys are now masked as you paste them during setup, and a key with non-ASCII characters (for example typed with a non-Latin keyboard layout) is rejected with an explanation instead of failing every request with "Cannot convert argument to a ByteString".
+- A rejected `SEMANTIC_SCHOLAR_API_KEY` now says so instead of `request failed: 403 Forbidden`.
+
 ## v0.5.16 - 2026-09-30
 
 - **Subagent research files land in the workspace.** When a workflow gave a subagent a relative output path such as `outputs/.drafts/<slug>-research-web.md`, pi-subagents saved it under `~/.feynman/sessions/subagent-artifacts/outputs/<run>/` instead, so the lead agent could not find the research notes, citations, or verification it asked for (about one in seven installs running research workflows hit this in the last week). Relative subagent outputs now resolve against the workspace, the researcher, reviewer, verifier, and writer no longer default to generic file names such as `research.md`, and `/deepresearch` and `/lit` name every subagent file under `outputs/.drafts/`. If you set `singleRunOutputBaseDir` in `~/.feynman/agent/extensions/subagent/config.json`, Feynman keeps your value.
