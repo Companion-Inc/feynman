@@ -98,23 +98,32 @@ function prune<T extends Record<string, unknown>>(record: T): Record<string, unk
 
 // The abort timer stays armed across the body read: fetch resolves on headers,
 // so clearing it earlier would leave a stalled body hanging forever.
+// Pacing keeps one process under NCBI's limit, but subagents run in their own
+// processes and an IP can be shared, so a 429 is retried once after a pause.
+const NCBI_RETRY_MS = 1500;
+
 async function send<T>(url: URL, accept: string, read: (response: Response) => Promise<T>): Promise<T> {
-	return withNcbiRateLimit(url, async () => {
-		const controller = new AbortController();
-		const timeout = setTimeout(() => controller.abort(), requestTimeoutMs);
-		try {
-			const response = await fetch(url, {
-				headers: {
-					accept,
-					"user-agent": "feynman-pubmed-tools/1.0 (https://github.com/Companion-Inc/feynman)",
-				},
-				signal: controller.signal,
-			});
-			return await read(response);
-		} finally {
-			clearTimeout(timeout);
-		}
-	});
+	for (let attempt = 0; ; attempt += 1) {
+		const result = await withNcbiRateLimit(url, async (): Promise<{ retry: true } | { value: T }> => {
+			const controller = new AbortController();
+			const timeout = setTimeout(() => controller.abort(), requestTimeoutMs);
+			try {
+				const response = await fetch(url, {
+					headers: {
+						accept,
+						"user-agent": "feynman-pubmed-tools/1.0 (https://github.com/Companion-Inc/feynman)",
+					},
+					signal: controller.signal,
+				});
+				if (response.status === 429 && attempt === 0) return { retry: true };
+				return { value: await read(response) };
+			} finally {
+				clearTimeout(timeout);
+			}
+		});
+		if ("value" in result) return result.value;
+		await new Promise((resolve) => setTimeout(resolve, NCBI_RETRY_MS));
+	}
 }
 
 function assertOk(response: Response): void {

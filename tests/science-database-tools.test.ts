@@ -313,3 +313,29 @@ test("science search accepts the \"null\" some models send for omitted optional 
 	assert.deepEqual(validate({ source: "pubmed", query: "x", sort: " Relevance ", limit: "5" }), { source: "pubmed", query: "x", sort: "relevance", limit: 5 });
 	assert.throws(() => validate({ source: "pubmed", query: "x", sort: "newest" }), /sort/);
 });
+
+test("arXiv lookups are paced three seconds apart and a 429 is retried once", async (t) => {
+	const { ARXIV_MIN_GAP_MS } = await import("../extensions/research-tools/science-database-arxiv.js");
+	assert.equal(ARXIV_MIN_GAP_MS, 3000);
+	t.mock.timers.enable({ apis: ["setTimeout"] });
+	const originalFetch = globalThis.fetch;
+	const starts: number[] = [];
+	globalThis.fetch = (async () => {
+		starts.push(starts.length);
+		if (starts.length === 1) return new Response("", { status: 429, statusText: "Unknown Error" });
+		return new Response("<feed xmlns='http://www.w3.org/2005/Atom'></feed>");
+	}) as typeof fetch;
+	try {
+		const tools = new Map<string, { execute: (id: string, params: Record<string, unknown>) => Promise<unknown> }>();
+		registerScienceDatabaseTools({ registerTool: (tool: { name: string; execute: never }) => tools.set(tool.name, tool), on: () => () => {} } as never);
+		const pending = tools.get("feynman_science_database_search")!.execute("ax", { source: "arxiv", query: "2309.08600" });
+		for (let i = 0; i < 20 && starts.length < 2; i += 1) {
+			await new Promise((resolve) => setImmediate(resolve));
+			t.mock.timers.tick(ARXIV_MIN_GAP_MS);
+		}
+		await pending;
+		assert.equal(starts.length, 2);
+	} finally {
+		globalThis.fetch = originalFetch;
+	}
+});
