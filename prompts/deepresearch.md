@@ -68,7 +68,7 @@ If subagents were chosen:
 - Keep `subagent` tool-call JSON small and valid.
 - Do not place multi-paragraph instructions inside the `subagent` JSON.
 - Use only supported `subagent` keys. Do not add extra keys such as `artifacts` unless the tool schema explicitly exposes them.
-- For parallel evidence gathering, write a workflow script that returns `await runs.all(...)` to `outputs/.plans/<slug>-workflow.js` with the write tool. After the write succeeds, call `subagent` with `workflow: "./outputs/.plans/<slug>-workflow.js"`, `async: true`, and `globalConcurrencyLimit: 4`. Each item needs a unique stable `key`, plus its agent, short task, and output path. Do not pass the script text inside the tool call.
+- For parallel evidence gathering, write a workflow script that returns `await runs.all(...)` to `outputs/.plans/<slug>-workflow.js` with the write tool. After the write succeeds, in a later tool call (not in parallel with the write), call `subagent` with `workflow: "./outputs/.plans/<slug>-workflow.js"`, `async: true`, and `globalConcurrencyLimit: 4`. Each item needs a unique stable `key`, plus its agent, short task, and output path. Do not pass the script text inside the tool call.
 - Read the ordered result array and record each child's `ok`, error, and returned output/artifact paths. Ordinary child failures are collected by `runs.all`; validation or infrastructure failure can still fail the workflow. Do not assume every output exists.
 - Prefer broad guidance such as "use paper search and web search"; if a PDF parser or paper fetch fails, the researcher must continue from metadata, abstracts, and web sources and mark PDF parsing as blocked.
 

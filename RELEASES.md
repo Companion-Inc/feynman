@@ -6,6 +6,12 @@ GitHub release notes are generated from the matching `## vX.Y.Z` section in this
 
 ## Unreleased
 
+## v0.5.23 - 2026-10-02
+
+- **arXiv and PubMed rate limits.** arXiv asks for one request every three seconds, and parallel lookups got `429`; arXiv requests now run at that pace and a 429 is retried once. A PubMed `429`, which a subagent in another process or a shared IP can still trigger, is retried once after a pause.
+- Running several subagents at once from any workflow no longer fails with "workflow: true requires exactly one ```js workflow fenced block": Feynman now always writes the workflow script to a file and runs it by path, as `/deepresearch` already did.
+- Pi 1.0 is not in this release: pi-subagents 0.74.0 cannot start background subagents on it. The fix is merged upstream (nicobailon/pi-subagents#2634) and Feynman will move to Pi 1.0 once it is released.
+
 ## v0.5.22 - 2026-10-01
 
 - **Launch warnings and the first-run telemetry notice show inside the session.** Feynman printed them to the terminal just before starting Pi, where Pi 1.0's fullscreen interface (coming in a later Feynman release) hides them for the whole session. They now appear in Pi's own interface: the Windows "No Bash found" warning, the small-local-model warning for research workflows, and the one-time telemetry disclosure. A one-shot `--prompt` run still prints them to stderr.

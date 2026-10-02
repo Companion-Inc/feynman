@@ -1,5 +1,7 @@
 import { XMLParser } from "fast-xml-parser";
 
+import { createRequestPacer } from "./request-pacer.js";
+
 type SearchParams = {
 	query: string;
 };
@@ -27,20 +29,32 @@ function cleanQuery(query: string): string {
 	return clean;
 }
 
+// arXiv's API terms ask for no more than one request every three seconds, and
+// parallel lookups got 429. Requests run one after another at that pace, and a
+// 429 is retried once after the same wait.
+const arxivPacer = createRequestPacer();
+export const ARXIV_MIN_GAP_MS = 3000;
+
 async function fetchText(url: URL, accept: string): Promise<string> {
-	const controller = new AbortController();
-	const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
-	try {
-		const response = await fetch(url, {
-			headers: { accept },
-			signal: controller.signal,
+	for (let attempt = 0; ; attempt += 1) {
+		const result = await arxivPacer(ARXIV_MIN_GAP_MS, async () => {
+			const controller = new AbortController();
+			const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+			try {
+				const response = await fetch(url, {
+					headers: { accept },
+					signal: controller.signal,
+				});
+				if (response.status === 429 && attempt === 0) return undefined;
+				if (!response.ok) {
+					throw new Error(`${url.hostname} request failed: ${response.status} ${response.statusText}`);
+				}
+				return await response.text();
+			} finally {
+				clearTimeout(timeout);
+			}
 		});
-		if (!response.ok) {
-			throw new Error(`${url.hostname} request failed: ${response.status} ${response.statusText}`);
-		}
-		return response.text();
-	} finally {
-		clearTimeout(timeout);
+		if (result !== undefined) return result;
 	}
 }
 

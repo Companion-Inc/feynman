@@ -167,3 +167,26 @@ test("the request timeout covers the response body, not just the headers", async
 	]);
 	assert.equal(outcome, "aborted", "the stalled body was never aborted within the request budget");
 });
+
+test("a PubMed 429 is retried once, and a second 429 is reported", async () => {
+	process.env.NCBI_API_KEY = "test-key";
+	let calls = 0;
+	globalThis.fetch = (async () => {
+		calls += 1;
+		if (calls === 1) return new Response("", { status: 429, statusText: "Too Many Requests" });
+		return Response.json({ esearchresult: { count: "0", idlist: [] } });
+	}) as typeof fetch;
+	await registerTools().get("feynman_science_database_search")!.execute("pm-429", { source: "pubmed", query: "crispr" });
+	assert.equal(calls, 2);
+
+	calls = 0;
+	globalThis.fetch = (async () => {
+		calls += 1;
+		return new Response("", { status: 429, statusText: "Too Many Requests" });
+	}) as typeof fetch;
+	await assert.rejects(
+		registerTools().get("feynman_science_database_search")!.execute("pm-429-twice", { source: "pubmed", query: "crispr" }),
+		/PubMed request failed: 429/,
+	);
+	assert.equal(calls, 2);
+});
