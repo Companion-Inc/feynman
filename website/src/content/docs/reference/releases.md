@@ -9,6 +9,10 @@ This page summarizes what changed in recent Feynman releases. GitHub releases us
 
 ## Unreleased
 
+## v0.5.24 - 2026-10-03
+
+- **Pi 1.0.** Feynman now runs on Pi 1.0.0, with pi-subagents 0.75.0 (background subagents start on Pi 1.0) and pi-btw 0.7.1 (allows Pi 1.x). The terminal UI is fullscreen by default and keeps its own scrollback; run `feynman --tui-mode regular`, or set `"tuiMode": "regular"` in `~/.feynman/agent/settings.json`, to use the terminal's normal scrollback. Launch warnings show inside the fullscreen UI. Pi 1.0 also adds MCP OAuth hardening, a copy-code Anthropic login for headless machines, and lower codemode token use.
+
 ## v0.5.23 - 2026-10-02
 
 - **arXiv and PubMed rate limits.** arXiv asks for one request every three seconds, and parallel lookups got `429`; arXiv requests now run at that pace and a 429 is retried once. A PubMed `429`, which a subagent in another process or a shared IP can still trigger, is retried once after a pause.
