@@ -107,6 +107,7 @@ These are equivalent to launching the REPL and typing the corresponding slash co
 | `--cwd <path>` | Set the working directory for tools |
 | `--session-dir <path>` | Set the session storage directory |
 | `--new-session` | Start a new persisted session |
+| `--tui-mode <fullscreen\|regular>` | Run the terminal UI fullscreen (Pi 1.0's default) or in the terminal's normal scrollback; set `tuiMode` in `~/.feynman/agent/settings.json` to keep a choice |
 | `--continue`, `-c` | Continue the most recent session (the default for an interactive launch) |
 | `--resume`, `-r` | Pick a previous session to resume |
 | `--session <path\|id>` | Open a specific session |

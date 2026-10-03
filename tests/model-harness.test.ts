@@ -426,6 +426,20 @@ test("setDefaultModelSpec explains why a model spec is unusable", async () => {
 	});
 });
 
+test("--tui-mode reaches Pi, which validates it", () => {
+	const homeDir = mkdtempSync(join(tmpdir(), "feynman-tui-mode-home-"));
+	const result = spawnSync(process.execPath, ["--import", "tsx", "src/index.ts", "--tui-mode", "bogus", "--mode", "rpc", "--no-session"], {
+		cwd: process.cwd(),
+		encoding: "utf8",
+		env: { ...process.env, FEYNMAN_HOME: homeDir, FEYNMAN_TELEMETRY: "0" },
+		input: "",
+		maxBuffer: 1024 * 1024,
+	});
+	assert.equal(result.status, 1);
+	assert.match(`${result.stdout}\n${result.stderr}`, /Invalid TUI mode "bogus"/);
+	assert.doesNotMatch(`${result.stdout}\n${result.stderr}`, /Unknown option '--tui-mode'/);
+});
+
 test("model help lists model commands, and -h is an alias for --help", () => {
 	const homeDir = mkdtempSync(join(tmpdir(), "feynman-model-help-home-"));
 	const run = (args: string[]) =>

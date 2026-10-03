@@ -157,6 +157,7 @@ export const legacyFlags = [
 	{ usage: "--cwd <path>", description: "Set the working directory for tools." },
 	{ usage: "--session-dir <path>", description: "Set the session storage directory." },
 	{ usage: "--new-session", description: "Start a new persisted session." },
+	{ usage: "--tui-mode <fullscreen|regular>", description: "Run the terminal UI fullscreen (default) or in the normal scrollback." },
 	{ usage: "--continue, -c", description: "Continue the most recent session (default for an interactive launch)." },
 	{ usage: "--resume, -r", description: "Pick a previous session to resume." },
 	{ usage: "--session <path|id>", description: "Open a specific session." },

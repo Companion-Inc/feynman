@@ -1,6 +1,6 @@
 {
   "name": "@companion-ai/feynman",
-  "version": "0.5.23",
+  "version": "0.5.24",
   "description": "Research-first CLI agent built on Pi and alphaXiv",
   "license": "MIT",
   "type": "module",
@@ -80,15 +80,15 @@
     "@clack/prompts": "^1.8.1",
     "@companion-ai/alpha-hub": "0.1.6",
     "fast-xml-parser": "5.11.1",
-    "pi-btw": "0.7.0",
+    "pi-btw": "0.7.1",
     "pi-docparser": "4.0.0",
-    "pi-subagents": "0.74.0",
+    "pi-subagents": "0.75.0",
     "pi-web-access": "0.35.0",
     "posthog-node": "^5.53.0"
   },
   "peerDependencies": {
-    "@earendil-works/pi-ai": "0.99.2",
-    "@earendil-works/pi-coding-agent": "0.99.2",
+    "@earendil-works/pi-ai": "1.0.0",
+    "@earendil-works/pi-coding-agent": "1.0.0",
     "@earendil-works/pi-tui": "*",
     "typebox": "*"
   },
