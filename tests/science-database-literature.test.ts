@@ -210,6 +210,38 @@ test("science database tool exposes exact literature parity names for OpenAlex a
 	assert.ok(seen.some((url) => url.includes("openalex_search_works")) === false);
 });
 
+for (const versions of [[2, 1], [1, 2], [2, 1, 2]]) {
+	test(`arxiv batch lookup preserves latest and exact versions with feed order ${versions.join(",")}`, async () => {
+		globalThis.fetch = async (input) => {
+			const url = new URL(String(input));
+			assert.equal(url.searchParams.get("id_list"), "2309.08600,2309.08600v1,2309.08600v2");
+			return atomResponse(versions.map((version) => arxivEntry(`2309.08600v${version}`)).join(""), versions.length);
+		};
+
+		const tool = registerTools().get("feynman_science_database_search");
+		assert.ok(tool);
+		const result = await tool.execute("arxiv-versions", {
+			source: "arxiv",
+			query: "2309.08600,2309.08600v1,2309.08600v2",
+		});
+		const details = result.details as { records: Array<{ id_versioned: string }>; duplicates: unknown[]; not_found: string[] };
+		assert.deepEqual(details.records.map((row) => row.id_versioned), ["2309.08600v2", "2309.08600v1"]);
+		assert.deepEqual(details.duplicates, [{ requested: "2309.08600v2", resolved_as: "2309.08600" }]);
+		assert.deepEqual(details.not_found, []);
+	});
+}
+
+test("arxiv batch lookup reports a missing exact version without substituting another version", async () => {
+	globalThis.fetch = async () => atomResponse(arxivEntry("2309.08600v2"));
+	const tool = registerTools().get("feynman_science_database_search");
+	assert.ok(tool);
+	const result = await tool.execute("arxiv-missing-version", { source: "arxiv", query: "2309.08600v1,2309.08600" });
+	const details = result.details as { records: Array<{ id_versioned: string }>; duplicates: unknown[]; not_found: string[] };
+	assert.deepEqual(details.not_found, ["2309.08600v1"]);
+	assert.deepEqual(details.records.map((row) => row.id_versioned), ["2309.08600v2"]);
+	assert.deepEqual(details.duplicates, []);
+});
+
 test("arxiv source rejects topic search and points to the discovery sources", async () => {
 	globalThis.fetch = async (input) => {
 		throw new Error(`unexpected URL ${String(input)}`);

@@ -59,7 +59,7 @@ Results are saved to `outputs/` (drafts to `papers/`). `/lit`, `/deepresearch`, 
 
 ## Sources
 
-Feynman searches alphaXiv, Semantic Scholar, OpenAlex, arXiv, PubMed, Europe PMC, bioRxiv, medRxiv, Crossref, the web, and Hugging Face, and reads local PDFs and documents. Free `OPENALEX_API_KEY` and `SEMANTIC_SCHOLAR_API_KEY` keys avoid the shared rate limits. It runs on stock [Pi](https://github.com/earendil-works/pi) with four research agents: researcher, verifier, reviewer, and writer.
+Feynman searches alphaXiv, Semantic Scholar, OpenAlex, arXiv, PubMed, Europe PMC, bioRxiv, medRxiv, Crossref, the web, and Hugging Face, and reads local PDFs and documents. Free `OPENALEX_API_KEY` and `SEMANTIC_SCHOLAR_API_KEY` keys avoid the shared rate limits. It runs on stock [Pi](https://github.com/earendil-works/pi) with four research agents: researcher, verifier, reviewer, and writer. arXiv ID lookups return the latest version for bare IDs and preserve explicitly requested versions, including in batches.
 
 ## Telemetry
 
