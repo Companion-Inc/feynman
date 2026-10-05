@@ -43,5 +43,9 @@ test("alphaXiv tools answer from OpenAlex and arXiv when alphaXiv does not answe
 	assert.match(String(paper.details.fallbackNote), /these results are from arXiv metadata and abstract/);
 	assert.match(JSON.stringify(paper.details), /Sparse Autoencoders Find Highly Interpretable Features in Language Models/);
 
+	const asked = await tools.get("alpha_ask_paper")!.execute("a", { paper: "2309.08600", question: "What dictionary size works best?" });
+	assert.match(String(asked.details.fallbackNote), /the question was not answered/);
+	assert.match(JSON.stringify(asked.details), /We use sparse autoencoders\./);
+
 	await assert.rejects(tools.get("alpha_get_paper")!.execute("q", { paper: "not-an-arxiv-id" }), /alphaXiv did not answer this call/);
 });
