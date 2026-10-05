@@ -167,13 +167,16 @@ async function getArxivPapers(query: string): Promise<Record<string, unknown>> {
 	const feed = recordValue(xmlParser.parse(xml).feed);
 	const byId = new Map<string, Record<string, unknown>>();
 	for (const row of arxivFeedEntries(feed).map(parseArxivEntry).filter((item): item is Record<string, unknown> => Boolean(item))) {
-		if (row.arxiv_id) byId.set(String(row.arxiv_id), row);
+		if (row.arxiv_id) {
+			const bare = String(row.arxiv_id);
+			const latest = byId.get(bare);
+			if (!latest || Number(row.version) >= Number(latest.version)) byId.set(bare, row);
+		}
 		if (row.id_versioned) byId.set(String(row.id_versioned), row);
 	}
 	const seen = new Map<Record<string, unknown>, string>();
 	for (const id of ids) {
-		const bare = id.replace(/v\d+$/i, "");
-		const row = byId.get(id) ?? byId.get(bare);
+		const row = byId.get(id);
 		if (!row) notFound.push(id);
 		else if (seen.has(row)) duplicates.push({ requested: id, resolved_as: seen.get(row) });
 		else {

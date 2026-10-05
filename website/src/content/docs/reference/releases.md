@@ -9,6 +9,12 @@ This page summarizes what changed in recent Feynman releases. GitHub releases us
 
 ## Unreleased
 
+## v0.5.25 - 2026-10-05
+
+- **Pi 1.0.2 and pi-subagents 0.76.0.** Pi now uses the patched brace-expansion 5.0.12 (GHSA-q2hr-2g5m-vwhr, GHSA-qhr7-859c-m2p7, GHSA-6j4f-fj2g-mc7p), so Feynman's npm audit has no exceptions left, and an npm install pulls about 120 fewer packages. Pi also retries "model at capacity" errors instead of ending the turn, and Sign in with ChatGPT reports a busy callback port instead of "OAuth state mismatch". pi-subagents frees async slots held by abandoned workflows.
+- **A timed-out paper search no longer ends a research step.** A Semantic Scholar or OpenAlex topic search that hits the 25 s timeout is answered from the other index, and other sources say which one did not respond instead of "This operation was aborted".
+- **arXiv batch versions.** Looking up a bare arXiv ID alongside an older version now returns the latest version for the bare ID regardless of feed order. An unavailable explicit version is reported in `not_found` instead of resolving to a different version. Thanks to @Kunyanli230 (#322).
+
 ## v0.5.24 - 2026-10-03
 
 - **Pi 1.0.** Feynman now runs on Pi 1.0.0, with pi-subagents 0.75.0 (background subagents start on Pi 1.0) and pi-btw 0.7.1 (allows Pi 1.x). The terminal UI is fullscreen by default and keeps its own scrollback; run `feynman --tui-mode regular`, or set `"tuiMode": "regular"` in `~/.feynman/agent/settings.json`, to use the terminal's normal scrollback. Launch warnings show inside the fullscreen UI. Pi 1.0 also adds MCP OAuth hardening, a copy-code Anthropic login for headless machines, and lower codemode token use.

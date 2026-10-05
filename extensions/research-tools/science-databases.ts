@@ -385,7 +385,14 @@ async function searchSemanticScholar(params: ScienceDatabaseSearchParams): Promi
 const OPENALEX_LOOKUP_QUERY =
 	/^(?:openalex_\w+|rate-limit|authors?|author-search|sources?|venues?|citations?|references?|work|detail)(?::|\s|$)|^(?:W\d+|doi:\s*10\.|10\.\S+\/)/i;
 
+// Each request aborts after REQUEST_TIMEOUT_MS, which fetch reports as a bare
+// "This operation was aborted".
+function isTimeout(error: unknown): boolean {
+	return error instanceof Error && error.name === "AbortError";
+}
+
 function isIndexUnavailable(error: unknown): boolean {
+	if (isTimeout(error)) return true;
 	if (error instanceof ScienceDatabaseRequestError) return error.status === 429 || error.status >= 500;
 	return error instanceof Error && /^OpenAlex request failed: (?:429|5\d\d)\b/.test(error.message);
 }
@@ -469,7 +476,13 @@ export function registerScienceDatabaseTools(pi: ExtensionAPI): void {
 			], { description: "PubMed sort order. For semanticscholar, prefer the default citation-count sort; use pub_date (newest first) only when recency matters. relevance falls back to the default when the anonymous pool is rate-limited. Ignored for other sources." })),
 		}),
 		async execute(_toolCallId, params) {
-			const result = await scienceDatabaseSearch(params as ScienceDatabaseSearchParams);
+			let result: Record<string, unknown>;
+			try {
+				result = await scienceDatabaseSearch(params as ScienceDatabaseSearchParams);
+			} catch (error) {
+				if (!isTimeout(error)) throw error;
+				throw new Error(`${params.source} did not respond within ${REQUEST_TIMEOUT_MS / 1000} s. Retry, or search another source.`);
+			}
 			return {
 				content: [{ type: "text", text: formatText(result) }],
 				details: result,

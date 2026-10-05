@@ -252,3 +252,20 @@ test("when both indexes are down the original error is reported", async () => {
 		/api\.semanticscholar\.org request failed: 503/,
 	);
 });
+
+test("a timed-out search falls back to the other index, and a timeout with no fallback names the source", async () => {
+	delete process.env.SEMANTIC_SCHOLAR_API_KEY;
+	const abort = () => Promise.reject(Object.assign(new Error("This operation was aborted"), { name: "AbortError" }));
+	globalThis.fetch = (async (input: string | URL | Request) => {
+		if (new URL(String(input)).hostname === "api.semanticscholar.org") return abort();
+		return jsonResponse({ meta: { count: 1 }, results: [openAlexWork] });
+	}) as typeof fetch;
+	const fallback = await searchTool().execute("s2-timeout", { source: "semanticscholar", query: "test-time compute" });
+	assert.match(String((fallback.details as { fallbackNote?: string }).fallbackNote), /^Semantic Scholar was unavailable \(This operation was aborted\)/);
+
+	globalThis.fetch = (async () => abort()) as typeof fetch;
+	await assert.rejects(
+		searchTool().execute("crossref-timeout", { source: "crossref", query: "10.1038/nature14539" }),
+		/^Error: crossref did not respond within 25 s\. Retry, or search another source\.$/,
+	);
+});
