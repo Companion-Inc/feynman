@@ -6,6 +6,11 @@ GitHub release notes are generated from the matching `## vX.Y.Z` section in this
 
 ## Unreleased
 
+## v0.5.27 - 2026-10-06
+
+- **Pi 1.0.3.** Sign in with ChatGPT no longer fails with `refresh_token_invalidated` after a request is cancelled during a token refresh, and closing the terminal no longer reports a `read EIO` / `setRawMode EIO` crash. In fullscreen, `Home`/`End` now move within the input line; jump to the top or bottom of the transcript with `Ctrl+Home`/`Ctrl+End`.
+- **Azure OpenAI is now `azure`.** Pi renamed the provider from `azure-openai-responses`, and `feynman model login` now offers the new name. If you set up Azure before, run `feynman model login azure` again and rename the provider in `~/.feynman/agent/models.json` and `settings.json`; `AZURE_OPENAI_*` variables are unchanged.
+
 ## v0.5.26 - 2026-10-05
 
 - **GitHub Copilot users get a research model by default.** Copilot names Claude models with dots (`claude-opus-5.5`), which Feynman did not recognize, so a new Copilot login fell back to alphabetical order and set `claude-haiku-4.5` as the default; Copilot then rejected it with "The requested model is not supported" for several users. Feynman now picks Copilot's newest Claude Opus, then Sonnet, then GPT. If `feynman status` shows `github-copilot/claude-haiku-4.5` and you did not choose it, run `feynman model set` to pick another.

@@ -25,5 +25,5 @@ export const MODEL_API_KEY_PROVIDERS: ApiKeyProviderInfo[] = [
 	{ id: "huggingface", label: "Hugging Face", envVar: "HF_TOKEN" },
 	{ id: "opencode", label: "OpenCode Zen", envVar: "OPENCODE_API_KEY" },
 	{ id: "opencode-go", label: "OpenCode Go", envVar: "OPENCODE_API_KEY" },
-	{ id: "azure-openai-responses", label: "Azure OpenAI (Responses)", envVar: "AZURE_OPENAI_API_KEY" },
+	{ id: "azure", label: "Azure OpenAI", envVar: "AZURE_OPENAI_API_KEY" },
 ];

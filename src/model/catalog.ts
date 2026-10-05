@@ -62,7 +62,7 @@ const PROVIDER_LABELS: Record<string, string> = {
 	cerebras: "Cerebras",
 	huggingface: "Hugging Face",
 	"amazon-bedrock": "Amazon Bedrock",
-	"azure-openai-responses": "Azure OpenAI Responses",
+	azure: "Azure OpenAI",
 	litellm: "LiteLLM Proxy",
 };
 
