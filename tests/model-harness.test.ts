@@ -14,7 +14,8 @@ import {
 	resolveThinkingConfig,
 	shouldRunInteractiveSetup,
 } from "../src/cli.js";
-import { buildModelStatusSnapshotFromRecords, choosePreferredModelRecord, chooseRecommendedModel, getAvailableModelRecords, isProClassModelSpec } from "../src/model/catalog.js";
+import { buildModelStatusSnapshotFromRecords, choosePreferredModelRecord, chooseRecommendedModel, getAvailableModelRecords, getSupportedModelRecords, isProClassModelSpec } from "../src/model/catalog.js";
+import { MODEL_API_KEY_PROVIDERS } from "../src/model/api-key-providers.js";
 import { getOrCreateDeviceId, isLocalModelProvider, resolveModelProviderForCommand, setDefaultModelSpec } from "../src/model/commands.js";
 import { createModelRegistry } from "../src/model/registry.js";
 import { canonicalizeModelSpec, parseModelSpec } from "../src/pi/settings.js";
@@ -280,6 +281,15 @@ test("packages CLI hides removed UI and bulk extras", () => {
 		assert.equal(installResult.status, 1, `${preset} install unexpectedly succeeded`);
 		assert.match(`${installResult.stdout}\n${installResult.stderr}`, new RegExp(`Unknown package preset: ${preset}`));
 	}
+});
+
+test("every API-key provider Feynman offers is a provider Pi knows", async () => {
+	// Pi 1.0.3 renamed azure-openai-responses to azure; a stale id would save
+	// credentials no model uses.
+	const authPath = createAuthPath({});
+	const piProviders = new Set((await getSupportedModelRecords(authPath)).map((model) => model.provider));
+	const unknown = MODEL_API_KEY_PROVIDERS.filter((provider) => provider.envVar && !piProviders.has(provider.id)).map((provider) => provider.id);
+	assert.deepEqual(unknown, []);
 });
 
 test("chooseRecommendedModel prefers Copilot Claude Opus over alphabetical order", async () => {
