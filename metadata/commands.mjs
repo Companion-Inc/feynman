@@ -147,7 +147,7 @@ export const cliCommandSections = [
 ];
 
 export const legacyFlags = [
-	{ usage: '--prompt "<text>"', description: "Run one prompt and exit." },
+	{ usage: '--prompt, -p "<text>"', description: "Run one prompt and exit." },
 	{ usage: "--alpha-login", description: "Sign in to alphaXiv and exit." },
 	{ usage: "--alpha-logout", description: "Clear alphaXiv auth and exit." },
 	{ usage: "--alpha-status", description: "Show alphaXiv auth status and exit." },

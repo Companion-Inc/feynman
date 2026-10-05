@@ -84,6 +84,13 @@ import {
 } from "../metadata/commands.mjs";
 
 const TOP_LEVEL_COMMANDS = new Set(topLevelCommandNames);
+// Flags users reach for that Feynman spells differently.
+const UNKNOWN_OPTION_HINTS: Record<string, string> = {
+	"--setup": "feynman setup",
+	"--list-models": "feynman model list",
+	"--new": "feynman --new-session",
+};
+
 // Removed commands fail instead of falling through to a chat prompt.
 const REMOVED_COMMANDS = new Set(["jobs", "paper", "rank", "serve", "watch"]);
 const ALPHA_HUB_PACKAGE_PATH = ["@companion-ai", "alpha-hub"] as const;
@@ -305,7 +312,8 @@ async function handleModelCommand(subcommand: string | undefined, args: string[]
 		return;
 	}
 
-	throw new Error(`Unknown model command: ${subcommand}\nRun \`feynman model help\` to see model commands.`);
+	const setHint = /[/:]/.test(subcommand) ? `Did you mean \`feynman model set ${subcommand}\`? ` : "";
+	throw new Error(`Unknown model command: ${subcommand}\n${setHint}Run \`feynman model help\` to see model commands.`);
 }
 
 async function handleUpdateCommand(piOptions: PiRuntimeOptions, feynmanVersion: string | undefined, source?: string): Promise<void> {
@@ -594,7 +602,7 @@ async function runMain(input: { here: string; appRoot: string; feynmanVersion: s
 				"no-session": { type: "boolean" },
 				"no-themes": { type: "boolean" },
 				"tui-mode": { type: "string" },
-				prompt: { type: "string" },
+				prompt: { type: "string", short: "p" },
 				resume: { type: "boolean", short: "r" },
 				"service-tier": { type: "string" },
 				session: { type: "string" },
@@ -614,7 +622,9 @@ async function runMain(input: { here: string; appRoot: string; feynmanVersion: s
 	} catch (error) {
 		if (error && typeof error === "object" && "code" in error && error.code === "ERR_PARSE_ARGS_UNKNOWN_OPTION") {
 			const message = error instanceof Error ? error.message : String(error);
-			throw new Error(`${message}\nRun \`feynman help\` to see available commands and flags.`);
+			const option = /Unknown option '([^']+)'/.exec(message)?.[1];
+			const hint = option ? UNKNOWN_OPTION_HINTS[option] : undefined;
+			throw new Error(`${message}\n${hint ? `Did you mean \`${hint}\`? ` : ""}Run \`feynman help\` to see available commands and flags.`);
 		}
 		throw error;
 	}
@@ -698,7 +708,7 @@ async function runMain(input: { here: string; appRoot: string; feynmanVersion: s
 			return;
 		}
 		if (rest[0]) {
-			throw new Error(`Unknown setup command: ${rest[0]}`);
+			throw new Error(`Unknown setup command: ${rest[0]}${rest[0] === "model" ? "\nTo choose a model, run `feynman model login` or `feynman model set`." : ""}`);
 		}
 		await runSetup({
 			settingsPath: feynmanSettingsPath,

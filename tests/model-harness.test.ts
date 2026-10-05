@@ -185,6 +185,25 @@ test("feynman alpha reaches Alpha Hub help when cwd is supplied before alpha", (
 	assert.doesNotMatch(result.stdout, /Research-first agent shell built on Pi/);
 });
 
+test("common wrong flags and commands name the right one", () => {
+	const homeDir = mkdtempSync(join(tmpdir(), "feynman-hints-home-"));
+	const run = (args: string[]) => {
+		const result = spawnSync(process.execPath, ["--import", "tsx", "src/index.ts", ...args], {
+			cwd: process.cwd(),
+			encoding: "utf8",
+			env: { ...process.env, FEYNMAN_HOME: homeDir, FEYNMAN_TELEMETRY: "0" },
+			input: "",
+			maxBuffer: 1024 * 1024,
+		});
+		return `${result.stdout}\n${result.stderr}`;
+	};
+	assert.match(run(["--setup"]), /Did you mean `feynman setup`\?/);
+	assert.match(run(["--list-models"]), /Did you mean `feynman model list`\?/);
+	assert.match(run(["model", "openai/gpt-6-sol"]), /Did you mean `feynman model set openai\/gpt-6-sol`\?/);
+	assert.match(run(["setup", "model"]), /To choose a model, run `feynman model login` or `feynman model set`\./);
+	assert.doesNotMatch(run(["-p", "hi", "--model", "nope/none"]), /Unknown option '-p'/);
+});
+
 test("unknown CLI flags point users to Feynman help", () => {
 	const workingDir = mkdtempSync(join(tmpdir(), "feynman-unknown-option-cwd-"));
 	const homeDir = mkdtempSync(join(tmpdir(), "feynman-unknown-option-home-"));
@@ -261,6 +280,21 @@ test("packages CLI hides removed UI and bulk extras", () => {
 		assert.equal(installResult.status, 1, `${preset} install unexpectedly succeeded`);
 		assert.match(`${installResult.stdout}\n${installResult.stderr}`, new RegExp(`Unknown package preset: ${preset}`));
 	}
+});
+
+test("chooseRecommendedModel prefers Copilot Claude Opus over alphabetical order", async () => {
+	await withoutModelEnv(async () => {
+		// Copilot writes Claude versions with dots; unrecognized, they fell back to
+		// alphabetical order and new users got claude-haiku-4.5.
+		const authPath = createAuthPath({
+			"github-copilot": { type: "oauth", refresh: "r", access: "a", expires: Date.now() + 3_600_000 },
+		});
+
+		const recommendation = await chooseRecommendedModel(authPath);
+
+		assert.equal(recommendation?.spec, "github-copilot/claude-opus-5.5");
+		assert.match(recommendation?.reason ?? "", /GitHub Copilot/);
+	});
 });
 
 test("chooseRecommendedModel prefers OpenCode Zen Claude when OpenCode is the authenticated provider", async () => {
