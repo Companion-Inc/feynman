@@ -4,17 +4,9 @@
 // Usage: node scripts/npm-audit.mjs [--prefix <dir>]
 import { spawnSync } from "node:child_process";
 
-// Pi's npm-shrinkwrap (0.99.1 and 0.99.2) locks brace-expansion 5.0.9, and npm keeps a
-// dependency's shrinkwrap over Feynman's overrides. Pi expands brace patterns only
-// through minimatch for package resource filters and model patterns, both from
-// the user's own settings or flags. Remove once a Pi release ships 5.0.12.
-const PI_BRACE_EXPANSION = {
-	reason: "brace-expansion 5.0.9 locked by Pi's shrinkwrap",
-	nodes: /(^|\/)node_modules\/@earendil-works\/pi-coding-agent\/node_modules\/brace-expansion$/,
-};
-const ALLOWED_ADVISORIES = Object.fromEntries(
-	["GHSA-q2hr-2g5m-vwhr", "GHSA-qhr7-859c-m2p7", "GHSA-6j4f-fj2g-mc7p"].map((id) => [id, PI_BRACE_EXPANSION]),
-);
+// Advisories that cannot be fixed here, with why and what removes each. None
+// are open.
+const ALLOWED_ADVISORIES = {};
 
 const result = spawnSync("npm", ["audit", "--omit=dev", "--json", ...process.argv.slice(2)], {
 	encoding: "utf8",
