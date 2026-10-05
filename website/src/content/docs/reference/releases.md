@@ -9,6 +9,13 @@ This page summarizes what changed in recent Feynman releases. GitHub releases us
 
 ## Unreleased
 
+## v0.5.26 - 2026-10-05
+
+- **GitHub Copilot users get a research model by default.** Copilot names Claude models with dots (`claude-opus-5.5`), which Feynman did not recognize, so a new Copilot login fell back to alphabetical order and set `claude-haiku-4.5` as the default; Copilot then rejected it with "The requested model is not supported" for several users. Feynman now picks Copilot's newest Claude Opus, then Sonnet, then GPT. If `feynman status` shows `github-copilot/claude-haiku-4.5` and you did not choose it, run `feynman model set` to pick another.
+- `alpha_ask_paper` answers with the arXiv metadata and abstract, marked as a fallback, when alphaXiv does not answer (for example after the login expires), like `alpha_search` and `alpha_get_paper` already did.
+- `-p` is short for `--prompt`, as in Pi. `--setup`, `--list-models`, `--new`, `feynman setup model`, and `feynman model <provider/model>` now say which command was meant.
+- pi-web-access 0.36.0: `web_search` accepts lists that a model sent as a JSON string (nicobailon/pi-web-access#491), `fetch_content` asks docs sites for markdown first, Brave prepaid keys keep working, and a `fetch_content` call whose only URL failed is reported as an error.
+
 ## v0.5.25 - 2026-10-05
 
 - **Pi 1.0.2 and pi-subagents 0.76.0.** Pi now uses the patched brace-expansion 5.0.12 (GHSA-q2hr-2g5m-vwhr, GHSA-qhr7-859c-m2p7, GHSA-6j4f-fj2g-mc7p), so Feynman's npm audit has no exceptions left, and an npm install pulls about 120 fewer packages. Pi also retries "model at capacity" errors instead of ending the turn, and Sign in with ChatGPT reports a busy callback port instead of "OAuth state mismatch". pi-subagents frees async slots held by abandoned workflows.

@@ -81,4 +81,4 @@ Core packages are not touched by `feynman update` because they ship with Feynman
 
 ## Runtime versions
 
-Feynman 0.5.25 runs Pi 1.0.2 with pi-subagents 0.76.0, pi-web-access 0.35.0, pi-docparser 4.0.0, pi-btw 0.7.1, and Alpha Hub 0.1.6 as ordinary npm dependencies, and does not modify any of them on disk. Every release is checked by booting the installed CLI in Pi RPC mode on Linux, macOS, and Windows.
+Feynman 0.5.26 runs Pi 1.0.2 with pi-subagents 0.76.0, pi-web-access 0.36.0, pi-docparser 4.0.0, pi-btw 0.7.1, and Alpha Hub 0.1.6 as ordinary npm dependencies, and does not modify any of them on disk. Every release is checked by booting the installed CLI in Pi RPC mode on Linux, macOS, and Windows.
