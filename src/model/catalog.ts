@@ -107,6 +107,19 @@ const RESEARCH_MODEL_FAMILY_PREFERENCES: ResearchModelPreference[] = [
 		matches: (model) => model.provider === "opencode" && /^gpt-\d+(?:\.\d+)*(?:-.+)?$/i.test(model.id),
 		reason: "newest OpenCode Zen GPT fallback when direct OpenAI access is unavailable",
 	},
+	// GitHub Copilot writes Claude versions with dots (claude-opus-5.5).
+	{
+		matches: (model) => model.provider === "github-copilot" && /^claude-opus-\d+(?:[.-]\d+)*$/i.test(model.id),
+		reason: "newest Claude Opus model available through GitHub Copilot",
+	},
+	{
+		matches: (model) => model.provider === "github-copilot" && /^claude-sonnet-\d+(?:[.-]\d+)*$/i.test(model.id),
+		reason: "newest Claude Sonnet model available through GitHub Copilot",
+	},
+	{
+		matches: (model) => model.provider === "github-copilot" && /^gpt-\d+(?:\.\d+)*(?:-.+)?$/i.test(model.id),
+		reason: "newest GPT model available through GitHub Copilot",
+	},
 ];
 
 const RESEARCH_MODEL_FALLBACK_PREFERENCES: ResearchModelPreference[] = [
@@ -245,7 +258,7 @@ function compareCurrentModelFamily(left: ModelRecord, right: ModelRecord): numbe
 }
 
 function currentFamilyPreference(model: ModelRecord): CurrentFamilyPreference | undefined {
-	const anthropic = /^claude-(opus|sonnet)-(\d+(?:-\d+)*)$/i.exec(model.id);
+	const anthropic = /^claude-(opus|sonnet)-(\d+(?:[.-]\d+)*)$/i.exec(model.id);
 	if (anthropic) {
 		const family = anthropic[1]!.toLowerCase();
 		const parsedVersion = parseClaudeVersion(anthropic[2]!);
@@ -260,7 +273,7 @@ function currentFamilyPreference(model: ModelRecord): CurrentFamilyPreference | 
 	}
 
 	const openAi = /^gpt-(\d+(?:\.\d+)*)(?:-(.+))?$/i.exec(model.id);
-	if (openAi && (model.provider === "openai" || model.provider === "openai-codex" || model.provider === "opencode")) {
+	if (openAi && ["openai", "openai-codex", "opencode", "github-copilot"].includes(model.provider)) {
 		const suffix = openAi[2]?.toLowerCase();
 		return {
 			family: `${model.provider}/gpt`,
@@ -298,7 +311,7 @@ function currentFamilyPreference(model: ModelRecord): CurrentFamilyPreference | 
 }
 
 function parseClaudeVersion(rawVersion: string): { version: number[]; qualityRank: number } {
-	const rawParts = rawVersion.split("-");
+	const rawParts = rawVersion.split(/[.-]/);
 	if (rawParts.length >= 2 && /^\d{8}$/.test(rawParts[rawParts.length - 1]!)) {
 		const baseParts = rawParts.slice(0, -1).map(Number);
 		return {

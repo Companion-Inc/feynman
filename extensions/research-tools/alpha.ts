@@ -134,7 +134,11 @@ export function registerAlphaTools(pi: ExtensionAPI, signedIn = isLoggedIn()): v
 			question: Type.String({ description: "Question about the paper." }),
 		}),
 		async execute(_toolCallId, params) {
-			const result = await withPaperFallback(() => askPaper(params.paper, params.question));
+			const arxivId = ARXIV_ID.exec(params.paper.trim())?.[1];
+			const result = await withPaperFallback(() => askPaper(params.paper, params.question), arxivId ? {
+				source: "arXiv metadata and abstract; the question was not answered, so answer it from the abstract or read the full text with fetch_content on the arXiv PDF",
+				run: () => searchArxiv({ query: arxivId }),
+			} : undefined);
 			return { content: [{ type: "text", text: formatText(result) }], details: result };
 		},
 	});
