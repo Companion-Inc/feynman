@@ -9,6 +9,13 @@ This page summarizes what changed in recent Feynman releases. GitHub releases us
 
 ## Unreleased
 
+## v0.5.28 - 2026-10-07
+
+- **Pi 1.0.4, pi-subagents 0.76.1, pi-web-access 0.37.0.**
+  - Pi: syntax highlighting keeps its colors across multiline strings and comments, MCP sign-in works on servers using OpenID Connect registration, and stalled Bedrock streams are retried.
+  - pi-subagents: when a subagent's result wakes the main session, that turn keeps its normal system prompt (subagent list, MCP servers, other extensions) and the provider's prompt cache. A per-tool timeout now names the tool instead of a run deadline that never fired.
+  - pi-web-access: a `web_search` or `fetch_content` call where nothing succeeded is now reported as a tool error, so the model knows to try something else; Perplexity results include page snippets and cost less.
+
 ## v0.5.27 - 2026-10-06
 
 - **Pi 1.0.3.** Sign in with ChatGPT no longer fails with `refresh_token_invalidated` after a request is cancelled during a token refresh, and closing the terminal no longer reports a `read EIO` / `setRawMode EIO` crash. In fullscreen, `Home`/`End` now move within the input line; jump to the top or bottom of the transcript with `Ctrl+Home`/`Ctrl+End`.
