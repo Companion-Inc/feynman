@@ -101,7 +101,8 @@ function parseAuthors(value: unknown): Array<Record<string, unknown>> {
 		const author = recordValue(item);
 		const collective = textValue(author.CollectiveName);
 		if (collective) return { collectiveName: collective, affiliations: [] };
-		const affiliations = listValue(recordValue(author.AffiliationInfo).Affiliation)
+		const affiliations = listValue(author.AffiliationInfo)
+			.flatMap((info) => listValue(recordValue(info).Affiliation))
 			.map((affiliation) => textValue(affiliation))
 			.filter((affiliation): affiliation is string => Boolean(affiliation));
 		return prune({
