@@ -8,6 +8,14 @@ const xmlParser = new XMLParser({
 	removeNSPrefix: true,
 });
 
+// Object-mode parsing groups tags and loses the order of mixed inline text.
+const orderedTextParser = new XMLParser({
+	preserveOrder: true,
+	removeNSPrefix: true,
+	trimValues: false,
+	parseTagValue: false,
+});
+
 function recordValue(value: unknown): Record<string, unknown> {
 	return value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : {};
 }
@@ -47,6 +55,31 @@ function textValue(value: unknown): string | undefined {
 		.map(([, item]) => textValue(item))
 		.filter((item): item is string => Boolean(item));
 	return parts.length ? parts.join(" ").replace(/\s+/g, " ").trim() : undefined;
+}
+
+function orderedChildren(value: unknown, tag: string): unknown[] {
+	return listValue(value).flatMap((node) => {
+		const children = recordValue(node)[tag];
+		return children === undefined ? [] : [children];
+	});
+}
+
+function orderedText(value: unknown): string {
+	if (typeof value === "string" || typeof value === "number") return String(value);
+	if (Array.isArray(value)) return value.map((node) => orderedText(node)).join("");
+	return Object.entries(recordValue(value))
+		.filter(([key]) => key !== ":@" && !key.startsWith("?"))
+		.map(([, children]) => orderedText(children))
+		.join("");
+}
+
+function orderedTextValue(value: unknown): string | undefined {
+	return orderedText(value).replace(/\s+/g, " ").trim() || undefined;
+}
+
+function orderedPubmedArticles(xml: string): unknown[] {
+	const set = orderedChildren(orderedTextParser.parse(xml), "PubmedArticleSet")[0];
+	return orderedChildren(set, "PubmedArticle");
 }
 
 function dateObject(value: unknown): Record<string, string> | undefined {
@@ -101,7 +134,8 @@ function parseAuthors(value: unknown): Array<Record<string, unknown>> {
 		const author = recordValue(item);
 		const collective = textValue(author.CollectiveName);
 		if (collective) return { collectiveName: collective, affiliations: [] };
-		const affiliations = listValue(recordValue(author.AffiliationInfo).Affiliation)
+		const affiliations = listValue(author.AffiliationInfo)
+			.flatMap((info) => listValue(recordValue(info).Affiliation))
 			.map((affiliation) => textValue(affiliation))
 			.filter((affiliation): affiliation is string => Boolean(affiliation));
 		return prune({
@@ -113,15 +147,17 @@ function parseAuthors(value: unknown): Array<Record<string, unknown>> {
 	});
 }
 
-function parsePubmedArticle(value: unknown): Record<string, unknown> {
+function parsePubmedArticle(value: unknown, orderedArticle: unknown): Record<string, unknown> {
 	const articleRoot = recordValue(value);
 	const citation = recordValue(articleRoot.MedlineCitation);
 	const article = recordValue(citation.Article);
 	const journal = recordValue(article.Journal);
 	const issue = recordValue(journal.JournalIssue);
-	const abstract = recordValue(article.Abstract);
-	const abstractParts = listValue(abstract.AbstractText)
-		.map((part) => textValue(part))
+	const orderedCitation = orderedChildren(orderedArticle, "MedlineCitation")[0];
+	const orderedContent = orderedChildren(orderedCitation, "Article")[0];
+	const orderedAbstract = orderedChildren(orderedContent, "Abstract")[0];
+	const abstractParts = orderedChildren(orderedAbstract, "AbstractText")
+		.map((part) => orderedTextValue(part))
 		.filter((part): part is string => Boolean(part));
 	const publicationTypes = listValue(recordValue(article.PublicationTypeList).PublicationType)
 		.map((item) => textValue(item))
@@ -140,7 +176,7 @@ function parsePubmedArticle(value: unknown): Record<string, unknown> {
 		pmid: identifiers.pmid,
 		pmcid: identifiers.pmc,
 		doi: identifiers.doi,
-		title: textValue(article.ArticleTitle),
+		title: orderedTextValue(orderedChildren(orderedContent, "ArticleTitle")[0]),
 		abstract: abstractParts.length ? abstractParts.join("\n") : undefined,
 		journal: prune({
 			title: textValue(journal.Title),
@@ -160,7 +196,8 @@ function parsePubmedArticle(value: unknown): Record<string, unknown> {
 export function parsePubmedArticles(xml: string): Record<string, unknown>[] {
 	const parsed = recordValue(xmlParser.parse(xml));
 	const set = recordValue(parsed.PubmedArticleSet);
-	return listValue(set.PubmedArticle).map((article) => parsePubmedArticle(article));
+	const orderedArticles = orderedPubmedArticles(xml);
+	return listValue(set.PubmedArticle).map((article, index) => parsePubmedArticle(article, orderedArticles[index]));
 }
 
 function jatsArticleId(meta: Record<string, unknown>, type: string): string | undefined {
@@ -238,8 +275,9 @@ export function copyrightFromPubmedXml(xml: string): Map<string, Record<string, 
 	const map = new Map<string, Record<string, unknown>>();
 	const parsed = recordValue(xmlParser.parse(xml));
 	const set = recordValue(parsed.PubmedArticleSet);
-	for (const rawArticle of listValue(set.PubmedArticle)) {
-		const article = parsePubmedArticle(rawArticle);
+	const orderedArticles = orderedPubmedArticles(xml);
+	for (const [index, rawArticle] of listValue(set.PubmedArticle).entries()) {
+		const article = parsePubmedArticle(rawArticle, orderedArticles[index]);
 		const pmid = stringValue(article.pmid);
 		if (!pmid) continue;
 		const pubmedArticle = recordValue(rawArticle);

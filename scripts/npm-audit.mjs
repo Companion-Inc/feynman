@@ -4,9 +4,16 @@
 // Usage: node scripts/npm-audit.mjs [--prefix <dir>]
 import { spawnSync } from "node:child_process";
 
-// Advisories that cannot be fixed here, with why and what removes each. None
-// are open.
-const ALLOWED_ADVISORIES = {};
+// Advisories that cannot be fixed here, with why and what removes each.
+// pi-web-access pins @modelcontextprotocol/sdk 1.27.1 exactly. The advisory is in
+// the SDK's OAuth client; pi-web-access imports only the SDK's server for its
+// `npx pi-web-access` MCP mode, and Feynman never runs that. Remove once
+// pi-web-access releases nicobailon/pi-web-access#522 (SDK 1.32.1).
+const PI_WEB_ACCESS_MCP_SDK = {
+	reason: "@modelcontextprotocol/sdk 1.27.1 pinned by pi-web-access",
+	nodes: /(^|\/)node_modules\/pi-web-access\/node_modules\/@modelcontextprotocol\/sdk$/,
+};
+const ALLOWED_ADVISORIES = { "GHSA-6qxp-vccf-f47h": PI_WEB_ACCESS_MCP_SDK };
 
 const result = spawnSync("npm", ["audit", "--omit=dev", "--json", ...process.argv.slice(2)], {
 	encoding: "utf8",
