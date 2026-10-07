@@ -9,6 +9,12 @@ This page summarizes what changed in recent Feynman releases. GitHub releases us
 
 ## Unreleased
 
+## v0.5.29 - 2026-10-07
+
+- **PubMed titles and abstracts keep their italic terms.** Text inside inline tags such as `<i>BRCA1</i>` was dropped, so a title read "patient with germline mutation" instead of "germline BRCA1 mutation", and gene names went missing from abstracts. Thanks to @KennyMcSimpson (#328).
+- **PubMed authors keep all their affiliations.** An author listed with two or more affiliations came back with none. Thanks to @KennyMcSimpson (#327).
+- Security: GHSA-6qxp-vccf-f47h (MCP SDK OAuth client). Feynman's own copies of `@modelcontextprotocol/sdk` move to 1.32.1. pi-web-access still pins 1.27.1 for its separate `npx pi-web-access` MCP server, which Feynman does not run and which does not use the affected OAuth client; it is updated in nicobailon/pi-web-access#522.
+
 ## v0.5.28 - 2026-10-07
 
 - **Pi 1.0.4, pi-subagents 0.76.1, pi-web-access 0.37.0.**
