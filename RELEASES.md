@@ -6,6 +6,10 @@ GitHub release notes are generated from the matching `## vX.Y.Z` section in this
 
 ## Unreleased
 
+## v0.5.30 - 2026-10-07
+
+- **Pi 1.1.0.** Claude browser login no longer fails with "localhost refused to connect" when port 53692 is reserved or in use (common with Hyper-V/WSL on Windows); it falls back to a free port. "Servers are busy" provider errors and Mistral stream errors are retried instead of ending the turn, fewer requests fail on context limits, and session costs count long prompts correctly. Adds Claude Haiku 5.5; Feynman's default for Anthropic stays Claude Opus.
+
 ## v0.5.29 - 2026-10-07
 
 - **PubMed titles and abstracts keep their italic terms.** Text inside inline tags such as `<i>BRCA1</i>` was dropped, so a title read "patient with germline mutation" instead of "germline BRCA1 mutation", and gene names went missing from abstracts. Thanks to @KennyMcSimpson (#328).
