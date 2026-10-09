@@ -6,6 +6,16 @@ GitHub release notes are generated from the matching `## vX.Y.Z` section in this
 
 ## Unreleased
 
+## v0.5.33 - 2026-10-09
+
+- **pi-web-access 0.38.0.**
+  - Web searches with no API key (Parallel) no longer fail with "free-tier rate limit".
+  - On a ChatGPT subscription, OpenAI web search now uses the newer, much cheaper `gpt-6-luna`, so searches take far less of your usage.
+  - `fetch_content` answer mode works with models whose provider signs in without an API key.
+  - Requests through a proxy keep their method, headers and body.
+  - Adds Ceramic, a paid search provider used only when you select it.
+- Security: pi-web-access now uses `@modelcontextprotocol/sdk` 1.32.1, so GHSA-6qxp-vccf-f47h no longer appears in `npm audit` for a Feynman install.
+
 ## v0.5.32 - 2026-10-09
 
 - **A rejected sign-in now says what to do.** When `feynman model login` or `feynman setup` ended with `invalid_grant`, usually after Sign in with ChatGPT, Feynman printed only the provider's error. It now explains that a stale browser session usually causes it: sign out of the provider's site or use a private window, then run `feynman model login <provider>` again. For ChatGPT it also suggests `feynman model login openai-codex`.
