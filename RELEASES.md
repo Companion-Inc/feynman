@@ -6,6 +6,10 @@ GitHub release notes are generated from the matching `## vX.Y.Z` section in this
 
 ## Unreleased
 
+## v0.5.32 - 2026-10-09
+
+- **A rejected sign-in now says what to do.** When `feynman model login` or `feynman setup` ended with `invalid_grant`, usually after Sign in with ChatGPT, Feynman printed only the provider's error. It now explains that a stale browser session usually causes it: sign out of the provider's site or use a private window, then run `feynman model login <provider>` again. For ChatGPT it also suggests `feynman model login openai-codex`.
+
 ## v0.5.31 - 2026-10-09
 
 - **Feynman starts again if you once installed the old `session-search` package.** Its entry stayed in `~/.feynman/agent/settings.json` after the preset was removed. On Node 24 that made every launch fail installing it, or crash Pi through its SQLite module or its extension. Feynman now drops the entry on launch; Feynman's sessions are searchable with `grep` or `rg` over `~/.feynman/sessions`.
