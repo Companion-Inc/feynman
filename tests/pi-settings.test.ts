@@ -69,7 +69,7 @@ test("later runs only add missing keys and leave an unchanged file alone", async
 	assert.equal(statSync(settingsPath).mtimeMs, modifiedAt);
 });
 
-test("pinned core packages from older releases become the bundled packages; custom packages stay", async (t) => {
+test("pinned core packages from older releases become the bundled packages; the retired session-search preset goes; custom packages stay", async (t) => {
 	const root = mkdtempSync(join(tmpdir(), "feynman-settings-legacy-packages-"));
 	t.after(() => rmSync(root, { recursive: true, force: true }));
 	const settingsPath = join(root, "settings.json");
@@ -86,6 +86,7 @@ test("pinned core packages from older releases become the bundled packages; cust
 			{ source: "npm:pi-web-access@0.28.0", skills: [] },
 			"npm:pi-otel@0.1.0",
 			"npm:@samfp/pi-memory",
+			"npm:@kaiserlich-dev/pi-session-search",
 			oldInstall,
 			{ source: "git:github.com/example/custom@v1", prompts: [] },
 		],

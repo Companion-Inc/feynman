@@ -6,6 +6,10 @@ GitHub release notes are generated from the matching `## vX.Y.Z` section in this
 
 ## Unreleased
 
+## v0.5.31 - 2026-10-09
+
+- **Feynman starts again if you once installed the old `session-search` package.** Its entry stayed in `~/.feynman/agent/settings.json` after the preset was removed. On Node 24 that made every launch fail installing it, or crash Pi through its SQLite module or its extension. Feynman now drops the entry on launch; Feynman's sessions are searchable with `grep` or `rg` over `~/.feynman/sessions`.
+
 ## v0.5.30 - 2026-10-07
 
 - **Pi 1.1.0.** Claude browser login no longer fails with "localhost refused to connect" when port 53692 is reserved or in use (common with Hyper-V/WSL on Windows); it falls back to a free port. "Servers are busy" provider errors and Mistral stream errors are retried instead of ending the turn, fewer requests fail on context limits, and session costs count long prompts correctly. Adds Claude Haiku 5.5; Feynman's default for Anthropic stays Claude Opus.
