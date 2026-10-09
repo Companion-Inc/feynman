@@ -163,9 +163,18 @@ function packageSourceName(source: string): string | undefined {
 // sessions (pi-subagents) see the same resources as the main session. Entries
 // for those packages from any other install or version are replaced; npm
 // entries for them are the pinned core list written by Feynman <= 0.4.0.
+// @kaiserlich-dev/pi-session-search, the retired session-search preset, is
+// dropped: it never saw Feynman's sessions, and on Node 24 its better-sqlite3
+// fails to install or aborts Pi on exit, so Feynman could not start.
 export function reconcileFeynmanPackages(packages: unknown, appRoot: string): PackageSource[] {
 	const feynmanName = (JSON.parse(readFileSync(join(appRoot, "package.json"), "utf8")) as { name: string }).name;
-	const managedNames = new Set<string>([feynmanName, "@companion-ai/alpha-hub", "pi-otel", ...BUNDLED_PI_PACKAGES]);
+	const managedNames = new Set<string>([
+		feynmanName,
+		"@companion-ai/alpha-hub",
+		"pi-otel",
+		"@kaiserlich-dev/pi-session-search",
+		...BUNDLED_PI_PACKAGES,
+	]);
 	const configured = Array.isArray(packages) ? (packages as PackageSource[]) : [];
 	const userPackages = configured.filter((entry) => {
 		const source = typeof entry === "string" ? entry : entry.source;
