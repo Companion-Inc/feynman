@@ -147,7 +147,7 @@ async function fetchJson(url: URL): Promise<{ credentialStatus: string; endpoint
 	}
 	if (!response.ok) {
 		const snippet = scrubOpenAlexText(response.body, url).slice(0, 240);
-		throw openAlexRequestFailure(response.status, response.statusText, snippet, auth.usingApiKey);
+		throw openAlexRequestFailure(response.status, response.statusText, snippet, auth.usingApiKey, url);
 	}
 	return { ...auth, endpoint, payload: response.payload };
 }

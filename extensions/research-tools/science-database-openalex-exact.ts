@@ -48,7 +48,20 @@ function endpointPath(path: string): URL {
 
 export const OPENALEX_API_KEY_HINT = "Get a free OpenAlex API key at https://openalex.org/settings/api and set OPENALEX_API_KEY; anonymous requests share a small daily budget.";
 
-export function openAlexRequestFailure(status: number, statusText: string, snippet: string, usingApiKey: boolean): Error {
+const OPENALEX_ENTITY_SEARCH: Record<string, [entity: string, search: string]> = {
+	works: ["work", "openalex_search_works:<title or topic>"],
+	authors: ["author", "openalex_search_authors:<name>"],
+	sources: ["source", "sources:<name>"],
+};
+
+export function openAlexRequestFailure(status: number, statusText: string, snippet: string, usingApiKey: boolean, url?: URL): Error {
+	// OpenAlex answers an unknown ID, or a name passed where an ID belongs, with an HTML 404 page.
+	const lookup = status === 404 ? url?.pathname.match(/^\/(works|authors|sources)\/([^/]+)$/) : null;
+	const known = lookup ? OPENALEX_ENTITY_SEARCH[lookup[1]!] : undefined;
+	if (lookup && known) {
+		const [entity, search] = known;
+		return new Error(`OpenAlex has no ${entity} "${decodeURIComponent(lookup[2]!)}". Lookups take an OpenAlex ID or DOI; to find one by name or title, use ${search}.`);
+	}
 	const hint = !usingApiKey && [401, 403, 429].includes(status) ? ` ${OPENALEX_API_KEY_HINT}` : "";
 	return new Error(`OpenAlex request failed: ${status} ${statusText}. ${snippet}${hint}`);
 }
@@ -97,7 +110,7 @@ async function fetchJson(url: URL): Promise<{ credentialStatus: string; endpoint
 		});
 		if (!response.ok) {
 			const snippet = scrubOpenAlexText((await response.text()).slice(0, 4096), url).slice(0, 240);
-			throw openAlexRequestFailure(response.status, response.statusText, snippet, auth.usingApiKey);
+			throw openAlexRequestFailure(response.status, response.statusText, snippet, auth.usingApiKey, url);
 		}
 		return { ...auth, endpoint, payload: await response.json() };
 	} finally {
