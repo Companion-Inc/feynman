@@ -271,6 +271,25 @@ test("OpenAlex failures without a key explain how to get a free key", async () =
 	);
 });
 
+test("an OpenAlex lookup of an ID that does not exist says so and how to search instead", async () => {
+	globalThis.fetch = async () => new Response("<!doctype html><title>404 Not Found</title>", { status: 404, statusText: "Not Found" });
+	const tool = registerTools().get("feynman_science_database_search")!;
+
+	for (const [query, entity, search] of [
+		["author: Geoffrey Hinton", "author", "openalex_search_authors:"],
+		["openalex_get_author:Jennifer Doudna", "author", "openalex_search_authors:"],
+		["openalex_get_work:Attention is all you need", "work", "openalex_search_works:"],
+		["work: W99999999999", "work", "openalex_search_works:"],
+	]) {
+		await assert.rejects(tool.execute("call-openalex-404", { source: "openalex", query }), (error: Error) => {
+			assert.match(error.message, new RegExp(`OpenAlex has no ${entity} `));
+			assert.ok(error.message.includes(search), error.message);
+			assert.doesNotMatch(error.message, /doctype/);
+			return true;
+		});
+	}
+});
+
 test("OpenAlex semantic searches are paced and a short 429 is retried once", async () => {
 	delete process.env.OPENALEX_API_KEY;
 	const starts: number[] = [];
