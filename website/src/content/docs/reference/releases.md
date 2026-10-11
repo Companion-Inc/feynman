@@ -9,6 +9,8 @@ This page summarizes what changed in recent Feynman releases. GitHub releases us
 
 ## Unreleased
 
+- **PubMed collective authors keep their affiliations.** Consortium and study-group authors now retain their institutional affiliations in article metadata, just like individual authors.
+
 ## v0.5.34 - 2026-10-09
 
 - **OpenAlex lookups that miss now say why.** Looking up a name or title where OpenAlex expects an ID (for example `openalex_get_work:Attention is all you need` or `author: Geoffrey Hinton`), or an ID that does not exist, returned OpenAlex's raw HTML "404 Not Found" page. The error now says no such work, author or source exists and names the search command to use instead, so the agent recovers on its next call.

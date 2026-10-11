@@ -221,3 +221,20 @@ test("PubMed source supports metadata, ID conversion, related links, full text, 
 	assert.equal(new URL(requests.find((url) => url.includes("/elink.fcgi"))!).searchParams.get("linkname"), "pubmed_pubmed");
 	assert.equal(new URL(requests.find((url) => url.includes("/ecitmatch.cgi"))!).searchParams.get("db"), "pubmed");
 });
+
+test("PubMed metadata tool preserves collective author affiliations", async () => {
+	globalThis.fetch = async (input) => {
+		assert.ok(String(input).includes("/efetch.fcgi"));
+		return textResponse(pubmedXml.replace("</AuthorList>", "<Author><CollectiveName>Clinical Research Consortium</CollectiveName><AffiliationInfo><Affiliation>University Hospital</Affiliation></AffiliationInfo><AffiliationInfo><Affiliation>Research Network</Affiliation></AffiliationInfo></Author></AuthorList>"));
+	};
+	const result = await registerTools().get("feynman_science_database_search")!.execute("pubmed-group-affiliations", {
+		source: "pubmed",
+		query: "pmid:35486828",
+		limit: 1,
+	});
+	const details = result.details as { results: Array<{ authors: Array<Record<string, unknown>> }> };
+	assert.deepEqual(details.results[0]?.authors, [
+		{ lastName: "Doudna", foreName: "Jennifer", initials: "J", affiliations: ["Example Lab"] },
+		{ collectiveName: "Clinical Research Consortium", affiliations: ["University Hospital", "Research Network"] },
+	]);
+});

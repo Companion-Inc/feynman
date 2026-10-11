@@ -17,6 +17,29 @@ for (const affiliations of [[], ["Example Lab"], ["Example Lab", "University Hos
 	});
 }
 
+for (const affiliations of [[], ["University Hospital"], ["University Hospital", "Research Network"]]) {
+	test(`PubMed preserves ${affiliations.length} collective author affiliations`, () => {
+		const entries = affiliations.map((name) => `<AffiliationInfo><Affiliation>${name}</Affiliation></AffiliationInfo>`).join("");
+		const xml = articleXml(`<Author><CollectiveName>Clinical Research Consortium</CollectiveName>${entries}</Author>`);
+		const expected = [{ collectiveName: "Clinical Research Consortium", affiliations }];
+		assert.deepEqual(parsePubmedArticles(xml)[0]?.authors, expected);
+		assert.deepEqual((copyrightFromPubmedXml(xml).get("12345")?.article as Record<string, unknown>).authors, expected);
+	});
+}
+
+test("PubMed keeps collective and individual affiliations with their own author", () => {
+	const xml = articleXml(`
+		<Author><LastName>Lee</LastName><AffiliationInfo><Affiliation>First Lab</Affiliation></AffiliationInfo></Author>
+		<Author><CollectiveName>Clinical Research Consortium</CollectiveName><AffiliationInfo><Affiliation>University Hospital</Affiliation></AffiliationInfo><AffiliationInfo><Affiliation>Research Network</Affiliation></AffiliationInfo></Author>
+		<Author><LastName>Patel</LastName><AffiliationInfo><Affiliation>Second Institute</Affiliation></AffiliationInfo></Author>
+	`);
+	assert.deepEqual(parsePubmedArticles(xml)[0]?.authors, [
+		{ lastName: "Lee", affiliations: ["First Lab"] },
+		{ collectiveName: "Clinical Research Consortium", affiliations: ["University Hospital", "Research Network"] },
+		{ lastName: "Patel", affiliations: ["Second Institute"] },
+	]);
+});
+
 test("PubMed keeps repeated affiliations with their own author in metadata and copyright results", () => {
 	const xml = articleXml(`
 		<Author><LastName>Lee</LastName><AffiliationInfo><Affiliation>First Lab</Affiliation></AffiliationInfo><AffiliationInfo><Affiliation>First Hospital</Affiliation></AffiliationInfo></Author>

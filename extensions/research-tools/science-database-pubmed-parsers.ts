@@ -133,11 +133,11 @@ function parseAuthors(value: unknown): Array<Record<string, unknown>> {
 	return listValue(value).map((item) => {
 		const author = recordValue(item);
 		const collective = textValue(author.CollectiveName);
-		if (collective) return { collectiveName: collective, affiliations: [] };
 		const affiliations = listValue(author.AffiliationInfo)
 			.flatMap((info) => listValue(recordValue(info).Affiliation))
 			.map((affiliation) => textValue(affiliation))
 			.filter((affiliation): affiliation is string => Boolean(affiliation));
+		if (collective) return { collectiveName: collective, affiliations };
 		return prune({
 			lastName: textValue(author.LastName),
 			foreName: textValue(author.ForeName),
