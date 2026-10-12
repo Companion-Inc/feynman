@@ -1,8 +1,10 @@
 import { execFile, spawnSync } from "node:child_process";
 import { existsSync } from "node:fs";
+import { homedir } from "node:os";
 import { dirname, delimiter } from "node:path";
 
 const isWindows = process.platform === "win32";
+const isLinux = process.platform === "linux";
 const programFiles = process.env.PROGRAMFILES ?? "C:\\Program Files";
 const localAppData = process.env.LOCALAPPDATA ?? "";
 
@@ -20,14 +22,36 @@ export const BROWSER_FALLBACK_PATHS = isWindows
 			`${programFiles} (x86)\\Google\\Chrome\\Application\\chrome.exe`,
 			`${localAppData}\\Google\\Chrome\\Application\\chrome.exe`,
 			`${programFiles}\\Microsoft\\Edge\\Application\\msedge.exe`,
+			`${programFiles} (x86)\\Microsoft\\Edge\\Application\\msedge.exe`,
 			`${programFiles}\\BraveSoftware\\Brave-Browser\\Application\\brave.exe`,
+			`${localAppData}\\BraveSoftware\\Brave-Browser\\Application\\brave.exe`,
 		]
-	: [
-			"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
-			"/Applications/Chromium.app/Contents/MacOS/Chromium",
-			"/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
-			"/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge",
-		];
+	: isLinux
+		? [
+				"/usr/bin/google-chrome",
+				"/usr/bin/google-chrome-stable",
+				"/usr/bin/chromium",
+				"/usr/bin/chromium-browser",
+				"/snap/bin/chromium",
+				"/usr/bin/microsoft-edge",
+				"/usr/bin/brave-browser",
+				"/opt/google/chrome/chrome",
+			]
+		: ["/Applications", `${homedir()}/Applications`].flatMap((dir) => [
+				`${dir}/Google Chrome.app/Contents/MacOS/Google Chrome`,
+				`${dir}/Chromium.app/Contents/MacOS/Chromium`,
+				`${dir}/Brave Browser.app/Contents/MacOS/Brave Browser`,
+				`${dir}/Microsoft Edge.app/Contents/MacOS/Microsoft Edge`,
+			]);
+
+export const BROWSER_COMMANDS = [
+	"google-chrome",
+	"google-chrome-stable",
+	"chromium",
+	"chromium-browser",
+	"microsoft-edge",
+	"brave-browser",
+];
 
 export const MERMAID_FALLBACK_PATHS = isWindows
 	? []
@@ -97,6 +121,39 @@ export async function resolveExecutableAsync(name: string, fallbackPaths: string
 	});
 }
 
+export type BrowserLookupOptions = {
+	fallbackPaths?: string[];
+	fileExists?: (path: string) => boolean;
+	resolveCommand?: (name: string) => string | undefined;
+};
+
+export function resolveBrowser({
+	fallbackPaths = BROWSER_FALLBACK_PATHS,
+	fileExists = existsSync,
+	resolveCommand = (name) => resolveExecutable(name),
+}: BrowserLookupOptions = {}): string | undefined {
+	const fallback = fallbackPaths.find((candidate) => fileExists(candidate));
+	if (fallback) {
+		return fallback;
+	}
+	for (const name of BROWSER_COMMANDS) {
+		const resolved = resolveCommand(name);
+		if (resolved) {
+			return resolved;
+		}
+	}
+	return undefined;
+}
+
+export async function resolveBrowserAsync(): Promise<string | undefined> {
+	const fallback = findInFallbackPaths(BROWSER_FALLBACK_PATHS);
+	if (fallback) {
+		return fallback;
+	}
+	const resolved = await Promise.all(BROWSER_COMMANDS.map((name) => resolveExecutableAsync(name)));
+	return resolved.find(Boolean);
+}
+
 export type ResolvedExecutables = {
 	pandoc: string | undefined;
 	mermaid: string | undefined;
@@ -107,7 +164,7 @@ export async function resolveAllExecutables(): Promise<ResolvedExecutables> {
 	const [pandoc, mermaid, browser] = await Promise.all([
 		resolveExecutableAsync("pandoc", PANDOC_FALLBACK_PATHS),
 		resolveExecutableAsync("mmdc", MERMAID_FALLBACK_PATHS),
-		resolveExecutableAsync("google-chrome", BROWSER_FALLBACK_PATHS),
+		resolveBrowserAsync(),
 	]);
 	return { pandoc, mermaid, browser };
 }

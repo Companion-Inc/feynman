@@ -3,9 +3,9 @@ import { createRequire } from "node:module";
 import { delimiter, dirname, resolve, win32 } from "node:path";
 
 import {
-	BROWSER_FALLBACK_PATHS,
 	MERMAID_FALLBACK_PATHS,
 	PANDOC_FALLBACK_PATHS,
+	resolveBrowser,
 	resolveExecutable,
 	type ResolvedExecutables,
 } from "../system/executables.js";
@@ -183,7 +183,7 @@ export function buildPiEnv(options: PiRuntimeOptions, executables?: ResolvedExec
 	const pandocPath = process.env.PANDOC_PATH ?? executables?.pandoc ?? resolveExecutable("pandoc", PANDOC_FALLBACK_PATHS);
 	const mermaidPath = process.env.MERMAID_CLI_PATH ?? executables?.mermaid ?? resolveExecutable("mmdc", MERMAID_FALLBACK_PATHS);
 	const browserPath =
-		process.env.PUPPETEER_EXECUTABLE_PATH ?? executables?.browser ?? resolveExecutable("google-chrome", BROWSER_FALLBACK_PATHS);
+		process.env.PUPPETEER_EXECUTABLE_PATH ?? executables?.browser ?? resolveBrowser();
 	return {
 		...process.env,
 		PATH: [binPath, process.env.PATH ?? "", process.platform === "win32" ? findWindowsBash()?.addDir : undefined]

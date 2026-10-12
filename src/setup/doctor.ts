@@ -5,7 +5,7 @@ import { readFileSync } from "node:fs";
 
 import { verifyAlphaAuthStatus } from "../alpha-auth-status.js";
 import { formatPiWebAccessDoctorLines, getPiWebAccessStatus } from "../pi/web-access.js";
-import { BROWSER_FALLBACK_PATHS, PANDOC_FALLBACK_PATHS, resolveExecutable } from "../system/executables.js";
+import { PANDOC_FALLBACK_PATHS, resolveBrowser, resolveExecutable } from "../system/executables.js";
 import { readJson } from "../pi/settings.js";
 import { findWindowsBash, validatePiInstallation, WINDOWS_BASH_MISSING_NOTICE } from "../pi/runtime.js";
 import { isTelemetryDisabled } from "../telemetry/posthog.js";
@@ -68,7 +68,7 @@ export type FeynmanStatusSnapshot = {
 
 export async function collectStatusSnapshot(options: DoctorOptions): Promise<FeynmanStatusSnapshot> {
 	const pandocPath = resolveExecutable("pandoc", PANDOC_FALLBACK_PATHS);
-	const browserPath = process.env.PUPPETEER_EXECUTABLE_PATH ?? resolveExecutable("google-chrome", BROWSER_FALLBACK_PATHS);
+	const browserPath = process.env.PUPPETEER_EXECUTABLE_PATH ?? resolveBrowser();
 	const missingPiBits = validatePiInstallation(options.appRoot);
 	const webStatus = getPiWebAccessStatus();
 	const modelStatus = buildModelStatusSnapshotFromRecords(
@@ -141,7 +141,7 @@ export async function runDoctor(options: DoctorOptions): Promise<void> {
 	const supportedModels = await getSupportedModelRecords(options.authPath);
 	const modelStatus = await collectStatusSnapshot(options);
 	const pandocPath = resolveExecutable("pandoc", PANDOC_FALLBACK_PATHS);
-	const browserPath = process.env.PUPPETEER_EXECUTABLE_PATH ?? resolveExecutable("google-chrome", BROWSER_FALLBACK_PATHS);
+	const browserPath = process.env.PUPPETEER_EXECUTABLE_PATH ?? resolveBrowser();
 	const missingPiBits = validatePiInstallation(options.appRoot);
 
 	printPanel("Feynman Doctor", [
