@@ -1,41 +1,29 @@
 import { getUserName as getAlphaUserName, isLoggedIn as isAlphaLoggedIn } from "@companion-ai/alpha-hub/lib";
 import { getValidToken as getValidAlphaToken } from "@companion-ai/alpha-hub/lib/auth";
 
-import { readFileSync } from "node:fs";
+import { ModelRuntime, SettingsManager } from "@earendil-works/pi-coding-agent";
+import { dirname } from "node:path";
 
 import { verifyAlphaAuthStatus } from "../alpha-auth-status.js";
 import { formatPiWebAccessDoctorLines, getPiWebAccessStatus } from "../pi/web-access.js";
 import { PANDOC_FALLBACK_PATHS, resolveBrowser, resolveExecutable } from "../system/executables.js";
-import { readJson } from "../pi/settings.js";
 import { findWindowsBash, validatePiInstallation, WINDOWS_BASH_MISSING_NOTICE } from "../pi/runtime.js";
 import { isTelemetryDisabled } from "../telemetry/posthog.js";
 import { printInfo, printPanel, printSection } from "../ui/terminal.js";
 import { getCurrentModelSpec } from "../model/commands.js";
 import { buildModelStatusSnapshotFromRecords, getAvailableModelRecords, getSupportedModelRecords } from "../model/catalog.js";
-import { createModelRegistry, getModelsJsonPath } from "../model/registry.js";
+import { createModelRuntime, getModelsJsonPath } from "../model/registry.js";
 import { getConfiguredServiceTier } from "../model/service-tier.js";
 
-function findProvidersMissingApiKey(modelsJsonPath: string): string[] {
-	try {
-		const raw = readFileSync(modelsJsonPath, "utf8").trim();
-		if (!raw) return [];
-		const parsed = JSON.parse(raw) as any;
-		const providers = parsed?.providers;
-		if (!providers || typeof providers !== "object") return [];
-		const missing: string[] = [];
-		for (const [providerId, config] of Object.entries(providers as Record<string, unknown>)) {
-			if (!config || typeof config !== "object") continue;
-			const models = (config as any).models;
-			if (!Array.isArray(models) || models.length === 0) continue;
-			const apiKey = (config as any).apiKey;
-			if (typeof apiKey !== "string" || apiKey.trim().length === 0) {
-				missing.push(providerId);
-			}
-		}
-		return missing;
-	} catch {
-		return [];
-	}
+// Custom providers (in models.json, not Pi's built-in catalog) that list models
+// but have no credential Pi can resolve, so none of their models are available.
+async function findProvidersMissingApiKey(modelRuntime: ModelRuntime, authPath: string): Promise<string[]> {
+	const builtIn = await ModelRuntime.create({ authPath, modelsPath: null, allowModelNetwork: false, refreshOnCreate: false });
+	return modelRuntime
+		.getProviders()
+		.filter((provider) => !builtIn.getProvider(provider.id) && modelRuntime.getModels(provider.id).length > 0)
+		.filter((provider) => !modelRuntime.getProviderAuthStatus(provider.id).configured)
+		.map((provider) => provider.id);
 }
 
 export type DoctorOptions = {
@@ -136,8 +124,8 @@ export async function runStatus(options: DoctorOptions): Promise<void> {
 }
 
 export async function runDoctor(options: DoctorOptions): Promise<void> {
-	const settings = readJson(options.settingsPath);
-	const modelRegistry = await createModelRegistry(options.authPath);
+	const settings = SettingsManager.create(options.workingDir, dirname(options.settingsPath), { projectTrusted: false });
+	const modelRuntime = await createModelRuntime(options.authPath);
 	const supportedModels = await getSupportedModelRecords(options.authPath);
 	const modelStatus = await collectStatusSnapshot(options);
 	const pandocPath = resolveExecutable("pandoc", PANDOC_FALLBACK_PATHS);
@@ -172,11 +160,9 @@ export async function runDoctor(options: DoctorOptions): Promise<void> {
 			.join(", ");
 		console.log(`  authenticated sample: ${sample}`);
 	}
-	console.log(
-		`default model: ${typeof settings.defaultProvider === "string" && typeof settings.defaultModel === "string"
-			? `${settings.defaultProvider}/${settings.defaultModel}`
-			: "not set"}`,
-	);
+	const defaultProvider = settings.getDefaultProvider();
+	const defaultModel = settings.getDefaultModel();
+	console.log(`default model: ${defaultProvider && defaultModel ? `${defaultProvider}/${defaultModel}` : "not set"}`);
 	console.log(`default model valid: ${modelStatus.modelValid ? "yes" : "no"}`);
 	console.log(`authenticated providers: ${modelStatus.authenticatedProviderCount}`);
 	console.log(`authenticated models: ${modelStatus.authenticatedModelCount}`);
@@ -185,7 +171,7 @@ export async function runDoctor(options: DoctorOptions): Promise<void> {
 	if (modelStatus.recommendedModelReason) {
 		console.log(`  why: ${modelStatus.recommendedModelReason}`);
 	}
-	const modelsError = modelRegistry.getError();
+	const modelsError = modelRuntime.getError();
 	if (modelsError) {
 		console.log("models.json: error");
 		for (const line of modelsError.split("\n")) {
@@ -194,23 +180,24 @@ export async function runDoctor(options: DoctorOptions): Promise<void> {
 	} else {
 		const modelsJsonPath = getModelsJsonPath(options.authPath);
 		console.log(`models.json: ${modelsJsonPath}`);
-		const missingApiKeyProviders = findProvidersMissingApiKey(modelsJsonPath);
+		const missingApiKeyProviders = await findProvidersMissingApiKey(modelRuntime, options.authPath);
 		if (missingApiKeyProviders.length > 0) {
 			console.log(`  warning: provider(s) missing apiKey: ${missingApiKeyProviders.join(", ")}`);
-			console.log("  note: custom providers with a models[] list need apiKey in models.json to be available.");
+			console.log("  note: custom providers with a models[] list need an apiKey in models.json or a stored key to be available.");
 		}
 	}
 	console.log(`pandoc: ${pandocPath ?? "missing"}`);
 	if (process.platform === "win32") {
-		const shellPath = settings.shellPath;
-		console.log(`bash: ${typeof shellPath === "string" ? `${shellPath} (shellPath)` : findWindowsBash()?.path ?? `missing. ${WINDOWS_BASH_MISSING_NOTICE}`}`);
+		const shellPath = settings.getShellPath();
+		console.log(`bash: ${shellPath ? `${shellPath} (shellPath)` : findWindowsBash()?.path ?? `missing. ${WINDOWS_BASH_MISSING_NOTICE}`}`);
 	}
 	console.log(`browser preview runtime: ${browserPath ?? "missing"}`);
 	for (const line of formatPiWebAccessDoctorLines()) {
 		console.log(line);
 	}
-	console.log(`quiet startup: ${settings.quietStartup === "header" ? "header only" : settings.quietStartup === true ? "enabled" : "disabled"}`);
-	console.log(`theme: ${typeof settings.theme === "string" ? settings.theme : "not set"}`);
+	const quietStartup = settings.getQuietStartup();
+	console.log(`quiet startup: ${quietStartup === "header" ? "header only" : quietStartup === true ? "enabled" : "disabled"}`);
+	console.log(`theme: ${settings.getThemeSetting() ?? "not set"}`);
 	if (missingPiBits.length > 0) {
 		console.log("pi runtime: missing files");
 		for (const entry of missingPiBits) {

@@ -1,9 +1,9 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 
-import { resolveCliModel, type ModelRegistry, type ModelRuntime, type PackageSource } from "@earendil-works/pi-coding-agent";
+import { resolveCliModel, SettingsManager, type ModelRuntime, type PackageSource } from "@earendil-works/pi-coding-agent";
 
-import { parseJsonText, readJsonFile } from "../config/json-file.js";
+import { parseJsonText } from "../config/json-file.js";
 import { BUNDLED_PI_PACKAGES, getFeynmanPackageSources, resolvePackageRoot } from "./runtime.js";
 import { choosePreferredModelRecord, getAvailableModelRecords } from "../model/catalog.js";
 import { migrateBareEnvApiKeys } from "../model/models-json.js";
@@ -11,16 +11,10 @@ import { getModelsJsonPath } from "../model/registry.js";
 
 export type ThinkingLevel = "off" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max";
 
-type ModelLookup = Pick<ModelRegistry, "find"> | Pick<ModelRuntime, "getModel">;
+type ModelLookup = Pick<ModelRuntime, "getModel">;
 
 // Written by Feynman <= 0.4.0 next to a subagent extension path it managed.
 const LEGACY_RESEARCHER_EXTENSION_MARKER = "_feynmanResearchToolsExtension";
-
-function findModel(modelLookup: ModelLookup, provider: string, id: string) {
-	return "find" in modelLookup
-		? modelLookup.find(provider, id)
-		: modelLookup.getModel(provider, id);
-}
 
 export function parseModelSpec(spec: string, modelLookup: ModelLookup) {
 	const trimmed = spec.trim();
@@ -32,7 +26,7 @@ export function parseModelSpec(spec: string, modelLookup: ModelLookup) {
 
 		const provider = trimmed.slice(0, separatorIndex);
 		const id = trimmed.slice(separatorIndex + 1);
-		const model = findModel(modelLookup, provider, id);
+		const model = modelLookup.getModel(provider, id);
 		if (model) {
 			return model;
 		}
@@ -87,23 +81,6 @@ export function normalizeThinkingLevel(value: string | undefined): ThinkingLevel
 	}
 
 	return undefined;
-}
-
-export function readJson(path: string): Record<string, unknown> {
-	if (!existsSync(path)) {
-		return {};
-	}
-
-	try {
-		return readJsonFile(path) as Record<string, unknown>;
-	} catch (error) {
-		if (process.env.FEYNMAN_DEBUG === "1") {
-			process.stderr.write(
-				`[feynman] warning: failed to parse ${path}, treating as empty (${error instanceof Error ? error.message : "unknown error"})\n`,
-			);
-		}
-		return {};
-	}
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -231,25 +208,25 @@ function isFeynmanSubagentExtension(path: unknown): boolean {
 	return typeof path === "string" && (/[\\/]extensions[\\/]research-tools\.ts$/.test(path) || /[\\/]pi-web-access$/.test(path));
 }
 
-export async function ensureFeynmanSettings(
-	settingsPath: string,
-	bundledSettingsPath: string,
-	appRoot: string,
-	defaultThinkingLevel: ThinkingLevel,
-	authPath: string,
-): Promise<void> {
-	// Validate before model discovery or either settings write. Invalid custom
-	// configuration must not silently turn into an empty/default configuration.
-	const subagentDefaults = prepareSubagentDefaults(settingsPath);
-	const existing = existsSync(settingsPath) ? readConfigObject(settingsPath, "Feynman settings") : undefined;
-	const settings: Record<string, unknown> = existing ? { ...existing.value } : {};
-	const defaults = readConfigObject(bundledSettingsPath, "bundled Feynman settings").value;
-	migrateBareEnvApiKeys(getModelsJsonPath(authPath));
+// Bundled defaults (.feynman/settings.json) and the thinking level, seeded
+// through Pi's SettingsManager setters.
+const PI_SETTING_SETTERS: Record<string, (settings: SettingsManager, value: never) => void> = {
+	theme: (settings, value: string) => settings.setTheme(value),
+	quietStartup: (settings, value: Parameters<SettingsManager["setQuietStartup"]>[0]) => settings.setQuietStartup(value),
+	collapseChangelog: (settings, value: boolean) => settings.setCollapseChangelog(value),
+	editorPaddingX: (settings, value: number) => settings.setEditorPaddingX(value),
+	showHardwareCursor: (settings, value: boolean) => settings.setShowHardwareCursor(value),
+	defaultThinkingLevel: (settings, value: ThinkingLevel) => settings.setDefaultThinkingLevel(value),
+};
 
-	for (const [key, value] of Object.entries({ ...defaults, defaultThinkingLevel })) {
-		if (settings[key] === undefined) settings[key] = value;
+// SettingsManager has no setter for `subagents` (pi-subagents' key), for deleting `retry`, or for a
+// bundled default outside PI_SETTING_SETTERS, so those are edited in the file directly.
+function updateSettingsWithoutPiSetter(settingsPath: string, appRoot: string, defaults: Record<string, unknown>): void {
+	const existing = existsSync(settingsPath) ? readConfigObject(settingsPath, "Feynman settings").value : {};
+	const settings = structuredClone(existing);
+	for (const [key, value] of Object.entries(defaults)) {
+		if (!(key in PI_SETTING_SETTERS) && settings[key] === undefined) settings[key] = value;
 	}
-	settings.packages = reconcileFeynmanPackages(settings.packages, appRoot);
 	removeLegacyResearcherExtension(settings);
 	// 0.5.0-0.5.5 seeded a 6-retry, 5s backoff that left a dead connection
 	// retrying silently for over five minutes; drop that exact value for Pi's default.
@@ -265,12 +242,41 @@ export async function ensureFeynmanSettings(
 			settings.subagents.defaultSubagentOnlyExtensions = feynmanSubagentExtensions(appRoot);
 		}
 	}
+	if (JSON.stringify(settings) === JSON.stringify(existing)) return;
+	mkdirSync(dirname(settingsPath), { recursive: true });
+	writeFileSync(settingsPath, JSON.stringify(settings, null, 2) + "\n", "utf8");
+}
 
-	if (!settings.defaultProvider || !settings.defaultModel) {
+export async function ensureFeynmanSettings(
+	settingsPath: string,
+	bundledSettingsPath: string,
+	appRoot: string,
+	defaultThinkingLevel: ThinkingLevel,
+	authPath: string,
+): Promise<void> {
+	// Validate before model discovery or either settings write. Invalid custom
+	// configuration must not silently turn into an empty/default configuration.
+	const subagentDefaults = prepareSubagentDefaults(settingsPath);
+	// Feynman's agent settings are global; an untrusted project's .pi/settings.json stays out.
+	const settings = SettingsManager.create(process.cwd(), dirname(settingsPath), { projectTrusted: false });
+	const loadError = settings.drainErrors().find((error) => error.scope === "global")?.error;
+	const current: unknown = settings.getGlobalSettings();
+	if (loadError || !isRecord(current)) {
+		throw new Error(`Invalid Feynman settings at ${settingsPath}: ${loadError?.message ?? "expected a JSON object"}. Fix the JSON or delete the file. The file was not changed.`);
+	}
+	const defaults = readConfigObject(bundledSettingsPath, "bundled Feynman settings").value;
+	migrateBareEnvApiKeys(getModelsJsonPath(authPath));
+
+	for (const [key, value] of Object.entries({ ...defaults, defaultThinkingLevel })) {
+		if (current[key] === undefined) PI_SETTING_SETTERS[key]?.(settings, value as never);
+	}
+	const packages = reconcileFeynmanPackages(current.packages, appRoot);
+	if (JSON.stringify(packages) !== JSON.stringify(current.packages)) settings.setPackages(packages);
+
+	if (!settings.getDefaultProvider() || !settings.getDefaultModel()) {
 		const preferredModel = choosePreferredModelRecord(await getAvailableModelRecords(authPath));
 		if (preferredModel) {
-			settings.defaultProvider = preferredModel.provider;
-			settings.defaultModel = preferredModel.id;
+			settings.setDefaultModelAndProvider(preferredModel.provider, preferredModel.id);
 		}
 	}
 
@@ -287,8 +293,10 @@ export async function ensureFeynmanSettings(
 			if ((error as NodeJS.ErrnoException).code !== "EEXIST") throw error;
 		}
 	}
-	const content = JSON.stringify(settings, null, 2) + "\n";
-	if (content === existing?.source) return;
-	mkdirSync(dirname(settingsPath), { recursive: true });
-	writeFileSync(settingsPath, content, "utf8");
+	// Read the file again after model discovery so edits made meanwhile survive;
+	// SettingsManager likewise merges only the keys it changed, under Pi's lock.
+	updateSettingsWithoutPiSetter(settingsPath, appRoot, defaults);
+	await settings.flush();
+	const [writeError] = settings.drainErrors();
+	if (writeError) throw writeError.error;
 }

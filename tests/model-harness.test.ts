@@ -16,7 +16,7 @@ import {
 } from "../src/cli.js";
 import { buildModelStatusSnapshotFromRecords, choosePreferredModelRecord, chooseRecommendedModel, getAvailableModelRecords, getSupportedModelRecords, isProClassModelSpec } from "../src/model/catalog.js";
 import { getOrCreateDeviceId, isLocalModelProvider, resolveModelProviderForCommand, setDefaultModelSpec } from "../src/model/commands.js";
-import { createModelRegistry } from "../src/model/registry.js";
+import { createModelRuntime } from "../src/model/registry.js";
 import { canonicalizeModelSpec, parseModelSpec } from "../src/pi/settings.js";
 
 function createAuthPath(contents: Record<string, unknown>): string {
@@ -139,7 +139,7 @@ test("model specs preserve colon-bearing custom model ids and canonicalize Pi la
 		}) + "\n",
 		"utf8",
 	);
-	const registry = await createModelRegistry(authPath);
+	const registry = await createModelRuntime(authPath);
 
 	for (const spec of ["ollama/qwen3:0.6b", "ollama:qwen3:0.6b"]) {
 		const model = parseModelSpec(spec, registry);
@@ -722,17 +722,42 @@ test("shouldRunInteractiveSetup skips onboarding for explicit model overrides or
 	assert.equal(await shouldRunInteractiveSetup(undefined, undefined, false, authPath), false);
 });
 
-test("isLocalModelProvider flags known local provider ids without consulting models.json", () => {
+test("isLocalModelProvider flags known local provider ids without consulting models.json", async () => {
 	const authPath = createAuthPath({});
 
-	assert.equal(isLocalModelProvider(authPath, "ollama"), true);
-	assert.equal(isLocalModelProvider(authPath, "lm-studio"), true);
-	assert.equal(isLocalModelProvider(authPath, "vllm"), true);
-	assert.equal(isLocalModelProvider(authPath, "anthropic"), false);
-	assert.equal(isLocalModelProvider(authPath, ""), false);
+	assert.equal(await isLocalModelProvider(authPath, "ollama"), true);
+	assert.equal(await isLocalModelProvider(authPath, "lm-studio"), true);
+	assert.equal(await isLocalModelProvider(authPath, "vllm"), true);
+	assert.equal(await isLocalModelProvider(authPath, "anthropic"), false);
+	assert.equal(await isLocalModelProvider(authPath, ""), false);
 });
 
-test("isLocalModelProvider flags custom providers whose models.json baseUrl points at localhost", () => {
+test("isLocalModelProvider reads models.json the way Pi does: comments, model baseUrl overrides, built-in overrides", async () => {
+	const authPath = createAuthPath({});
+	writeFileSync(
+		join(authPath, "..", "models.json"),
+		`{
+	// Pi accepts comments in models.json.
+	"providers": {
+		"my-proxy": { "baseUrl": "http://127.0.0.1:8000/v1" },
+		"per-model": {
+			"baseUrl": "https://example.com/v1", "api": "openai-completions", "apiKey": "k",
+			"models": [{ "id": "m", "baseUrl": "http://localhost:9000/v1" }]
+		},
+		"openai": { "baseUrl": "http://0.0.0.0:1234/v1" }
+	}
+}
+`,
+		"utf8",
+	);
+
+	assert.equal(await isLocalModelProvider(authPath, "my-proxy"), true);
+	assert.equal(await isLocalModelProvider(authPath, "per-model"), true);
+	assert.equal(await isLocalModelProvider(authPath, "openai"), true);
+	assert.equal(await isLocalModelProvider(authPath, "anthropic"), false);
+});
+
+test("isLocalModelProvider flags custom providers whose models.json baseUrl points at localhost", async () => {
 	const authPath = createAuthPath({});
 	const modelsJsonPath = join(authPath, "..", "models.json");
 	writeFileSync(
@@ -746,8 +771,8 @@ test("isLocalModelProvider flags custom providers whose models.json baseUrl poin
 		"utf8",
 	);
 
-	assert.equal(isLocalModelProvider(authPath, "my-proxy"), true);
-	assert.equal(isLocalModelProvider(authPath, "openrouter"), false);
+	assert.equal(await isLocalModelProvider(authPath, "my-proxy"), true);
+	assert.equal(await isLocalModelProvider(authPath, "openrouter"), false);
 });
 
 test("buildLocalModelWorkflowNotice names the configured model and the workflow", () => {

@@ -17,6 +17,7 @@ const SERVICE_TIER_SET = new Set<string>(FEYNMAN_SERVICE_TIERS);
 const OPENAI_SERVICE_TIERS = new Set<FeynmanServiceTier>(["auto", "default", "flex", "priority"]);
 const ANTHROPIC_SERVICE_TIERS = new Set<FeynmanServiceTier>(["auto", "standard_only"]);
 
+// serviceTier is Feynman's key; Pi's SettingsManager has no getter or setter for it, so it is read and written directly.
 function readSettings(settingsPath: string): Record<string, unknown> {
 	try {
 		return readJsonFile(settingsPath) as Record<string, unknown>;

@@ -1,7 +1,6 @@
 import type { AuthEvent, AuthInteraction, AuthPrompt } from "@earendil-works/pi-ai";
 import type { ModelRuntime } from "@earendil-works/pi-coding-agent";
 import { SettingsManager } from "@earendil-works/pi-coding-agent";
-import { readFileSync } from "node:fs";
 import { exec as execCallback } from "node:child_process";
 import { dirname } from "node:path";
 import { promisify } from "node:util";
@@ -19,7 +18,7 @@ import {
 	type ModelStatusSnapshot,
 } from "./catalog.js";
 import { MODEL_API_KEY_PROVIDERS, type ApiKeyProviderInfo } from "./api-key-providers.js";
-import { createModelRegistry, createModelRuntime, getModelsJsonPath } from "./registry.js";
+import { createModelRuntime, getModelsJsonPath } from "./registry.js";
 import { apiKeyReference, upsertProviderBaseUrl, upsertProviderConfig } from "./models-json.js";
 
 const exec = promisify(execCallback);
@@ -211,7 +210,9 @@ function isLocalBaseUrl(baseUrl: string): boolean {
 // "llama.cpp" is the id of Pi's bundled llama.cpp provider.
 const LOCAL_PROVIDER_IDS = new Set(["ollama", "lm-studio", "vllm", "llama.cpp", "llama-cpp", "llamacpp"]);
 
-export function isLocalModelProvider(authPath: string, providerId: string): boolean {
+// Reads models.json through Pi, so its comments, BOM handling, and per-model
+// baseUrl overrides count the same way they do at launch.
+export async function isLocalModelProvider(authPath: string, providerId: string): Promise<boolean> {
 	if (!providerId) {
 		return false;
 	}
@@ -219,14 +220,9 @@ export function isLocalModelProvider(authPath: string, providerId: string): bool
 		return true;
 	}
 
-	try {
-		const raw = readFileSync(getModelsJsonPath(authPath), "utf8");
-		const parsed = JSON.parse(raw) as { providers?: Record<string, { baseUrl?: unknown }> };
-		const provider = parsed.providers?.[providerId];
-		return typeof provider?.baseUrl === "string" && isLocalBaseUrl(provider.baseUrl);
-	} catch {
-		return false;
-	}
+	const modelRuntime = await createModelRuntime(authPath);
+	return [modelRuntime.getProvider(providerId)?.baseUrl, ...modelRuntime.getModels(providerId).map((model) => model.baseUrl)]
+		.some((baseUrl) => typeof baseUrl === "string" && isLocalBaseUrl(baseUrl));
 }
 
 async function resolveApiKeyConfig(apiKeyConfig: string): Promise<string | undefined> {
@@ -494,8 +490,8 @@ async function promptLiteLlmProviderSetup(): Promise<CustomProviderSetup | undef
 }
 
 async function verifyCustomProvider(setup: CustomProviderSetup, authPath: string): Promise<void> {
-	const registry = await createModelRegistry(authPath);
-	const modelsError = registry.getError();
+	const modelRuntime = await createModelRuntime(authPath);
+	const modelsError = modelRuntime.getError();
 	if (modelsError) {
 		printWarning("Verification: models.json failed to load.");
 		for (const line of modelsError.split("\n")) {
@@ -504,23 +500,21 @@ async function verifyCustomProvider(setup: CustomProviderSetup, authPath: string
 		return;
 	}
 
-	const all = registry.getAll();
-	const hasModel = setup.modelIds.some((id) => all.some((model) => model.provider === setup.providerId && model.id === id));
+	const all = modelRuntime.getModels(setup.providerId);
+	const hasModel = setup.modelIds.some((id) => all.some((model) => model.id === id));
 	if (!hasModel) {
 		printWarning("Verification: model registry does not contain the configured provider/model ids.");
 		return;
 	}
 
-	const available = registry.getAvailable();
-	const hasAvailable = setup.modelIds.some((id) =>
-		available.some((model) => model.provider === setup.providerId && model.id === id),
-	);
+	const available = await modelRuntime.getAvailable(setup.providerId);
+	const hasAvailable = setup.modelIds.some((id) => available.some((model) => model.id === id));
 	if (!hasAvailable) {
 		printWarning("Verification: provider is not considered authenticated/available.");
 		return;
 	}
 
-	const apiKey = await registry.getApiKeyForProvider(setup.providerId);
+	const apiKey = (await modelRuntime.getAuth(setup.providerId).catch(() => undefined))?.auth.apiKey;
 	if (!apiKey) {
 		printWarning("Verification: API key could not be resolved (check env var name / !command).");
 		return;
@@ -1016,7 +1010,7 @@ async function describeUnavailableModelSpec(authPath: string, spec: string): Pro
 		if (isProClassModelSpec(knownSpec)) {
 			return `Pro-class model disabled: ${knownSpec}. Choose an approved research model.`;
 		}
-		if (isLocalModelProvider(authPath, known.provider)) {
+		if (await isLocalModelProvider(authPath, known.provider)) {
 			return `${knownSpec} has no API key. Pi only lists a local provider when it has one: add "apiKey": "local" to the ${known.provider} provider in ${getModelsJsonPath(authPath)}.`;
 		}
 		return `${knownSpec} has no credentials. Run \`feynman model login ${known.provider}\` first.`;

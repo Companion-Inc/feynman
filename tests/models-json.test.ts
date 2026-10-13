@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { apiKeyReference, migrateBareEnvApiKeys, upsertProviderConfig } from "../src/model/models-json.js";
-import { createModelRegistry } from "../src/model/registry.js";
+import { createModelRuntime } from "../src/model/registry.js";
 
 test("upsertProviderConfig creates models.json and merges provider config", () => {
 	const dir = mkdtempSync(join(tmpdir(), "feynman-models-"));
@@ -112,8 +112,8 @@ test("bare environment variable names in apiKey become $NAME, which Pi resolves"
 
 	process.env.LITELLM_MASTER_KEY = "sk-real-secret";
 	try {
-		const registry = await createModelRegistry(join(dir, "auth.json"));
-		assert.equal(await registry.getApiKeyForProvider("litellm"), "sk-real-secret");
+		const modelRuntime = await createModelRuntime(join(dir, "auth.json"));
+		assert.equal((await modelRuntime.getAuth("litellm"))?.auth.apiKey, "sk-real-secret");
 	} finally {
 		delete process.env.LITELLM_MASTER_KEY;
 	}
