@@ -58,8 +58,7 @@ import {
 	isProClassModelSpec,
 	getSupportedModelRecords,
 } from "./model/catalog.js";
-import { clearSearchConfig, printSearchStatus, setSearchProvider } from "./search/commands.js";
-import type { PiWebSearchProvider } from "./pi/web-access.js";
+import { clearSearchConfig, printSearchStatus, searchSetUsage, setSearchProvider } from "./search/commands.js";
 import { fetchLatestFeynmanVersion, getFeynmanUpgradeLines, isNewerVersion } from "./system/self-update.js";
 import { runDoctor, runStatus } from "./setup/doctor.js";
 import { setupPreviewDependencies } from "./setup/preview.js";
@@ -395,12 +394,8 @@ function handleSearchCommand(subcommand: string | undefined, args: string[]): vo
 	}
 
 	if (subcommand === "set") {
-		const provider = args[0] as PiWebSearchProvider | undefined;
-		const validProviders: PiWebSearchProvider[] = ["auto", "perplexity", "exa", "gemini"];
-		if (!provider || !validProviders.includes(provider)) {
-			throw new Error("Usage: feynman search set <auto|perplexity|exa|gemini> [api-key]");
-		}
-		setSearchProvider(provider, args[1]);
+		if (!args[0]) throw new Error(searchSetUsage());
+		setSearchProvider(args[0], args[1]);
 		return;
 	}
 

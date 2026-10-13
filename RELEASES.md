@@ -6,6 +6,11 @@ GitHub release notes are generated from the matching `## vX.Y.Z` section in this
 
 ## Unreleased
 
+## v0.5.44 - 2026-10-13
+
+- **`feynman search set` works with every search provider pi-web-access supports.** It accepted only `auto`, `exa`, `perplexity` and `gemini`; it now takes all 39, including Brave, Tavily, Kagi, Serper, You.com, SearXNG and DuckDuckGo, and saves each key where pi-web-access reads it. `feynman search status` and `feynman doctor` name the provider you chose and list every saved key, and no longer describe an outdated automatic search order.
+- **pi-web-access 0.40.0.** Asking about a YouTube or local video works again when a thumbnail comes back with the transcript, excerpts no longer cut an emoji in half, and a new opt-in setting (`fetchContent.redirects: "same-origin"`) refuses redirects to another site.
+
 ## v0.5.43 - 2026-10-13
 
 - **Feynman reads and writes Pi's configuration only through Pi.** Settings now go through Pi's settings manager, which locks the file and changes only the keys Feynman sets, so a change Pi or another Feynman window makes at the same moment is no longer overwritten. Model checks, local-model detection and `feynman doctor` read your models through Pi, so comments in `models.json`, a `baseUrl` set on one model, and a key saved with `feynman model login` count the same way they do when Feynman runs.

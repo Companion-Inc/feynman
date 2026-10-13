@@ -184,3 +184,27 @@ test("formatPiWebAccessDoctorLines omits marker and hint when config exists", ()
 	assert.ok(!configLine!.includes("(not created yet)"), `did not expect '(not created yet)' marker: ${configLine}`);
 	assert.ok(!lines.some((line) => line.includes("hint:")), "did not expect a hint line when config exists");
 });
+
+test("feynman search set accepts every search provider pi-web-access has", async () => {
+	const { readFileSync } = await import("node:fs");
+	const { PI_WEB_SEARCH_PROVIDERS, searchProviderKeyField } = await import("../src/pi/web-access.js");
+	const source = readFileSync("node_modules/pi-web-access/gemini-search.ts", "utf8");
+	const resolved = JSON.parse(`[${/RESOLVED_SEARCH_PROVIDERS = \[([^\]]+)\]/.exec(source)![1]}]`) as string[];
+	assert.deepEqual([...PI_WEB_SEARCH_PROVIDERS].sort(), ["all", "auto", ...resolved].sort());
+	// Every key field Feynman writes is one pi-web-access reads.
+	const packageSource = (await import("node:fs")).readdirSync("node_modules/pi-web-access")
+		.filter((name) => name.endsWith(".ts"))
+		.map((name) => readFileSync(`node_modules/pi-web-access/${name}`, "utf8"))
+		.join("\n");
+	for (const provider of PI_WEB_SEARCH_PROVIDERS) {
+		const field = searchProviderKeyField(provider);
+		if (field) assert.ok(packageSource.includes(field), `${provider} -> ${field}`);
+	}
+});
+
+test("search status names any configured provider and lists every saved key", () => {
+	const status = getPiWebAccessStatus({ provider: "brave", searchProvider: "brave", braveApiKey: "b", tavilyApiKey: "t" }, "/tmp/w.json");
+	assert.equal(status.routeLabel, "brave");
+	assert.deepEqual(status.configuredKeys, ["brave", "tavily"]);
+	assert.doesNotMatch(formatPiWebAccessDoctorLines(status).join("\n"), /try Exa, then Perplexity/);
+});

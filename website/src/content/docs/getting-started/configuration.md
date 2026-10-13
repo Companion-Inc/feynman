@@ -52,7 +52,7 @@ Web search, page fetching, and PDF extraction come from the bundled `pi-web-acce
 
 ```bash
 feynman search status
-feynman search set perplexity <api-key>   # or exa, gemini, auto
+feynman search set brave <api-key>   # or exa, tavily, perplexity, kagi, auto, ... (`feynman search set` lists all)
 feynman search clear                      # back to auto, keys kept
 ```
 
