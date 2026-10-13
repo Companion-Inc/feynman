@@ -73,3 +73,23 @@ test("public source links do not depend on old-owner redirects", () => {
 		assert.doesNotMatch(content, /github\.com\/advaitpaliwal(?:\/|%2f)feynman|advaitpaliwal%2Ffeynman/i, path);
 	}
 });
+
+// Pi pins its own packages with open ^ ranges, so a fresh npm install of a
+// Feynman pinned to Pi X.Y.Z pulled Pi X.(Y+1)'s pi-codemode, which Pi X.Y.Z
+// cannot load. Feynman pins every Pi package Pi depends on to Pi's version;
+// pi-tui and typebox stay "*" peers because Pi supplies them to extensions.
+test("every Pi package Pi depends on is pinned to Pi's version", () => {
+	const manifest = JSON.parse(read("package.json")) as {
+		dependencies: Record<string, string>;
+		peerDependencies: Record<string, string>;
+	};
+	const pi = JSON.parse(read("node_modules/@earendil-works/pi-coding-agent/package.json")) as {
+		version: string;
+		dependencies: Record<string, string>;
+	};
+	assert.equal(manifest.peerDependencies["@earendil-works/pi-coding-agent"], pi.version);
+	for (const name of Object.keys(pi.dependencies).filter((dep) => dep.startsWith("@earendil-works/") && dep !== "@earendil-works/pi-tui")) {
+		const pinned = manifest.dependencies[name] ?? manifest.peerDependencies[name];
+		assert.equal(pinned, pi.version, name);
+	}
+});

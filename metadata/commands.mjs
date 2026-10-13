@@ -151,7 +151,7 @@ export const legacyFlags = [
 	{ usage: "--alpha-login", description: "Sign in to alphaXiv and exit." },
 	{ usage: "--alpha-logout", description: "Clear alphaXiv auth and exit." },
 	{ usage: "--alpha-status", description: "Show alphaXiv auth status and exit." },
-	{ usage: "--model <provider/model|provider:model>", description: "Force a specific approved research model." },
+	{ usage: "--model <model>", description: "Force an approved research model: provider/model, a bare ID, or a short name; add :high etc. for thinking." },
 	{ usage: "--service-tier <tier>", description: "Override request service tier for this run." },
 	{ usage: "--thinking <level>", description: "Set thinking level: off | minimal | low | medium | high | xhigh | max." },
 	{ usage: "--cwd <path>", description: "Set the working directory for tools." },

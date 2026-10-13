@@ -1,7 +1,8 @@
 import type { AuthEvent, AuthPrompt } from "@earendil-works/pi-ai";
+import type { ModelRuntime } from "@earendil-works/pi-coding-agent";
+import { SettingsManager } from "@earendil-works/pi-coding-agent";
 import { readFileSync, writeFileSync } from "node:fs";
 import { exec as execCallback } from "node:child_process";
-import { randomUUID } from "node:crypto";
 import { dirname, resolve } from "node:path";
 import { promisify } from "node:util";
 
@@ -190,7 +191,8 @@ function isLocalBaseUrl(baseUrl: string): boolean {
 	return /^(https?:\/\/)?(localhost|127\.0\.0\.1|0\.0\.0\.0)(:|\/|$)/i.test(baseUrl);
 }
 
-const LOCAL_PROVIDER_IDS = new Set(["ollama", "lm-studio", "vllm", "llama-cpp", "llamacpp"]);
+// "llama.cpp" is the id of Pi's bundled llama.cpp provider.
+const LOCAL_PROVIDER_IDS = new Set(["ollama", "lm-studio", "vllm", "llama.cpp", "llama-cpp", "llamacpp"]);
 
 export function isLocalModelProvider(authPath: string, providerId: string): boolean {
 	if (!providerId) {
@@ -770,6 +772,7 @@ async function configureApiKeyProvider(authPath: string, providerId?: string): P
 			printWarning(result.error);
 		}
 	}
+	await refreshProviderModels(modelRuntime, provider.id);
 
 	return true;
 }
@@ -794,8 +797,8 @@ async function resolveAvailableModelSpec(authPath: string, input: string): Promi
 	// When multiple providers expose the same bare model ID, prefer providers the
 	// user explicitly configured in auth storage.
 	if (exactIdMatches.length > 1) {
-		const authData = readJson(authPath) as Record<string, unknown>;
-		const configuredProviders = new Set(Object.keys(authData));
+		const credentials = await (await createModelRuntime(authPath)).listCredentials();
+		const configuredProviders = new Set(credentials.map((credential) => credential.providerId));
 		const configuredMatches = exactIdMatches.filter((model) => configuredProviders.has(model.provider));
 		if (configuredMatches.length === 1) {
 			return `${configuredMatches[0]!.provider}/${configuredMatches[0]!.id}`;
@@ -864,12 +867,11 @@ export async function authenticateModelProvider(authPath: string, settingsPath?:
 
 // Sign in with ChatGPT sends a stable installation ID. Pi's own /login keeps it
 // as `deviceId` in the agent settings.json; share that one.
-export function getOrCreateDeviceId(authPath: string): string {
-	const settingsPath = resolve(dirname(authPath), "settings.json");
-	const settings = readJson(settingsPath);
-	if (typeof settings.deviceId === "string" && settings.deviceId) return settings.deviceId;
-	const deviceId = randomUUID();
-	writeFileSync(settingsPath, `${JSON.stringify({ ...settings, deviceId }, null, 2)}\n`, "utf8");
+// Pi's own device ID, the one its /login sends, kept in the agent settings.
+export async function getOrCreateDeviceId(authPath: string): Promise<string> {
+	const settings = SettingsManager.create(process.cwd(), dirname(authPath));
+	const deviceId = settings.getOrCreateDeviceId();
+	await settings.flush();
 	return deviceId;
 }
 
@@ -883,6 +885,13 @@ export function describeOAuthLoginFailure(providerId: string, error: unknown): u
 	return new Error(
 		`${error.message}\nThe sign-in was rejected, usually because of a stale browser session. Sign out of the provider's site in your browser, or use a private window, then run \`feynman model login ${providerId}\` again.${alternative}`,
 	);
+}
+
+// Pi's /login refreshes the provider's model list from the network after
+// signing in (OpenRouter keys get the models that key may use); do the same,
+// so the recommended default comes from that list. A failure keeps the saved list.
+async function refreshProviderModels(modelRuntime: ModelRuntime, providerId: string): Promise<void> {
+	await modelRuntime.refresh({ providers: [providerId], allowNetwork: true, signal: AbortSignal.timeout(15_000) }).catch(() => undefined);
 }
 
 export async function loginModelProvider(authPath: string, providerId?: string, settingsPath?: string): Promise<boolean> {
@@ -912,6 +921,7 @@ export async function loginModelProvider(authPath: string, providerId?: string, 
 	const modelRuntime = await createModelRuntime(authPath);
 	const abortController = new AbortController();
 
+	const deviceId = await getOrCreateDeviceId(authPath);
 	await modelRuntime.login(provider.id, "oauth", {
 		prompt: async (prompt: AuthPrompt) => {
 			if (prompt.type === "select") {
@@ -959,11 +969,12 @@ export async function loginModelProvider(authPath: string, providerId?: string, 
 			}
 		},
 		signal: abortController.signal,
-	}, { getDeviceId: () => getOrCreateDeviceId(authPath) }).catch((error: unknown) => {
+	}, { getDeviceId: () => deviceId }).catch((error: unknown) => {
 		throw describeOAuthLoginFailure(provider.id, error);
 	});
 
 	printSuccess(`Model provider login complete: ${provider.id}`);
+	await refreshProviderModels(modelRuntime, provider.id);
 
 	await maybeSetRecommendedDefaultModel(settingsPath, authPath);
 

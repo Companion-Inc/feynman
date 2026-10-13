@@ -50,3 +50,42 @@ test("signed-out alpha commands name `feynman alpha login`", () => {
 	assert.equal(status, 1);
 	assert.match(output, /Run `feynman alpha login`/);
 });
+
+test("a no-model exit is reported to telemetry as a deliberate exit, not a crash", async () => {
+	const { createServer } = await import("node:http");
+	const { gunzipSync } = await import("node:zlib");
+	const events: Array<{ event: string; properties: Record<string, unknown> }> = [];
+	const server = createServer((req, res) => {
+		const chunks: Buffer[] = [];
+		req.on("data", (chunk: Buffer) => chunks.push(chunk));
+		req.on("end", () => {
+			let body = Buffer.concat(chunks);
+			if (req.headers["content-encoding"] === "gzip") body = gunzipSync(body);
+			try {
+				const parsed = JSON.parse(body.toString("utf8")) as { batch?: typeof events };
+				events.push(...(parsed.batch ?? []));
+			} catch {}
+			res.writeHead(200, { "content-type": "application/json" }).end("{}");
+		});
+	});
+	await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+	const port = (server.address() as { port: number }).port;
+	const home = mkdtempSync(join(tmpdir(), "feynman-first-run-telemetry-"));
+	try {
+		const env = Object.fromEntries(Object.entries(process.env).filter(([key]) => !/_API_KEY$|_TOKEN$/.test(key)));
+		const { spawn } = await import("node:child_process");
+		const child = spawn(process.execPath, ["--import", "tsx", "src/index.ts", "-p", "hi"], {
+			cwd: process.cwd(),
+			env: { ...env, FEYNMAN_HOME: home, HOME: home, FEYNMAN_TELEMETRY: "1", FEYNMAN_POSTHOG_HOST: `http://127.0.0.1:${port}` },
+			stdio: ["ignore", "ignore", "ignore"],
+		});
+		await new Promise((resolve) => child.on("exit", resolve));
+		const failed = events.find((entry) => entry.event === "feynman_command_failed");
+		assert.ok(failed, `events: ${events.map((entry) => entry.event).join(", ")}`);
+		assert.equal(failed.properties.exit_reason, "no_model");
+		assert.equal(failed.properties.pi_stderr, undefined);
+	} finally {
+		server.close();
+		rmSync(home, { recursive: true, force: true });
+	}
+});

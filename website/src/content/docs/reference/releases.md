@@ -9,6 +9,17 @@ This page summarizes what changed in recent Feynman releases. GitHub releases us
 
 ## Unreleased
 
+## v0.5.41 - 2026-10-12
+
+- **A fresh `npm install` works again.** Pi 1.2.0, released today, made new npm installs of Feynman 0.5.40 fail on every command except `-v` (`does not provide an export named 'MCP_TYPESCRIPT_PREAMBLE'`). Pi 1.1.0 asks for its own sub-packages with open version ranges, so npm pulled Pi 1.2.0's copies. Feynman now pins those sub-packages to the Pi version it ships. The curl and PowerShell installers were not affected.
+- **An expired sign-in no longer looks like no model.** Feynman treated a ChatGPT, Claude or Copilot sign-in whose short-lived access token had expired as if no model were set up. `feynman` reopened the setup menu, and since 0.5.36 `feynman -p` refused to run. Pi renews the token on the next request, so Feynman now leaves that to Pi and asks you to sign in again only when renewal really fails.
+- **`--model` accepts the names Pi accepts.** Bare model IDs (`claude-opus-5-5`), short names (`sonnet`) and a thinking suffix (`anthropic/claude-opus-5-5:high`) now work, preferring a provider you are signed in to; `provider/model` and `provider:model` still work. Pro-class models stay blocked.
+- **After you sign in, the model list matches your account.** `feynman model login` refreshes that provider's model list, so an OpenRouter key gets the models it can actually use before Feynman picks a default.
+- A provider error hint now appears once the run has stopped, not in the middle of an automatic retry.
+- Launching Feynman no longer erases your terminal's scrollback.
+- The llama.cpp provider is recognized as a local model.
+- **Preview and PDF export find more browsers.** Chromium, Edge and Brave on Linux, Edge under `Program Files (x86)` and Brave in your user folder on Windows, and apps in `~/Applications` on macOS. Thanks to @A-ryanVAT-S (#343).
+
 ## v0.5.40 - 2026-10-12
 
 - **alphaXiv sign-in messages name the right command.** When you weren't signed in, `feynman alpha search`, `get` and the paper tools said to run `alpha login`, a command that isn't installed with Feynman. They now say `feynman alpha login`. (Alpha Hub 0.1.7.)

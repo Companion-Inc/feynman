@@ -101,7 +101,7 @@ These are equivalent to launching the REPL and typing the corresponding slash co
 | Flag | Description |
 | --- | --- |
 | `--prompt "<text>"`, `-p` | Run one prompt and exit (one-shot mode) |
-| `--model <provider/model\|provider:model>` | Force a specific approved research model for this session |
+| `--model <model>` | Force an approved research model for this session: `provider/model`, `provider:model`, a bare ID or short name such as `sonnet`, optionally with a thinking suffix such as `:high` |
 | `--service-tier <tier>` | Override the request service tier for this run |
 | `--thinking <level>` | Set thinking level: `off`, `minimal`, `low`, `medium`, `high`, `xhigh`, `max` |
 | `--cwd <path>` | Set the working directory for tools |

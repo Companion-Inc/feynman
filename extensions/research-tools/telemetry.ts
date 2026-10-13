@@ -252,7 +252,8 @@ export function registerResearchTelemetry(
 			$ai_cache_creation_input_tokens: message.usage.cacheWrite,
 			// Pi reports input tokens with cache reads and writes already subtracted.
 			$ai_cache_reporting_exclusive: true,
-			$ai_latency: requestStartedAt === undefined ? undefined : (now() - requestStartedAt) / 1000,
+			// Pi times each response itself; older messages may lack it.
+			$ai_latency: message.durationMs !== undefined ? message.durationMs / 1000 : requestStartedAt === undefined ? undefined : (now() - requestStartedAt) / 1000,
 			$ai_http_status: httpStatus,
 			$ai_is_error: message.stopReason === "error",
 			$ai_error: message.stopReason === "error" ? errorText(message.errorMessage) : undefined,
@@ -264,8 +265,8 @@ export function registerResearchTelemetry(
 		if (run) run.stopReason = message.stopReason;
 	});
 
-	pi.on("agent_settled", (_event, ctx) => {
-		finishRun(ctx.cwd, stopStatus(run?.stopReason));
+	pi.on("agent_settled", (event, ctx) => {
+		finishRun(ctx.cwd, event.aborted ? "aborted" : stopStatus(run?.stopReason));
 	});
 
 	pi.on("session_shutdown", async (event, ctx) => {
