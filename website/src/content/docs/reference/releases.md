@@ -12,12 +12,11 @@ This page summarizes what changed in recent Feynman releases. GitHub releases us
 ## v0.5.41 - 2026-10-12
 
 - **An expired sign-in no longer looks like no model.** Feynman treated a ChatGPT, Claude or Copilot sign-in whose short-lived access token had expired as if no model were set up. `feynman` reopened the setup menu, and since 0.5.36 `feynman -p` refused to run. Pi renews the token on the next request, so Feynman now leaves that to Pi and asks you to sign in again only when renewal really fails.
-- **Pi 1.2.0.**
-  - With an OpenRouter key, `/model` lists only the models that key can use, with their real context sizes and prices; OpenRouter's `auto` model no longer shows a negative cost.
-  - "The upstream provider returned an error" is retried instead of ending the turn, and Anthropic requests rejected for having too many strict tools are retried once.
-  - `feynman -p` warns and exits 1 when the answer was cut off at the model's output limit, instead of exiting 0.
-  - On Windows, reading or writing your saved logins no longer fails with `EPERM` while an old lock is being cleaned up.
-  - Long thinking with Mistral is no longer cut off by the request timeout.
+- **`--model` accepts the names Pi accepts.** Bare model IDs (`claude-opus-5-5`), short names (`sonnet`) and a thinking suffix (`anthropic/claude-opus-5-5:high`) now work, preferring a provider you are signed in to; `provider/model` and `provider:model` still work. Pro-class models stay blocked.
+- **After you sign in, the model list matches your account.** `feynman model login` refreshes that provider's model list, so an OpenRouter key gets the models it can actually use before Feynman picks a default.
+- A provider error hint now appears once the run has stopped, not in the middle of an automatic retry.
+- Launching Feynman no longer erases your terminal's scrollback.
+- The llama.cpp provider is recognized as a local model.
 - **Preview and PDF export find more browsers.** Chromium, Edge and Brave on Linux, Edge under `Program Files (x86)` and Brave in your user folder on Windows, and apps in `~/Applications` on macOS. Thanks to @A-ryanVAT-S (#343).
 
 ## v0.5.40 - 2026-10-12

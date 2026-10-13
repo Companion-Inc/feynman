@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 
-import type { ModelRegistry, ModelRuntime, PackageSource } from "@earendil-works/pi-coding-agent";
+import { resolveCliModel, type ModelRegistry, type ModelRuntime, type PackageSource } from "@earendil-works/pi-coding-agent";
 
 import { parseJsonText, readJsonFile } from "../config/json-file.js";
 import { BUNDLED_PI_PACKAGES, getFeynmanPackageSources, resolvePackageRoot } from "./runtime.js";
@@ -44,6 +44,28 @@ export function parseModelSpec(spec: string, modelLookup: ModelLookup) {
 export function canonicalizeModelSpec(spec: string, modelLookup: ModelLookup): string | undefined {
 	const model = parseModelSpec(spec, modelLookup);
 	return model ? `${model.provider}/${model.id}` : undefined;
+}
+
+// `--model` input, resolved the way Pi resolves it (bare ids, fuzzy names, a
+// `:<thinking>` suffix) after Feynman's exact provider/id and provider:id
+// forms. Pi's fuzzy match ignores sign-ins, so the same model id on a provider
+// you are signed in to wins.
+export function resolveExplicitModelSpec(spec: string, modelRuntime: ModelRuntime): string | undefined {
+	const exact = canonicalizeModelSpec(spec, modelRuntime);
+	if (exact) return exact;
+	let result = resolveCliModel({ cliModel: spec.trim(), modelRuntime });
+	if (!result.model) return undefined;
+	if (!modelRuntime.hasConfiguredAuth(result.model.provider)) {
+		for (const provider of new Set(modelRuntime.getAvailableSnapshot().map((model) => model.provider))) {
+			const signedIn = resolveCliModel({ cliProvider: provider, cliModel: spec.trim(), modelRuntime });
+			if (signedIn.model && !signedIn.warning) {
+				result = signedIn;
+				break;
+			}
+		}
+	}
+	const model = result.model!;
+	return `${model.provider}/${model.id}${result.thinkingLevel ? `:${result.thinkingLevel}` : ""}`;
 }
 
 export function normalizeThinkingLevel(value: string | undefined): ThinkingLevel | undefined {

@@ -1,4 +1,5 @@
 import type { AuthEvent, AuthPrompt } from "@earendil-works/pi-ai";
+import type { ModelRuntime } from "@earendil-works/pi-coding-agent";
 import { SettingsManager } from "@earendil-works/pi-coding-agent";
 import { readFileSync, writeFileSync } from "node:fs";
 import { exec as execCallback } from "node:child_process";
@@ -190,7 +191,8 @@ function isLocalBaseUrl(baseUrl: string): boolean {
 	return /^(https?:\/\/)?(localhost|127\.0\.0\.1|0\.0\.0\.0)(:|\/|$)/i.test(baseUrl);
 }
 
-const LOCAL_PROVIDER_IDS = new Set(["ollama", "lm-studio", "vllm", "llama-cpp", "llamacpp"]);
+// "llama.cpp" is the id of Pi's bundled llama.cpp provider.
+const LOCAL_PROVIDER_IDS = new Set(["ollama", "lm-studio", "vllm", "llama.cpp", "llama-cpp", "llamacpp"]);
 
 export function isLocalModelProvider(authPath: string, providerId: string): boolean {
 	if (!providerId) {
@@ -770,6 +772,7 @@ async function configureApiKeyProvider(authPath: string, providerId?: string): P
 			printWarning(result.error);
 		}
 	}
+	await refreshProviderModels(modelRuntime, provider.id);
 
 	return true;
 }
@@ -884,6 +887,13 @@ export function describeOAuthLoginFailure(providerId: string, error: unknown): u
 	);
 }
 
+// Pi's /login refreshes the provider's model list from the network after
+// signing in (OpenRouter keys get the models that key may use); do the same,
+// so the recommended default comes from that list. A failure keeps the saved list.
+async function refreshProviderModels(modelRuntime: ModelRuntime, providerId: string): Promise<void> {
+	await modelRuntime.refresh({ providers: [providerId], allowNetwork: true, signal: AbortSignal.timeout(15_000) }).catch(() => undefined);
+}
+
 export async function loginModelProvider(authPath: string, providerId?: string, settingsPath?: string): Promise<boolean> {
 	if (providerId) {
 		const resolvedProvider = await resolveModelProviderForCommand(authPath, providerId);
@@ -964,6 +974,7 @@ export async function loginModelProvider(authPath: string, providerId?: string, 
 	});
 
 	printSuccess(`Model provider login complete: ${provider.id}`);
+	await refreshProviderModels(modelRuntime, provider.id);
 
 	await maybeSetRecommendedDefaultModel(settingsPath, authPath);
 

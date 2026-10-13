@@ -56,9 +56,8 @@ for (const { mode, stdoutTTY, stderrTTY, telemetry, warning, oneShot } of [
 			assert.equal(result.status, 0, result.stderr);
 			const disclosure = telemetry && stdoutTTY && stderrTTY && mode !== "rpc" ? TELEMETRY_NOTICE : undefined;
 			const notice = [disclosure, warning].filter(Boolean).join("\n") || null;
-			const clear = stdoutTTY && mode !== "rpc" ? "\x1b[2J\x1b[3J\x1b[H" : "";
 			assert.equal(result.stderr, oneShot && notice ? `${notice}\n` : "");
-			assert.equal(result.stdout, `${clear}${JSON.stringify({ notice: oneShot ? null : notice })}\n`);
+			assert.equal(result.stdout, `${JSON.stringify({ notice: oneShot ? null : notice })}\n`);
 		} finally {
 			rmSync(home, { recursive: true, force: true });
 		}

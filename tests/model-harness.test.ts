@@ -756,3 +756,15 @@ test("buildLocalModelWorkflowNotice names the configured model and the workflow"
 	assert.ok(notice.includes("/deepresearch"));
 	assert.ok(notice.includes("feynman model set"));
 });
+
+test("--model accepts the names Pi resolves and keeps a thinking suffix, preferring a signed-in provider", async () => {
+	const { resolveExplicitModelSpec } = await import("../src/pi/settings.js");
+	const authPath = createAuthPath({ anthropic: { type: "api_key", key: "sk-ant-test" } });
+	const runtime = await (await import("../src/model/registry.js")).createModelRuntime(authPath);
+	assert.equal(resolveExplicitModelSpec("anthropic/claude-opus-5-5", runtime), "anthropic/claude-opus-5-5");
+	assert.equal(resolveExplicitModelSpec("anthropic:claude-opus-5-5", runtime), "anthropic/claude-opus-5-5");
+	assert.equal(resolveExplicitModelSpec("anthropic/claude-opus-5-5:high", runtime), "anthropic/claude-opus-5-5:high");
+	assert.equal(resolveExplicitModelSpec("claude-opus-5-5", runtime), "anthropic/claude-opus-5-5");
+	assert.match(resolveExplicitModelSpec("sonnet:high", runtime) ?? "", /^anthropic\/claude-sonnet-[^:]+:high$/);
+	assert.equal(resolveExplicitModelSpec("no-such-model-xyz", runtime), undefined);
+});

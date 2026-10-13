@@ -19,3 +19,21 @@ test("common provider errors get a cause and a fix", () => {
 test("a provider's sentence names the provider", () => {
 	assert.match(modelErrorHint("google", "429 quota") ?? "", /^google /);
 });
+
+test("the hint waits until the run settles and skips errors Pi retried past", async () => {
+	const { registerModelErrorHint } = await import("../extensions/research-tools/model-error-hint.js");
+	const handlers: Record<string, (event: unknown, ctx: unknown) => void> = {};
+	registerModelErrorHint({ on: (name: string, handler: (event: unknown, ctx: unknown) => void) => { handlers[name] = handler; } } as never);
+	const notes: string[] = [];
+	const ctx = { hasUI: true, ui: { notify: (text: string) => notes.push(text) } };
+	const failed = { role: "assistant", stopReason: "error", provider: "google", errorMessage: "429 quota" };
+	handlers.message_end!({ message: failed }, ctx);
+	assert.equal(notes.length, 0);
+	handlers.message_end!({ message: { role: "assistant", stopReason: "stop", provider: "google" } }, ctx);
+	handlers.agent_settled!({ aborted: false }, ctx);
+	assert.equal(notes.length, 0);
+	handlers.message_end!({ message: failed }, ctx);
+	handlers.agent_settled!({ aborted: false }, ctx);
+	assert.equal(notes.length, 1);
+	assert.match(notes[0]!, /quota/);
+});

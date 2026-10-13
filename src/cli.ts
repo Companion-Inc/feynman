@@ -35,6 +35,7 @@ import {
 } from "./pi/packages.js";
 import {
 	canonicalizeModelSpec,
+	resolveExplicitModelSpec,
 	ensureFeynmanSettings,
 	normalizeThinkingLevel,
 	readJson,
@@ -793,9 +794,13 @@ async function runMain(input: { here: string; appRoot: string; feynmanVersion: s
 			throw new Error(`Pro-class model disabled: ${requestedExplicitModelSpec}. Choose an approved research model.`);
 		}
 		const modelRuntime = await createModelRuntime(feynmanAuthPath);
-		const canonicalModelSpec = canonicalizeModelSpec(requestedExplicitModelSpec, modelRuntime);
+		const canonicalModelSpec = resolveExplicitModelSpec(requestedExplicitModelSpec, modelRuntime);
 		if (!canonicalModelSpec) {
 			throw new Error(`Unknown model: ${requestedExplicitModelSpec}. Run \`feynman model list\` to see available models.`);
+		}
+		// Check the resolved model too: a short name can resolve to a Pro-class one.
+		if (isProClassModelSpec(canonicalModelSpec.replace(/:(off|minimal|low|medium|high|xhigh|max)$/, ""))) {
+			throw new Error(`Pro-class model disabled: ${canonicalModelSpec}. Choose an approved research model.`);
 		}
 		explicitModelSpec = canonicalModelSpec;
 	}

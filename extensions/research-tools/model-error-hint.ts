@@ -1,3 +1,4 @@
+import type { AssistantMessage } from "@earendil-works/pi-ai";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 
 // Most failed research runs end on a provider error (quota, a key, a model the
@@ -24,9 +25,18 @@ export function modelErrorHint(provider: string, error: string): string | undefi
 }
 
 export function registerModelErrorHint(pi: ExtensionAPI): void {
-	pi.on("message_end", (event, ctx) => {
+	// Pi retries rate limits and outages itself; hint only about the error the
+	// run actually ended on, once it has settled.
+	let lastError: AssistantMessage | undefined;
+	pi.on("message_end", (event) => {
 		const message = event.message;
-		if (message.role !== "assistant" || message.stopReason !== "error" || !ctx.hasUI) return;
+		if (message.role !== "assistant") return;
+		lastError = message.stopReason === "error" ? message : undefined;
+	});
+	pi.on("agent_settled", (event, ctx) => {
+		const message = lastError;
+		lastError = undefined;
+		if (!message || event.aborted || !ctx.hasUI) return;
 		const hint = modelErrorHint(message.provider, message.errorMessage ?? "");
 		ctx.ui.notify(
 			`${hint ?? `${message.provider} returned an error.`} If this looks like a Feynman bug, report it at https://github.com/Companion-Inc/feynman/issues (Pi's /bug goes to Pi's developers).`,

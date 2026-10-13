@@ -60,8 +60,9 @@ export async function runPi(
 
 export async function launchPiChat(options: PiRuntimeOptions): Promise<void> {
 	let telemetryNotice: string | undefined;
+	// No screen clear: Pi's fullscreen mode uses the alternate screen, and
+	// `--tui-mode regular` keeps the terminal's scrollback.
 	if (process.stdout.isTTY && options.mode !== "rpc") {
-		process.stdout.write("\x1b[2J\x1b[3J\x1b[H");
 		telemetryNotice = telemetryFirstRunNotice();
 	}
 
