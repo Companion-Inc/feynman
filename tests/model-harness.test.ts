@@ -334,7 +334,9 @@ test("chooseRecommendedModel prefers OpenCode Go Kimi when OpenCode Go is the au
 	});
 });
 
-test("getAvailableModelRecords excludes expired OAuth credentials without an env fallback", async () => {
+// Pi refreshes an expired OAuth access token on the next request, so a login
+// with a refresh token is still usable; treating it as no model reopened setup.
+test("getAvailableModelRecords keeps OAuth logins whose access token has expired", async () => {
 	const authPath = createAuthPath({
 		anthropic: {
 			type: "oauth",
@@ -346,7 +348,7 @@ test("getAvailableModelRecords excludes expired OAuth credentials without an env
 
 	const available = await getAvailableModelRecords(authPath);
 
-	assert.equal(available.some((model) => model.provider === "anthropic"), false);
+	assert.equal(available.some((model) => model.provider === "anthropic"), true);
 });
 
 test("getAvailableModelRecords keeps unexpired OAuth credentials available", async () => {
@@ -511,14 +513,14 @@ test("model help lists model commands, and -h is an alias for --help", () => {
 	assert.match(shortHelp.stdout, /feynman model list/);
 });
 
-test("OAuth login reuses one device ID stored in the agent settings", () => {
+test("OAuth login reuses one device ID stored in the agent settings", async () => {
 	const authPath = createAuthPath({});
 	const settingsPath = join(dirname(authPath), "settings.json");
 	writeFileSync(settingsPath, JSON.stringify({ defaultProvider: "openai", defaultModel: "gpt-5.6-terra" }));
 
-	const first = getOrCreateDeviceId(authPath);
+	const first = await getOrCreateDeviceId(authPath);
 	assert.match(first, /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
-	assert.equal(getOrCreateDeviceId(authPath), first);
+	assert.equal(await getOrCreateDeviceId(authPath), first);
 	assert.deepEqual(JSON.parse(readFileSync(settingsPath, "utf8")), { defaultProvider: "openai", defaultModel: "gpt-5.6-terra", deviceId: first });
 });
 

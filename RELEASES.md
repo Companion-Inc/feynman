@@ -6,6 +6,17 @@ GitHub release notes are generated from the matching `## vX.Y.Z` section in this
 
 ## Unreleased
 
+## v0.5.41 - 2026-10-12
+
+- **An expired sign-in no longer looks like no model.** Feynman treated a ChatGPT, Claude or Copilot sign-in whose short-lived access token had expired as if no model were set up. `feynman` reopened the setup menu, and since 0.5.36 `feynman -p` refused to run. Pi renews the token on the next request, so Feynman now leaves that to Pi and asks you to sign in again only when renewal really fails.
+- **Pi 1.2.0.**
+  - With an OpenRouter key, `/model` lists only the models that key can use, with their real context sizes and prices; OpenRouter's `auto` model no longer shows a negative cost.
+  - "The upstream provider returned an error" is retried instead of ending the turn, and Anthropic requests rejected for having too many strict tools are retried once.
+  - `feynman -p` warns and exits 1 when the answer was cut off at the model's output limit, instead of exiting 0.
+  - On Windows, reading or writing your saved logins no longer fails with `EPERM` while an old lock is being cleaned up.
+  - Long thinking with Mistral is no longer cut off by the request timeout.
+- **Preview and PDF export find more browsers.** Chromium, Edge and Brave on Linux, Edge under `Program Files (x86)` and Brave in your user folder on Windows, and apps in `~/Applications` on macOS. Thanks to @A-ryanVAT-S (#343).
+
 ## v0.5.40 - 2026-10-12
 
 - **alphaXiv sign-in messages name the right command.** When you weren't signed in, `feynman alpha search`, `get` and the paper tools said to run `alpha login`, a command that isn't installed with Feynman. They now say `feynman alpha login`. (Alpha Hub 0.1.7.)

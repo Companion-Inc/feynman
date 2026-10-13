@@ -544,7 +544,9 @@ export async function main(): Promise<void> {
 			...commandTelemetry,
 			duration_ms: durationMs,
 			exit_code: exitCode,
-			...(exitCode === 0 ? {} : { pi_stderr: getLastPiStderr() }),
+			// A fixed reason for a deliberate non-zero exit, so it isn't read as a crash.
+			...(exitReason ? { exit_reason: exitReason } : {}),
+			...(exitCode === 0 || exitReason ? {} : { pi_stderr: getLastPiStderr() }),
 		};
 		captureTelemetryEvent(exitCode === 0 ? "feynman_command_completed" : "feynman_command_failed", completeProperties);
 	} catch (error) {
@@ -561,6 +563,9 @@ export async function main(): Promise<void> {
 		await shutdownPostHogTelemetry();
 	}
 }
+
+// Set when Feynman exits non-zero on purpose (see the completion telemetry in main).
+let exitReason: "no_model" | undefined;
 
 async function runMain(input: { here: string; appRoot: string; feynmanVersion: string | undefined }): Promise<void> {
 	const { appRoot, feynmanVersion } = input;
@@ -819,6 +824,7 @@ async function runMain(input: { here: string; appRoot: string; feynmanVersion: s
 		if (!getCurrentModelSpec(feynmanSettingsPath)) {
 			console.error(noModelMessage(promptGiven));
 			process.exitCode = 1;
+			exitReason = "no_model";
 			return;
 		}
 		await ensureFeynmanSettings(feynmanSettingsPath, bundledSettingsPath, appRoot, defaultThinkingLevel, feynmanAuthPath);
@@ -827,6 +833,7 @@ async function runMain(input: { here: string; appRoot: string; feynmanVersion: s
 		&& (await getAuthenticatedModelRecords(feynmanAuthPath)).length === 0) {
 		console.error(noModelMessage(promptGiven));
 		process.exitCode = 1;
+		exitReason = "no_model";
 		return;
 	}
 
