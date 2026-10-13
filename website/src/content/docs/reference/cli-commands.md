@@ -62,7 +62,7 @@ See [Package Stack](/docs/reference/package-stack) for the core packages and opt
 | Command | Description |
 | --- | --- |
 | `feynman search status` | Show Pi web-access status and config path |
-| `feynman search set <provider> [api-key]` | Set the web search provider (`auto`, `exa`, `perplexity`, or `gemini`) and optionally save its API key |
+| `feynman search set <provider> [api-key]` | Set the web search provider (any pi-web-access provider; run with no provider to list them) and optionally save its API key |
 | `feynman search clear` | Reset the web search provider to `auto` while keeping API keys |
 
 See [Web Search](/docs/tools/web-search).

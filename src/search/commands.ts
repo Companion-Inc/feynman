@@ -1,17 +1,16 @@
 import {
 	getPiWebAccessStatus,
+	PI_WEB_SEARCH_PROVIDERS,
 	savePiWebAccessConfig,
+	searchProviderKeyField,
 	type PiWebAccessConfig,
 	type PiWebSearchProvider,
 } from "../pi/web-access.js";
 import { printInfo } from "../ui/terminal.js";
 
-const SEARCH_PROVIDERS: PiWebSearchProvider[] = ["auto", "perplexity", "exa", "gemini"];
-const PROVIDER_API_KEY_FIELDS: Partial<Record<PiWebSearchProvider, keyof PiWebAccessConfig>> = {
-	perplexity: "perplexityApiKey",
-	exa: "exaApiKey",
-	gemini: "geminiApiKey",
-};
+export function searchSetUsage(): string {
+	return `Usage: feynman search set <provider> [api-key]\nProviders: ${PI_WEB_SEARCH_PROVIDERS.join(", ")}`;
+}
 
 export function printSearchStatus(status = getPiWebAccessStatus()): void {
 	const configPathSuffix = status.configExists ? "" : " (not created yet)";
@@ -19,9 +18,7 @@ export function printSearchStatus(status = getPiWebAccessStatus()): void {
 	printInfo(`Search route: ${status.routeLabel}`);
 	printInfo(`Request route: ${status.requestProvider}`);
 	printInfo(`Search workflow: ${status.workflow}`);
-	printInfo(`Perplexity API configured: ${status.perplexityConfigured ? "yes" : "no"}`);
-	printInfo(`Exa API configured: ${status.exaConfigured ? "yes" : "no"}`);
-	printInfo(`Gemini API configured: ${status.geminiApiConfigured ? "yes" : "no"}`);
+	printInfo(`Saved API keys: ${status.configuredKeys.join(", ") || "none"}`);
 	printInfo(`Gemini browser fallback: ${status.geminiBrowserEnabled ? "enabled" : "disabled"}`);
 	if (status.geminiBrowserEnabled && status.chromeProfile) {
 		printInfo(`Gemini browser profile: ${status.chromeProfile}`);
@@ -30,18 +27,17 @@ export function printSearchStatus(status = getPiWebAccessStatus()): void {
 	if (!status.configExists) {
 		printInfo("Not configured yet. Run one of:");
 		printInfo("  feynman search set auto");
-		printInfo("  feynman search set perplexity <api-key>");
-		printInfo("  feynman search set exa <api-key>");
-		printInfo("  feynman search set gemini <api-key>");
+		printInfo("  feynman search set <provider> <api-key>   (for example exa, brave, tavily, perplexity)");
 	}
 }
 
-export function setSearchProvider(provider: PiWebSearchProvider, apiKey?: string): void {
-	if (!SEARCH_PROVIDERS.includes(provider)) {
-		throw new Error(`Usage: feynman search set <${SEARCH_PROVIDERS.join("|")}> [api-key]`);
+export function setSearchProvider(provider: string, apiKey?: string): void {
+	if (!(PI_WEB_SEARCH_PROVIDERS as readonly string[]).includes(provider)) {
+		throw new Error(searchSetUsage());
 	}
-	if (apiKey !== undefined && provider === "auto") {
-		throw new Error("The auto provider does not use an API key. Usage: feynman search set auto");
+	const keyField = searchProviderKeyField(provider as PiWebSearchProvider);
+	if (apiKey !== undefined && !keyField) {
+		throw new Error(`${provider} takes no API key. Usage: feynman search set ${provider}`);
 	}
 
 	const updates: Partial<Record<keyof PiWebAccessConfig, unknown>> = {
@@ -51,9 +47,8 @@ export function setSearchProvider(provider: PiWebSearchProvider, apiKey?: string
 		allowBrowserCookies: false,
 		route: undefined,
 	};
-	const apiKeyField = PROVIDER_API_KEY_FIELDS[provider];
-	if (apiKeyField && apiKey !== undefined) {
-		updates[apiKeyField] = apiKey;
+	if (keyField && apiKey !== undefined) {
+		updates[keyField] = apiKey;
 	}
 	savePiWebAccessConfig(updates);
 
