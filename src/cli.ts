@@ -38,7 +38,6 @@ import {
 	resolveExplicitModelSpec,
 	ensureFeynmanSettings,
 	normalizeThinkingLevel,
-	readJson,
 	type ThinkingLevel,
 } from "./pi/settings.js";
 import { BUNDLED_PI_PACKAGES, buildPiEnv, findWindowsBash, WINDOWS_BASH_MISSING_NOTICE, type PiRuntimeOptions } from "./pi/runtime.js";
@@ -337,7 +336,8 @@ async function handleUpdateCommand(piOptions: PiRuntimeOptions, feynmanVersion: 
 
 async function handlePackagesCommand(subcommand: string | undefined, args: string[], piOptions: PiRuntimeOptions): Promise<void> {
 	const configuredSources = new Set(
-		((readJson(resolve(piOptions.feynmanAgentDir, "settings.json")).packages ?? []) as Array<string | { source?: string }>)
+		SettingsManager.create(process.cwd(), piOptions.feynmanAgentDir, { projectTrusted: false })
+			.getPackages()
 			.map((entry) => (typeof entry === "string" ? entry : entry.source)),
 	);
 
@@ -871,13 +871,12 @@ async function runMain(input: { here: string; appRoot: string; feynmanVersion: s
 	if (command && workflowCommandNames.has(command) && mode !== "rpc" && mode !== "json" && process.stdout.isTTY) {
 		const effectiveSpec = explicitModelSpec ?? getCurrentModelSpec(feynmanSettingsPath);
 		const providerId = effectiveSpec?.split("/")[0] ?? "";
-		if (effectiveSpec && isLocalModelProvider(feynmanAuthPath, providerId)) {
+		if (effectiveSpec && await isLocalModelProvider(feynmanAuthPath, providerId)) {
 			preLaunchNotice = buildLocalModelWorkflowNotice(effectiveSpec, command);
 		}
 	}
 	if (process.platform === "win32" && mode !== "rpc" && mode !== "json" && process.stdout.isTTY) {
-		const shellPath = readJson(feynmanSettingsPath).shellPath;
-		if (typeof shellPath !== "string" && !findWindowsBash()) {
+		if (!SettingsManager.create(workingDir, feynmanAgentDir, { projectTrusted: false }).getShellPath() && !findWindowsBash()) {
 			preLaunchNotice = [preLaunchNotice, WINDOWS_BASH_MISSING_NOTICE].filter(Boolean).join("\n");
 		}
 	}

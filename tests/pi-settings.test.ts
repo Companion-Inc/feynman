@@ -11,7 +11,7 @@ import {
 } from "../src/pi/packages.js";
 import { BUNDLED_PI_PACKAGES, getFeynmanPackageSources } from "../src/pi/runtime.js";
 import { chooseRecommendedModel } from "../src/model/catalog.js";
-import { ensureFeynmanSettings, feynmanSubagentExtensions, normalizeThinkingLevel, readJson } from "../src/pi/settings.js";
+import { ensureFeynmanSettings, feynmanSubagentExtensions, normalizeThinkingLevel } from "../src/pi/settings.js";
 
 const appRoot = process.cwd();
 const bundledSettingsPath = resolve(appRoot, ".feynman", "settings.json");
@@ -242,7 +242,6 @@ test("settings saved with a UTF-8 byte-order mark still load and keep their valu
 	t.after(() => rmSync(root, { recursive: true, force: true }));
 	const settingsPath = join(root, "settings.json");
 	writeFileSync(settingsPath, "\uFEFF" + JSON.stringify({ defaultProvider: "anthropic", defaultModel: "claude-opus-5-5", theme: "feynman" }));
-	assert.equal(readJson(settingsPath).defaultModel, "claude-opus-5-5");
 	await ensureFeynmanSettings(settingsPath, bundledSettingsPath, appRoot, "medium", join(root, "absent-auth.json"));
 	const saved = JSON.parse(readFileSync(settingsPath, "utf8").replace(/^\uFEFF/, "")) as Record<string, unknown>;
 	assert.equal(saved.defaultProvider, "anthropic");
@@ -292,6 +291,28 @@ test("ensureFeynmanSettings seeds OpenCode Go Kimi as the preferred OpenCode Go 
 	};
 	assert.equal(settings.defaultProvider, "opencode-go");
 	assert.equal(settings.defaultModel, "kimi-k2.7-code");
+});
+
+test("ensureFeynmanSettings keeps settings another process saves while it discovers models", async (t) => {
+	// Pi's own /settings, or a second Feynman, can save while this start awaits model discovery.
+	const root = mkdtempSync(join(tmpdir(), "feynman-settings-concurrent-edit-"));
+	t.after(() => rmSync(root, { recursive: true, force: true }));
+	const settingsPath = join(root, "settings.json");
+	const authPath = join(root, "auth.json");
+	writeFileSync(authPath, JSON.stringify({ openai: { type: "api_key", key: "openai-test-key" } }) + "\n", "utf8");
+	writeFileSync(settingsPath, JSON.stringify({ theme: "dark" }));
+
+	const pending = ensureFeynmanSettings(settingsPath, bundledSettingsPath, appRoot, "medium", authPath);
+	writeFileSync(settingsPath, JSON.stringify({ theme: "light", hideThinkingBlock: true }));
+	await pending;
+
+	const settings = JSON.parse(readFileSync(settingsPath, "utf8"));
+	assert.equal(settings.hideThinkingBlock, true);
+	assert.equal(settings.theme, "light");
+	assert.equal(settings.defaultThinkingLevel, "medium");
+	assert.equal(settings.defaultProvider, "openai");
+	assert.deepEqual(settings.packages, getFeynmanPackageSources(appRoot));
+	assert.deepEqual(settings.subagents.agentExcludeDirs, ["~/.agents"]);
 });
 
 test("optional package presets map friendly names to Pi package sources", () => {

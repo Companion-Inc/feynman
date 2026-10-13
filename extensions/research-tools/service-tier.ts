@@ -34,6 +34,7 @@ function normalizeServiceTier(value: string | undefined): FeynmanServiceTier | u
 	return SERVICE_TIER_SET.has(normalized) ? (normalized as FeynmanServiceTier) : undefined;
 }
 
+// serviceTier is Feynman's key; Pi's SettingsManager has no getter or setter for it, so it is read and written directly.
 function getConfiguredServiceTier(settingsPath: string): FeynmanServiceTier | undefined {
 	try {
 		const parsed = JSON.parse(readFileSync(settingsPath, "utf8")) as { serviceTier?: string };
