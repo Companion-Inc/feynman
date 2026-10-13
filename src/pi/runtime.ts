@@ -194,7 +194,6 @@ export function buildPiEnv(options: PiRuntimeOptions, executables?: ResolvedExec
 		FEYNMAN_BIN_PATH: getFeynmanCliBinPath(options.appRoot),
 		PI_CODING_AGENT_DIR: options.feynmanAgentDir,
 		PANDOC_PATH: pandocPath,
-		PI_HARDWARE_CURSOR: process.env.PI_HARDWARE_CURSOR ?? "1",
 		PI_SKIP_VERSION_CHECK: process.env.PI_SKIP_VERSION_CHECK ?? "1",
 		// A Feynman telemetry opt-out also turns off Pi's install telemetry (docs/environment-variables.md).
 		...(isTelemetryDisabled() && process.env.PI_TELEMETRY === undefined ? { PI_TELEMETRY: "0" } : {}),
