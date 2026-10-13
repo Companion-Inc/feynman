@@ -6,6 +6,11 @@ GitHub release notes are generated from the matching `## vX.Y.Z` section in this
 
 ## Unreleased
 
+## v0.5.43 - 2026-10-13
+
+- **Feynman reads and writes Pi's configuration only through Pi.** Settings now go through Pi's settings manager, which locks the file and changes only the keys Feynman sets, so a change Pi or another Feynman window makes at the same moment is no longer overwritten. Model checks, local-model detection and `feynman doctor` read your models through Pi, so comments in `models.json`, a `baseUrl` set on one model, and a key saved with `feynman model login` count the same way they do when Feynman runs.
+- `feynman doctor` no longer warns about a custom provider whose key you saved with `feynman model login` rather than writing it into `models.json`.
+
 ## v0.5.42 - 2026-10-13
 
 - **Pi 1.2.0 and pi-subagents 0.78.0.**
