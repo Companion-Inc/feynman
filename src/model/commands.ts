@@ -808,12 +808,12 @@ async function resolveAvailableModelSpec(authPath: string, input: string): Promi
 	return undefined;
 }
 
+// The default model Pi will launch with, read through Pi's SettingsManager.
 export function getCurrentModelSpec(settingsPath: string): string | undefined {
-	const settings = readJson(settingsPath);
-	if (typeof settings.defaultProvider === "string" && typeof settings.defaultModel === "string") {
-		return `${settings.defaultProvider}/${settings.defaultModel}`;
-	}
-	return undefined;
+	const settings = SettingsManager.create(process.cwd(), dirname(settingsPath));
+	const provider = settings.getDefaultProvider();
+	const model = settings.getDefaultModel();
+	return provider && model ? `${provider}/${model}` : undefined;
 }
 
 export async function printModelList(settingsPath: string, authPath: string): Promise<void> {
@@ -1044,11 +1044,10 @@ export async function setDefaultModelSpec(settingsPath: string, authPath: string
 	}
 
 	const [provider, ...rest] = resolvedSpec.split("/");
-	const modelId = rest.join("/");
-	const settings = readJson(settingsPath);
-	settings.defaultProvider = provider;
-	settings.defaultModel = modelId;
-	writeFileSync(settingsPath, JSON.stringify(settings, null, 2) + "\n", "utf8");
+	// Pi's SettingsManager merges only the changed keys under its lock.
+	const settings = SettingsManager.create(process.cwd(), dirname(settingsPath));
+	settings.setDefaultModelAndProvider(provider!, rest.join("/"));
+	await settings.flush();
 	printSuccess(`Research default model set to ${resolvedSpec}`);
 }
 

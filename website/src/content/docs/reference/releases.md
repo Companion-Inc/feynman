@@ -9,6 +9,19 @@ This page summarizes what changed in recent Feynman releases. GitHub releases us
 
 ## Unreleased
 
+## v0.5.42 - 2026-10-13
+
+- **Pi 1.2.0 and pi-subagents 0.78.0.**
+  - With an OpenRouter key, `/model` lists only the models that key can use, with their real context sizes and prices.
+  - "The upstream provider returned an error" is retried instead of ending the turn, and Anthropic requests rejected for too many strict tools are retried once.
+  - `feynman -p` warns and exits 1 when the answer was cut off at the model's output limit.
+  - On Windows, reading or writing saved logins no longer fails with `EPERM` while an old lock is cleaned up.
+  - Pressing `Esc` keeps a research run stopped; a subagent finishing a moment later no longer restarts it.
+  - Reports are no longer overwritten when a subagent run is resumed, and a timed-out subagent's partial output reaches the lead agent.
+  - The `workflowScript contains dynamic child launches` warning no longer prints on every parallel run.
+- **Turning off Feynman's telemetry also turns off Pi's.** `FEYNMAN_TELEMETRY=off` (or `DO_NOT_TRACK=1`) now sets Pi's own `PI_TELEMETRY=0` for its install reporting.
+- `feynman model set` and the default-model check use Pi's settings API, so they match what Pi launches with (including trusted project settings).
+
 ## v0.5.41 - 2026-10-12
 
 - **A fresh `npm install` works again.** Pi 1.2.0, released today, made new npm installs of Feynman 0.5.40 fail on every command except `-v` (`does not provide an export named 'MCP_TYPESCRIPT_PREAMBLE'`). Pi 1.1.0 asks for its own sub-packages with open version ranges, so npm pulled Pi 1.2.0's copies. Feynman now pins those sub-packages to the Pi version it ships. The curl and PowerShell installers were not affected.

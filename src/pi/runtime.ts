@@ -9,7 +9,7 @@ import {
 	resolveExecutable,
 	type ResolvedExecutables,
 } from "../system/executables.js";
-import { getPostHogChildEnv } from "../telemetry/posthog.js";
+import { getPostHogChildEnv, isTelemetryDisabled } from "../telemetry/posthog.js";
 
 // Pi packages shipped as Feynman dependencies and loaded from their install
 // paths through settings.json `packages` (Pi's documented local-path source).
@@ -196,6 +196,8 @@ export function buildPiEnv(options: PiRuntimeOptions, executables?: ResolvedExec
 		PANDOC_PATH: pandocPath,
 		PI_HARDWARE_CURSOR: process.env.PI_HARDWARE_CURSOR ?? "1",
 		PI_SKIP_VERSION_CHECK: process.env.PI_SKIP_VERSION_CHECK ?? "1",
+		// A Feynman telemetry opt-out also turns off Pi's install telemetry (docs/environment-variables.md).
+		...(isTelemetryDisabled() && process.env.PI_TELEMETRY === undefined ? { PI_TELEMETRY: "0" } : {}),
 		MERMAID_CLI_PATH: mermaidPath,
 		PUPPETEER_EXECUTABLE_PATH: browserPath,
 		...getPostHogChildEnv(),
