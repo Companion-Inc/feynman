@@ -41,7 +41,7 @@ feynman search set auto
 
 `feynman search set` accepts every search provider pi-web-access supports, including `brave`, `tavily`, `kagi`, `serper`, `you`, `searxng` (pass its base URL instead of a key) and `duckduckgo` (no key); run `feynman search set` with no provider to list them all. It also sets the search `workflow` to `none` (raw results, no curator window) and turns browser-cookie access off. `feynman search clear` resets the provider to `auto` and keeps saved API keys.
 
-For other providers (Brave, Tavily, Jina, Kagi, Parallel, SearXNG, DuckDuckGo, and more), multi-provider search with `provider: "all"`, fallback routes, proxies, and PDF extraction settings, edit `~/.feynman/agent/web-search.json` directly. The [pi-web-access README](https://github.com/nicobailon/pi-web-access#configuration) documents every field.
+For fallback routes, proxies, PDF extraction and other advanced settings, edit `~/.feynman/agent/web-search.json` directly. The [pi-web-access README](https://github.com/nicobailon/pi-web-access#configuration) documents every field.
 
 ## Commands
 
