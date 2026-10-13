@@ -15,7 +15,6 @@ import {
 	shouldRunInteractiveSetup,
 } from "../src/cli.js";
 import { buildModelStatusSnapshotFromRecords, choosePreferredModelRecord, chooseRecommendedModel, getAvailableModelRecords, getSupportedModelRecords, isProClassModelSpec } from "../src/model/catalog.js";
-import { MODEL_API_KEY_PROVIDERS } from "../src/model/api-key-providers.js";
 import { getOrCreateDeviceId, isLocalModelProvider, resolveModelProviderForCommand, setDefaultModelSpec } from "../src/model/commands.js";
 import { createModelRegistry } from "../src/model/registry.js";
 import { canonicalizeModelSpec, parseModelSpec } from "../src/pi/settings.js";
@@ -286,13 +285,15 @@ test("packages CLI hides removed UI and bulk extras", () => {
 	}
 });
 
-test("every API-key provider Feynman offers is a provider Pi knows", async () => {
-	// Pi 1.0.3 renamed azure-openai-responses to azure; a stale id would save
-	// credentials no model uses.
+test("the API-key menu offers every provider Pi can sign in with an API key", async () => {
+	const { listApiKeyProviders } = await import("../src/model/commands.js");
 	const authPath = createAuthPath({});
-	const piProviders = new Set((await getSupportedModelRecords(authPath)).map((model) => model.provider));
-	const unknown = MODEL_API_KEY_PROVIDERS.filter((provider) => provider.envVar && !piProviders.has(provider.id)).map((provider) => provider.id);
-	assert.deepEqual(unknown, []);
+	const ids = (await listApiKeyProviders(authPath)).map((provider) => provider.id);
+	for (const id of ["openai", "anthropic", "deepseek", "fireworks", "together", "nvidia", "google-vertex", "amazon-bedrock"]) {
+		assert.ok(ids.includes(id), id);
+	}
+	// Feynman-only setups for endpoints Pi has no sign-in for.
+	for (const id of ["lm-studio", "litellm", "__custom__"]) assert.ok(ids.includes(id), id);
 });
 
 test("chooseRecommendedModel prefers Copilot Claude Opus over alphabetical order", async () => {

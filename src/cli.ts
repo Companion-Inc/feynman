@@ -65,6 +65,7 @@ import { fetchLatestFeynmanVersion, getFeynmanUpgradeLines, isNewerVersion } fro
 import { runDoctor, runStatus } from "./setup/doctor.js";
 import { setupPreviewDependencies } from "./setup/preview.js";
 import { runSetup } from "./setup/setup.js";
+import { SettingsManager } from "@earendil-works/pi-coding-agent";
 import { noModelMessage } from "./setup/prompts.js";
 import {
 	captureTelemetryEvent,
@@ -647,7 +648,15 @@ async function runMain(input: { here: string; appRoot: string; feynmanVersion: s
 	}
 
 	const workingDir = resolve(values.cwd ?? process.cwd());
-	const sessionDir = resolve(values["session-dir"] ?? getDefaultSessionDir(feynmanHome));
+	// Pi's order: --session-dir, then PI_CODING_AGENT_SESSION_DIR, then the sessionDir
+	// setting; Feynman's own default comes last.
+	const sessionDir = resolve(
+		workingDir,
+		values["session-dir"] ??
+			process.env.PI_CODING_AGENT_SESSION_DIR ??
+			SettingsManager.create(workingDir, feynmanAgentDir).getSessionDir() ??
+			getDefaultSessionDir(feynmanHome),
+	);
 	const feynmanSettingsPath = resolve(feynmanAgentDir, "settings.json");
 	const feynmanAuthPath = resolve(feynmanAgentDir, "auth.json");
 	const { defaultThinkingLevel, launchThinkingLevel } = resolveThinkingConfig(values.thinking ?? process.env.FEYNMAN_THINKING);

@@ -89,3 +89,19 @@ test("a no-model exit is reported to telemetry as a deliberate exit, not a crash
 		rmSync(home, { recursive: true, force: true });
 	}
 });
+
+test("Feynman uses Pi's sessionDir setting when no --session-dir is given", async () => {
+	const { writeFileSync, mkdirSync } = await import("node:fs");
+	const home = mkdtempSync(join(tmpdir(), "feynman-session-dir-"));
+	try {
+		mkdirSync(join(home, ".feynman", "agent"), { recursive: true });
+		writeFileSync(join(home, ".feynman", "agent", "settings.json"), JSON.stringify({ sessionDir: join(home, "my-sessions") }));
+		const env = Object.fromEntries(Object.entries(process.env).filter(([key]) => !/_API_KEY$|_TOKEN$|SESSION_DIR$/.test(key)));
+		const result = spawnSync(process.execPath, ["--import", "tsx", "src/index.ts", "status"], {
+			cwd: process.cwd(), encoding: "utf8", env: { ...env, FEYNMAN_HOME: home, HOME: home, FEYNMAN_TELEMETRY: "0" }, input: "",
+		});
+		assert.match(result.stdout, new RegExp(`Sessions: ${join(home, "my-sessions").replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`));
+	} finally {
+		rmSync(home, { recursive: true, force: true });
+	}
+});

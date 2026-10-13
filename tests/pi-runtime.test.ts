@@ -290,3 +290,21 @@ test("findWindowsBash finds per-user Git for Windows installs that Pi misses", (
 	});
 	assert.equal(find({ PATH: "C:\\Windows", LOCALAPPDATA: user, ProgramFiles: "C:\\Program Files" }, []), undefined);
 });
+
+test("a Feynman telemetry opt-out turns off Pi's install telemetry too", () => {
+	const saved = { FEYNMAN_TELEMETRY: process.env.FEYNMAN_TELEMETRY, PI_TELEMETRY: process.env.PI_TELEMETRY, DO_NOT_TRACK: process.env.DO_NOT_TRACK };
+	const options = { appRoot: "/repo/feynman", workingDir: "/w", sessionDir: "/s", feynmanAgentDir: "/a", feynmanVersion: "0.1.5" };
+	try {
+		delete process.env.PI_TELEMETRY;
+		delete process.env.DO_NOT_TRACK;
+		process.env.FEYNMAN_TELEMETRY = "off";
+		assert.equal(buildPiEnv(options).PI_TELEMETRY, "0");
+		process.env.FEYNMAN_TELEMETRY = "on";
+		assert.equal(buildPiEnv(options).PI_TELEMETRY, undefined);
+	} finally {
+		for (const [key, value] of Object.entries(saved)) {
+			if (value === undefined) delete process.env[key];
+			else process.env[key] = value;
+		}
+	}
+});
