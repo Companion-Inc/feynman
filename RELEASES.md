@@ -16,6 +16,7 @@ GitHub release notes are generated from the matching `## vX.Y.Z` section in this
   - Pressing `Esc` keeps a research run stopped; a subagent finishing a moment later no longer restarts it.
   - Reports are no longer overwritten when a subagent run is resumed, and a timed-out subagent's partial output reaches the lead agent.
   - The `workflowScript contains dynamic child launches` warning no longer prints on every parallel run.
+- **`feynman model login` offers every provider Pi supports with an API key.** That is 41 providers instead of Feynman's own list of 16, adding DeepSeek, Fireworks, Together, NVIDIA, Google Vertex, Cloudflare, Qwen and others. Pi now asks for what each provider needs, so Cloudflare's extra fields and Bedrock's profile or bearer-token options work. Pressing Enter on an empty key no longer saves an empty credential.
 - **Turning off Feynman's telemetry also turns off Pi's.** `FEYNMAN_TELEMETRY=off` (or `DO_NOT_TRACK=1`) now sets Pi's own `PI_TELEMETRY=0` for its install reporting.
 - Feynman now honors Pi's own `sessionDir` setting and `PI_CODING_AGENT_SESSION_DIR` when you don't pass `--session-dir`.
 - `feynman model set` and the default-model check use Pi's settings API, so they match what Pi launches with (including trusted project settings).

@@ -1,12 +1,11 @@
-import type { AuthEvent, AuthPrompt } from "@earendil-works/pi-ai";
+import type { AuthEvent, AuthInteraction, AuthPrompt } from "@earendil-works/pi-ai";
 import type { ModelRuntime } from "@earendil-works/pi-coding-agent";
 import { SettingsManager } from "@earendil-works/pi-coding-agent";
-import { readFileSync, writeFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { exec as execCallback } from "node:child_process";
-import { dirname, resolve } from "node:path";
+import { dirname } from "node:path";
 import { promisify } from "node:util";
 
-import { readJson } from "../pi/settings.js";
 import { promptChoice, promptSecret, promptSelect, promptText, SetupCancelledError, validateApiKeyInput, type PromptSelectOption } from "../setup/prompts.js";
 import { openUrl } from "../system/open-url.js";
 import { printInfo, printSection, printSuccess, printWarning } from "../ui/terminal.js";
@@ -86,12 +85,29 @@ async function selectOAuthProvider(authPath: string, action: "login" | "logout")
 	return selection;
 }
 
-function resolveApiKeyProvider(input: string): ApiKeyProviderInfo | undefined {
+// Endpoints Pi has no API-key sign-in for: Feynman writes their models.json entry.
+const LOCAL_API_KEY_SETUPS: ApiKeyProviderInfo[] = MODEL_API_KEY_PROVIDERS.filter((provider) =>
+	["lm-studio", "litellm", "__custom__"].includes(provider.id),
+);
+
+// Every provider Pi can sign in to with an API key (its own list, labels and
+// prompts), plus Feynman's local and custom endpoint setups.
+export async function listApiKeyProviders(authPath: string): Promise<ApiKeyProviderInfo[]> {
+	const envVars = new Map(MODEL_API_KEY_PROVIDERS.map((provider) => [provider.id, provider.envVar]));
+	const piProviders = (await createModelRuntime(authPath))
+		.getProviders()
+		.filter((provider) => provider.auth.apiKey)
+		.map((provider) => ({ id: provider.id, label: provider.name, envVar: envVars.get(provider.id) }))
+		.sort((left, right) => left.label.localeCompare(right.label));
+	return [...piProviders, ...LOCAL_API_KEY_SETUPS];
+}
+
+async function resolveApiKeyProvider(authPath: string, input: string): Promise<ApiKeyProviderInfo | undefined> {
 	const normalizedInput = normalizeProviderId(input);
 	if (!normalizedInput) {
 		return undefined;
 	}
-	return MODEL_API_KEY_PROVIDERS.find((provider) => provider.id === normalizedInput);
+	return (await listApiKeyProviders(authPath)).find((provider) => provider.id === normalizedInput);
 }
 
 export async function resolveModelProviderForCommand(
@@ -103,7 +119,7 @@ export async function resolveModelProviderForCommand(
 		return { kind: "oauth", id: oauthProvider.id };
 	}
 
-	const apiKeyProvider = resolveApiKeyProvider(input);
+	const apiKeyProvider = await resolveApiKeyProvider(authPath, input);
 	if (apiKeyProvider) {
 		return { kind: "api-key", id: apiKeyProvider.id };
 	}
@@ -124,15 +140,16 @@ function apiKeyProviderHint(provider: ApiKeyProviderInfo): string {
 	return provider.envVar ?? provider.id;
 }
 
-async function selectApiKeyProvider(): Promise<ApiKeyProviderInfo | undefined> {
-	const options: PromptSelectOption<ApiKeyProviderInfo | "cancel">[] = MODEL_API_KEY_PROVIDERS.map((provider) => ({
+async function selectApiKeyProvider(authPath: string): Promise<ApiKeyProviderInfo | undefined> {
+	const providers = await listApiKeyProviders(authPath);
+	const options: PromptSelectOption<ApiKeyProviderInfo | "cancel">[] = providers.map((provider) => ({
 		value: provider,
 		label: provider.label,
 		hint: apiKeyProviderHint(provider),
 	}));
 	options.push({ value: "cancel", label: "Cancel" });
 
-	const defaultProvider = MODEL_API_KEY_PROVIDERS.find((provider) => provider.id === "openai") ?? MODEL_API_KEY_PROVIDERS[0];
+	const defaultProvider = providers.find((provider) => provider.id === "openai") ?? providers[0];
 	const selection = await promptSelect("Choose an API-key provider:", options, defaultProvider);
 	if (selection === "cancel") {
 		return undefined;
@@ -602,38 +619,6 @@ async function verifyCustomProvider(setup: CustomProviderSetup, authPath: string
 	printInfo("Verification: skipped network probe for this API mode.");
 }
 
-async function verifyBedrockCredentialChain(): Promise<void> {
-	const { defaultProvider } = await import("@aws-sdk/credential-provider-node");
-	const credentials = await defaultProvider({})();
-	if (!credentials?.accessKeyId || !credentials?.secretAccessKey) {
-		throw new Error("AWS credential chain resolved without usable Bedrock credentials.");
-	}
-}
-
-async function configureBedrockProvider(authPath: string): Promise<boolean> {
-	printSection("AWS Credentials: Amazon Bedrock");
-	printInfo("Feynman will verify the AWS SDK credential chain used by Pi's Bedrock provider.");
-	printInfo("Supported sources include AWS_PROFILE, ~/.aws credentials/config, SSO, ECS/IRSA, and EC2 instance roles.");
-
-	try {
-		await verifyBedrockCredentialChain();
-		const modelRuntime = await createModelRuntime(authPath);
-		if (!(await modelRuntime.checkAuth("amazon-bedrock"))) {
-			throw new Error("Pi could not resolve the verified AWS credential chain for Amazon Bedrock.");
-		}
-		printSuccess("Verified the AWS credential chain used by Amazon Bedrock.");
-		printInfo("Use `feynman model list` to see available Bedrock models.");
-		return true;
-	} catch (error) {
-		printWarning(`AWS credential verification failed: ${error instanceof Error ? error.message : String(error)}`);
-		printInfo("Configure AWS credentials first, for example:");
-		printInfo("  export AWS_PROFILE=default");
-		printInfo("  # or set AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY");
-		printInfo("  # or use an EC2/ECS/IRSA role with valid Bedrock access");
-		return false;
-	}
-}
-
 async function maybeSetRecommendedDefaultModel(settingsPath: string | undefined, authPath: string): Promise<void> {
 	if (!settingsPath) {
 		return;
@@ -652,17 +637,13 @@ async function maybeSetRecommendedDefaultModel(settingsPath: string | undefined,
 }
 
 async function configureApiKeyProvider(authPath: string, providerId?: string): Promise<boolean> {
-	const provider = providerId ? resolveApiKeyProvider(providerId) : await selectApiKeyProvider();
+	const provider = providerId ? await resolveApiKeyProvider(authPath, providerId) : await selectApiKeyProvider(authPath);
 	if (!provider) {
 		if (providerId) {
 			throw new Error(`Unknown API-key model provider: ${providerId}`);
 		}
 		printInfo("API key setup cancelled.");
 		return false;
-	}
-
-	if (provider.id === "amazon-bedrock") {
-		return configureBedrockProvider(authPath);
 	}
 
 	if (provider.id === "lm-studio") {
@@ -745,22 +726,29 @@ async function configureApiKeyProvider(authPath: string, providerId?: string): P
 		printInfo(`Tip: to avoid writing secrets to disk, set ${provider.envVar} in your shell or .env.`);
 	}
 
-	const apiKey = await promptSecret("Paste API key (leave empty to use env var instead)", undefined, validateApiKeyInput);
-	if (!apiKey) {
-		if (provider.envVar) {
-			printInfo(`Set ${provider.envVar} and rerun setup (or run \`feynman model list\`).`);
-		} else {
-			printInfo("No API key provided.");
-		}
-		return false;
-	}
-
+	// Pi asks for whatever this provider needs (a key, or e.g. Cloudflare's account
+	// and gateway, Bedrock's profile or token). Esc cancels.
 	const modelRuntime = await createModelRuntime(authPath);
-	await modelRuntime.login(provider.id, "api_key", {
-		prompt: async () => apiKey,
-		notify: () => undefined,
-	});
-	printSuccess(`Saved API key for ${provider.id} in auth storage.`);
+	const interaction = terminalAuthInteraction(provider.label, new AbortController().signal);
+	const signedIn = await modelRuntime
+		.login(provider.id, "api_key", {
+			...interaction,
+			prompt: async (prompt: AuthPrompt) => {
+				if (prompt.type !== "secret") return interaction.prompt(prompt);
+				const secret = await promptSecret(prompt.message, prompt.signal, validateApiKeyInput);
+				// An empty key would be saved as a credential that fails every request.
+				if (!secret) throw new SetupCancelledError("no API key entered");
+				return secret;
+			},
+		})
+		.then(() => true)
+		.catch((error: unknown) => {
+			if (!(error instanceof SetupCancelledError)) throw error;
+			if (provider.envVar) printInfo(`Or set ${provider.envVar} and run feynman again.`);
+			return false;
+		});
+	if (!signedIn) return false;
+	printSuccess(`Saved ${provider.label} credentials in auth storage.`);
 
 	const baseUrl = await promptText("Base URL override (optional, include /v1 for OpenAI-compatible endpoints)", "");
 	if (baseUrl) {
@@ -894,6 +882,58 @@ async function refreshProviderModels(modelRuntime: ModelRuntime, providerId: str
 	await modelRuntime.refresh({ providers: [providerId], allowNetwork: true, signal: AbortSignal.timeout(15_000) }).catch(() => undefined);
 }
 
+// Runs Pi's own login prompts (selects, secrets, text, browser URLs) in the terminal.
+function terminalAuthInteraction(providerLabel: string, signal: AbortSignal): AuthInteraction {
+	return {
+		prompt: async (prompt: AuthPrompt) => {
+			if (prompt.type === "select") {
+				return promptSelect(
+					prompt.message,
+					prompt.options.map((option) => ({
+						value: option.id,
+						label: option.label,
+						hint: option.description,
+					})),
+					undefined,
+					prompt.signal,
+				);
+			}
+			if (prompt.type === "secret") {
+				return promptSecret(prompt.message, prompt.signal);
+			}
+			// An empty answer here fails the login with "Missing authorization code";
+			// keep asking, since the browser callback can still finish meanwhile.
+			const required = prompt.type === "manual_code" ? "Paste the redirect URL or code, or finish signing in in the browser." : undefined;
+			return promptText(prompt.message, "", prompt.placeholder, prompt.signal, required);
+		},
+		notify: (event: AuthEvent) => {
+			if (event.type === "auth_url") {
+				printSection(`Login: ${providerLabel}`);
+				if (openUrl(event.url)) {
+					printInfo("Opened the login URL in your browser.");
+				} else {
+					printWarning("Couldn't open your browser automatically.");
+				}
+				printInfo(`Auth URL: ${event.url}`);
+				if (event.instructions) {
+					printInfo(event.instructions);
+				}
+				return;
+			}
+			if (event.type === "device_code") {
+				printSection(`Login: ${providerLabel}`);
+				printInfo(`Visit ${event.verificationUri} and enter code: ${event.userCode}`);
+				openUrl(event.verificationUri);
+				return;
+			}
+			if (event.type === "progress" || event.type === "info") {
+				printInfo(event.message);
+			}
+		},
+		signal,
+	};
+}
+
 export async function loginModelProvider(authPath: string, providerId?: string, settingsPath?: string): Promise<boolean> {
 	if (providerId) {
 		const resolvedProvider = await resolveModelProviderForCommand(authPath, providerId);
@@ -922,54 +962,7 @@ export async function loginModelProvider(authPath: string, providerId?: string, 
 	const abortController = new AbortController();
 
 	const deviceId = await getOrCreateDeviceId(authPath);
-	await modelRuntime.login(provider.id, "oauth", {
-		prompt: async (prompt: AuthPrompt) => {
-			if (prompt.type === "select") {
-				return promptSelect(
-					prompt.message,
-					prompt.options.map((option) => ({
-						value: option.id,
-						label: option.label,
-						hint: option.description,
-					})),
-					undefined,
-					prompt.signal,
-				);
-			}
-			if (prompt.type === "secret") {
-				return promptSecret(prompt.message, prompt.signal);
-			}
-			// An empty answer here fails the login with "Missing authorization code";
-			// keep asking, since the browser callback can still finish meanwhile.
-			const required = prompt.type === "manual_code" ? "Paste the redirect URL or code, or finish signing in in the browser." : undefined;
-			return promptText(prompt.message, "", prompt.placeholder, prompt.signal, required);
-		},
-		notify: (event: AuthEvent) => {
-			if (event.type === "auth_url") {
-				printSection(`Login: ${provider.name ?? provider.id}`);
-				if (openUrl(event.url)) {
-					printInfo("Opened the login URL in your browser.");
-				} else {
-					printWarning("Couldn't open your browser automatically.");
-				}
-				printInfo(`Auth URL: ${event.url}`);
-				if (event.instructions) {
-					printInfo(event.instructions);
-				}
-				return;
-			}
-			if (event.type === "device_code") {
-				printSection(`Login: ${provider.name ?? provider.id}`);
-				printInfo(`Visit ${event.verificationUri} and enter code: ${event.userCode}`);
-				openUrl(event.verificationUri);
-				return;
-			}
-			if (event.type === "progress" || event.type === "info") {
-				printInfo(event.message);
-			}
-		},
-		signal: abortController.signal,
-	}, { getDeviceId: () => deviceId }).catch((error: unknown) => {
+	await modelRuntime.login(provider.id, "oauth", terminalAuthInteraction(provider.name ?? provider.id, abortController.signal), { getDeviceId: () => deviceId }).catch((error: unknown) => {
 		throw describeOAuthLoginFailure(provider.id, error);
 	});
 

@@ -24,7 +24,7 @@ Choose how to configure model access:
   Cancel
 ```
 
-OAuth opens a browser to sign in. On a remote or headless machine where the browser callback cannot reach Feynman, paste the final redirect URL or authorization code into the prompt. The API-key flow lists hosted providers plus LM Studio, LiteLLM, custom OpenAI-compatible servers, and Amazon Bedrock. You can paste a key, or leave it empty and set the provider's environment variable (for example `ANTHROPIC_API_KEY` or `OPENAI_API_KEY`) instead.
+OAuth opens a browser to sign in. On a remote or headless machine where the browser callback cannot reach Feynman, paste the final redirect URL or authorization code into the prompt. The API-key flow lists every provider Pi can sign in to with a key (OpenAI, Anthropic, Google, DeepSeek, Fireworks, Together, NVIDIA, Amazon Bedrock, Google Vertex and more), plus LM Studio, LiteLLM and custom OpenAI-compatible servers. Pi asks for what that provider needs. You can also skip the prompt and set the provider's environment variable (for example `ANTHROPIC_API_KEY` or `OPENAI_API_KEY`) instead.
 
 Credentials are stored in `~/.feynman/agent/auth.json` with user-only file permissions. Setting the key in your shell or `.env` keeps it off disk.
 
@@ -39,7 +39,7 @@ feynman model set <provider/model>
 
 ### Amazon Bedrock
 
-Choose `Amazon Bedrock (AWS credential chain)`. Feynman checks the same AWS credential chain Pi uses at runtime, including `AWS_PROFILE`, `~/.aws` credentials and config, SSO, ECS/IRSA, and EC2 instance roles. When the check passes, Bedrock models appear in `feynman model list` without an API key.
+Choose `Amazon Bedrock`. Pi asks how to sign in: a Bedrock bearer token, an AWS profile, or the AWS credentials already on the machine (`AWS_PROFILE`, `~/.aws`, SSO, ECS/IRSA, and EC2 instance roles). Bedrock models then appear in `feynman model list`.
 
 ### Local models: LM Studio, LiteLLM, Ollama, vLLM
 
