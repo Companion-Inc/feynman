@@ -20,6 +20,7 @@ This page summarizes what changed in recent Feynman releases. GitHub releases us
   - Reports are no longer overwritten when a subagent run is resumed, and a timed-out subagent's partial output reaches the lead agent.
   - The `workflowScript contains dynamic child launches` warning no longer prints on every parallel run.
 - **Turning off Feynman's telemetry also turns off Pi's.** `FEYNMAN_TELEMETRY=off` (or `DO_NOT_TRACK=1`) now sets Pi's own `PI_TELEMETRY=0` for its install reporting.
+- Feynman now honors Pi's own `sessionDir` setting and `PI_CODING_AGENT_SESSION_DIR` when you don't pass `--session-dir`.
 - `feynman model set` and the default-model check use Pi's settings API, so they match what Pi launches with (including trusted project settings).
 
 ## v0.5.41 - 2026-10-12
