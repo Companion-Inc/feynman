@@ -9,6 +9,12 @@ This page summarizes what changed in recent Feynman releases. GitHub releases us
 
 ## Unreleased
 
+## v0.5.45 - 2026-10-13
+
+- **Paper lookups recover instead of failing.**
+  - A topic sent to the arXiv source, which only looks papers up by ID, now gets OpenAlex semantic search results with a note saying so, instead of an error the model had to recover from.
+  - When arXiv times out or is overloaded, arXiv ID lookups come from Semantic Scholar, with a note saying so.
+
 ## v0.5.44 - 2026-10-13
 
 - **`feynman search set` works with every search provider pi-web-access supports.** It accepted only `auto`, `exa`, `perplexity` and `gemini`; it now takes all 39, including Brave, Tavily, Kagi, Serper, You.com, SearXNG and DuckDuckGo, and saves each key where pi-web-access reads it. `feynman search status` and `feynman doctor` name the provider you chose and list every saved key, and no longer describe an outdated automatic search order.

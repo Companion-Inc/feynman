@@ -242,21 +242,46 @@ test("arxiv batch lookup reports a missing exact version without substituting an
 	assert.deepEqual(details.duplicates, []);
 });
 
-test("arxiv source rejects topic search and points to the discovery sources", async () => {
+test("a topic sent to the arxiv source is searched with OpenAlex instead", async () => {
+	const requests: string[] = [];
 	globalThis.fetch = async (input) => {
-		throw new Error(`unexpected URL ${String(input)}`);
+		const url = String(input);
+		requests.push(url);
+		if (url.startsWith("https://api.openalex.org/works")) {
+			return new Response(JSON.stringify({ meta: { count: 1 }, results: [{ id: "https://openalex.org/W1", display_name: "Sparse autoencoders", publication_year: 2024 }] }), { headers: { "content-type": "application/json" } });
+		}
+		throw new Error(`unexpected URL ${url}`);
 	};
-	const tool = registerTools().get("feynman_science_database_search");
-	assert.ok(tool);
-
-	await assert.rejects(
-		tool.execute("arxiv-topic", { source: "arxiv", query: "sparse autoencoders interpretability" }),
-		/only looks up papers by ID; search topics with source semanticscholar or openalex/,
-	);
+	const tool = registerTools().get("feynman_science_database_search")!;
+	const result = await tool.execute("arxiv-topic", { source: "arxiv", query: "sparse autoencoders interpretability" });
+	const details = result.details as { fallbackNote?: string; source?: string };
+	assert.match(String(details.fallbackNote), /looks up papers by ID.*OpenAlex/);
+	assert.equal(details.source, "openalex");
+	assert.ok(new URL(requests[0]!).searchParams.get("search.semantic")?.includes("sparse autoencoders"));
+	assert.ok(!requests.some((url) => url.includes("arxiv.org")));
 	await assert.rejects(
 		tool.execute("arxiv-search-command", { source: "arxiv", query: "arxiv_search:sparse autoencoders category=cs.LG" }),
 		/arXiv topic search was removed/,
 	);
+});
+
+test("arXiv ID lookups come from Semantic Scholar when arXiv is down", async () => {
+	const requests: string[] = [];
+	globalThis.fetch = async (input) => {
+		const url = String(input);
+		requests.push(url);
+		if (url.includes("export.arxiv.org")) return new Response("busy", { status: 503, statusText: "Service Unavailable" });
+		if (url.startsWith("https://api.semanticscholar.org/graph/v1/paper/ARXIV:2309.08600")) {
+			return new Response(JSON.stringify({ paperId: "p1", title: "Sparse Autoencoders Find Interpretable Features", year: 2023, externalIds: { ArXiv: "2309.08600" } }), { headers: { "content-type": "application/json" } });
+		}
+		throw new Error(`unexpected URL ${url}`);
+	};
+	const tool = registerTools().get("feynman_science_database_search")!;
+	const result = await tool.execute("arxiv-down", { source: "arxiv", query: "2309.08600v2" });
+	const details = result.details as { fallbackNote?: string; results: Array<{ title?: string; arxivId?: string }> };
+	assert.match(String(details.fallbackNote), /arXiv was unavailable \(.*503.*\); these records are from Semantic Scholar/);
+	assert.equal(details.results[0]?.title, "Sparse Autoencoders Find Interpretable Features");
+	assert.equal(details.results[0]?.arxivId, "2309.08600");
 });
 
 test("arxiv source never expands external XML entities from the feed", async () => {
