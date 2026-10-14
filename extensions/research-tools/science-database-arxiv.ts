@@ -159,6 +159,19 @@ function arxivFeedEntries(feed: Record<string, unknown>): Record<string, unknown
 	return entries;
 }
 
+// Plain search words from a query written in arXiv's API syntax
+// (search_query=all:..., AND submittedDate:[...], &max_results=...).
+export function arxivTopicText(query: string): string {
+	return query
+		.replace(/&?\b(?:max_results|start|sortBy|sortOrder)=[^&\s]*/gi, " ")
+		.replace(/\b(?:AND|OR|ANDNOT)\s+submittedDate:\[[^\]]*\]/gi, " ")
+		.replace(/\bsearch_query[=_:]+/gi, " ")
+		.replace(/\b(?:all|ti|abs|au|cat|co|jr):/gi, " ")
+		.replace(/[&"()]/g, " ")
+		.replace(/\s+/g, " ")
+		.trim();
+}
+
 async function getArxivPapers(query: string): Promise<Record<string, unknown>> {
 	const parsed = parseToolKeyValueQuery(stripGetPapersCommand(query));
 	const requested = (parsed.flags.ids ?? parsed.text).split(/[,\s]+/).map((id) => id.trim()).filter(Boolean).slice(0, MAX_ARXIV_EXACT_RESULTS);
@@ -173,7 +186,7 @@ async function getArxivPapers(query: string): Promise<Record<string, unknown>> {
 	if (!ids.length) {
 		throw new ArxivTopicQueryError(
 			`No arXiv IDs found in "${query}". The arxiv source only looks up papers by ID; search topics with source semanticscholar or openalex.`,
-			parsed.text || stripGetPapersCommand(query),
+			arxivTopicText(parsed.text || stripGetPapersCommand(query)),
 		);
 	}
 	const rows: Record<string, unknown>[] = [];

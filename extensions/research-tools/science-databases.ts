@@ -461,6 +461,22 @@ async function searchArxivWithFallback(params: ScienceDatabaseSearchParams): Pro
 	}
 }
 
+// OpenAlex indexes new arXiv preprints days late; arXiv itself answers for its
+// own DOIs (10.48550/arXiv.<id>).
+async function withArxivDoiFallback(
+	params: ScienceDatabaseSearchParams,
+	run: () => Promise<Record<string, unknown>>,
+): Promise<Record<string, unknown>> {
+	try {
+		return await run();
+	} catch (error) {
+		const arxivId = error instanceof Error ? /^OpenAlex has no work for doi:10\.48550\/arxiv\.(.+)$/i.exec(error.message)?.[1] : undefined;
+		if (!arxivId) throw error;
+		const result = await searchArxivWithFallback({ ...params, source: "arxiv", query: arxivId });
+		return { fallbackNote: `OpenAlex has no record of this arXiv DOI yet, so it was looked up on arXiv (${arxivId}).`, ...result };
+	}
+}
+
 async function scienceDatabaseSearch(params: ScienceDatabaseSearchParams): Promise<Record<string, unknown>> {
 	if (params.source === "arxiv") return searchArxivWithFallback(params);
 	if (params.source === "biorxiv") return searchPreprints(params, "biorxiv");
@@ -473,11 +489,11 @@ async function scienceDatabaseSearch(params: ScienceDatabaseSearchParams): Promi
 		return withIndexFallback(semanticScholar, openAlex, (reason) => `Semantic Scholar was unavailable (${reason}); these results are from OpenAlex.`);
 	}
 	if (params.source === "openalex") {
-		return withIndexFallback(
+		return withArxivDoiFallback(params, () => withIndexFallback(
 			openAlex,
 			OPENALEX_LOOKUP_QUERY.test(params.query.trim()) ? undefined : semanticScholar,
 			(reason) => `OpenAlex was unavailable (${reason}); these results are from Semantic Scholar.`,
-		);
+		));
 	}
 	return searchEuropePmc(params);
 }

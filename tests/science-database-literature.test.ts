@@ -299,3 +299,27 @@ test("arxiv source never expands external XML entities from the feed", async () 
 	);
 	assert.doesNotMatch(outcome, /root:/);
 });
+
+test("an arXiv DOI OpenAlex does not have is looked up on arXiv", async () => {
+	globalThis.fetch = async (input) => {
+		const url = String(input);
+		if (url.startsWith("https://api.openalex.org/works")) {
+			return new Response(JSON.stringify({ meta: { count: 0 }, results: [] }), { headers: { "content-type": "application/json" } });
+		}
+		if (url.includes("export.arxiv.org")) return atomResponse(arxivEntry("2610.01234v1"));
+		throw new Error(`unexpected URL ${url}`);
+	};
+	const tool = registerTools().get("feynman_science_database_search")!;
+	const result = await tool.execute("arxiv-doi", { source: "openalex", query: "10.48550/arXiv.2610.01234" });
+	const details = result.details as { fallbackNote?: string; source?: string; records: Array<{ arxiv_id?: string }> };
+	assert.match(String(details.fallbackNote), /OpenAlex has no record of this arXiv DOI yet.*arXiv/);
+	assert.equal(details.source, "arxiv");
+	assert.equal(details.records[0]?.arxiv_id, "2610.01234");
+});
+
+test("arXiv API syntax is reduced to search words before the OpenAlex fallback", async () => {
+	const { arxivTopicText } = await import("../extensions/research-tools/science-database-arxiv.js");
+	assert.equal(arxivTopicText("search_query=all:privacy-preserving genomic analysis&max_results=20"), "privacy-preserving genomic analysis");
+	assert.equal(arxivTopicText("search_query_all:mechanistic interpretability AND submittedDate:[2024 TO 2026]"), "mechanistic interpretability");
+	assert.equal(arxivTopicText("diffusion protein design RFdiffusion"), "diffusion protein design RFdiffusion");
+});
