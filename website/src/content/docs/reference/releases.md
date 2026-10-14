@@ -9,6 +9,11 @@ This page summarizes what changed in recent Feynman releases. GitHub releases us
 
 ## Unreleased
 
+## v0.5.46 - 2026-10-13
+
+- **Recent arXiv papers resolve by DOI.** OpenAlex adds new arXiv preprints days late, so looking up an arXiv DOI (`10.48550/arXiv.<id>`) it doesn't have yet failed. It is now looked up on arXiv itself, with a note.
+- When a topic sent to the arXiv source is written in arXiv's own query syntax (`search_query=all:...`, `submittedDate:[...]`), only the search words are passed on to OpenAlex.
+
 ## v0.5.45 - 2026-10-13
 
 - **Paper lookups recover instead of failing.**
