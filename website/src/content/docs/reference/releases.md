@@ -9,6 +9,10 @@ This page summarizes what changed in recent Feynman releases. GitHub releases us
 
 ## Unreleased
 
+## v0.5.47 - 2026-10-15
+
+- **pi-web-access 0.41.0.** Sites that turn away AI fetchers can be read by setting your own User-Agent: add `"fetchContent": { "userAgent": "..." }` to `~/.feynman/agent/web-search.json`. A SearXNG instance on your own machine now works without opening every local service to page fetches.
+
 ## v0.5.46 - 2026-10-13
 
 - **Recent arXiv papers resolve by DOI.** OpenAlex adds new arXiv preprints days late, so looking up an arXiv DOI (`10.48550/arXiv.<id>`) it doesn't have yet failed. It is now looked up on arXiv itself, with a note.
