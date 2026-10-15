@@ -1,6 +1,6 @@
 {
   "name": "@companion-ai/feynman",
-  "version": "0.5.46",
+  "version": "0.5.47",
   "description": "The open source AI research agent.",
   "license": "MIT",
   "type": "module",
@@ -86,7 +86,7 @@
     "pi-btw": "0.8.0",
     "pi-docparser": "4.0.0",
     "pi-subagents": "0.78.0",
-    "pi-web-access": "0.40.0",
+    "pi-web-access": "0.41.0",
     "posthog-node": "^5.53.0"
   },
   "peerDependencies": {
