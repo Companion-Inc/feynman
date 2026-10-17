@@ -6,6 +6,14 @@ GitHub release notes are generated from the matching `## vX.Y.Z` section in this
 
 ## Unreleased
 
+## v0.5.48 - 2026-10-16
+
+- **Pi 1.3.0.**
+  - Tool calls whose arguments contain a backslash sequence like `\usepackage` no longer lose fields, which mattered for LaTeX in drafts and papers.
+  - Gateway errors such as "Unable to forward upstream stream" and "service is temporarily unavailable" are retried instead of ending the turn.
+  - Anthropic requests no longer fail with a 400 when a failed tool result contains images.
+  - A tool call with malformed arguments now fails instead of running with partial ones.
+
 ## v0.5.47 - 2026-10-15
 
 - **pi-web-access 0.41.0.** Sites that turn away AI fetchers can be read by setting your own User-Agent: add `"fetchContent": { "userAgent": "..." }` to `~/.feynman/agent/web-search.json`. A SearXNG instance on your own machine now works without opening every local service to page fetches.
