@@ -6,6 +6,14 @@ GitHub release notes are generated from the matching `## vX.Y.Z` section in this
 
 ## Unreleased
 
+## v0.5.50 - 2026-10-18
+
+- **pi-subagents 0.79.1.**
+  - Sessions that have not delegated yet no longer send the `bg_wait` and `subagent_supervisor` tool definitions with every request, about 1,500 characters saved per request.
+  - When a workflow's main process dies, research subagents that had already finished keep their results instead of being marked failed.
+  - Workflow lanes in the widget and `status` show each subagent's model.
+  - Read-only installs no longer log a "permission denied" error about the upgrade notice on every start.
+
 ## v0.5.49 - 2026-10-17
 
 - **pi-subagents 0.79.0.**
