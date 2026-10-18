@@ -6,6 +6,15 @@ GitHub release notes are generated from the matching `## vX.Y.Z` section in this
 
 ## Unreleased
 
+## v0.5.49 - 2026-10-17
+
+- **pi-subagents 0.79.0.**
+  - Forked research subagents reuse the parent's prompt cache, and `/subagent-cost` reports no longer ride along in every later request, so parallel runs cost fewer tokens.
+  - When a provider stops a subagent with an error such as a content-filter refusal, the error now includes the provider's reply, so a refusal can be told apart from an outage.
+  - `subagent` stays available after an update or `/reload` mid-session.
+- **pi-web-access 0.42.0.** DeepSeek's Search API is available as a search provider: `feynman search set deepseek <key>`. It bills each search, so `auto` never picks it.
+- `.env.example` lists `OPENALEX_API_KEY`, which raises the OpenAlex rate limit for long literature runs (thanks @fanfyh).
+
 ## v0.5.48 - 2026-10-16
 
 - **Pi 1.3.0.**
