@@ -9,6 +9,11 @@ This page summarizes what changed in recent Feynman releases. GitHub releases us
 
 ## Unreleased
 
+## v0.5.51 - 2026-10-19
+
+- **A damaged `auth.json` says so.** When `~/.feynman/agent/auth.json` isn't valid JSON, for example after a hand edit, every command used to print only `Expected property name or '}' in JSON`. Feynman now names the file and says to fix it, or move it aside and sign in again with `feynman setup`.
+- `feynman --update` points to `feynman update`, and `feynman model setup` points to `feynman model login`.
+
 ## v0.5.50 - 2026-10-18
 
 - **pi-subagents 0.79.1.**
