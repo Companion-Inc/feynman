@@ -204,6 +204,8 @@ test("common wrong flags and commands name the right one", () => {
 	assert.doesNotMatch(run(["-p", "hi", "--model", "nope/none"]), /Unknown option '-p'/);
 	assert.match(run(["--json"]), /Did you mean `feynman --mode json`\?/);
 	assert.match(run(["--work-dir", "x"]), /Did you mean `feynman --cwd <dir>`\?/);
+	assert.match(run(["--update"]), /Did you mean `feynman update`\?/);
+	assert.match(run(["model", "setup"]), /To sign in, run `feynman model login`\./);
 	assert.match(run(["-v"]), /^\d+\.\d+\.\d+$/m);
 });
 

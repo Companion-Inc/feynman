@@ -93,6 +93,7 @@ const UNKNOWN_OPTION_HINTS: Record<string, string> = {
 	"--json": "feynman --mode json",
 	"--work-dir": "feynman --cwd <dir>",
 	"--path": "feynman --cwd <dir>",
+	"--update": "feynman update",
 };
 
 // Removed commands fail instead of falling through to a chat prompt.
@@ -309,7 +310,11 @@ async function handleModelCommand(subcommand: string | undefined, args: string[]
 		return;
 	}
 
-	const setHint = /[/:]/.test(subcommand) ? `Did you mean \`feynman model set ${subcommand}\`? ` : "";
+	const setHint = /[/:]/.test(subcommand)
+		? `Did you mean \`feynman model set ${subcommand}\`? `
+		: subcommand === "setup"
+			? "To sign in, run `feynman model login`. "
+			: "";
 	throw new Error(`Unknown model command: ${subcommand}\n${setHint}Run \`feynman model help\` to see model commands.`);
 }
 

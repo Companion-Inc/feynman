@@ -1,16 +1,20 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { settings } from "@clack/prompts";
 
 import "../src/setup/prompts.js";
 
-function runWithoutModel(args: string[]) {
+function runWithoutModel(args: string[], authJson?: string) {
 	const home = mkdtempSync(join(tmpdir(), "feynman-first-run-"));
 	try {
+		if (authJson !== undefined) {
+			mkdirSync(join(home, ".feynman", "agent"), { recursive: true });
+			writeFileSync(join(home, ".feynman", "agent", "auth.json"), authJson);
+		}
 		const env = Object.fromEntries(Object.entries(process.env).filter(([key]) => !/_API_KEY$|_TOKEN$/.test(key)));
 		const result = spawnSync(process.execPath, ["--import", "tsx", "src/index.ts", ...args], {
 			cwd: process.cwd(),
@@ -27,6 +31,16 @@ function runWithoutModel(args: string[]) {
 
 test("typing a question into a setup menu does not move the selection", () => {
 	for (const key of ["h", "j", "k", "l"]) assert.equal(settings.aliases.has(key), false, key);
+});
+
+test("a malformed auth.json names the file and how to recover", () => {
+	for (const args of [["model", "list"], ["doctor"]]) {
+		const { status, output } = runWithoutModel(args, '{\n  ,"openai": {}\n}\n');
+		assert.equal(status, 1, args.join(" "));
+		assert.match(output, /auth\.json is not valid JSON \(.*position/);
+		assert.match(output, /feynman setup/);
+		assert.doesNotMatch(output, /node_modules|at file:/);
+	}
 });
 
 test("a prompt with no model configured says how to add one and that it was not sent", () => {
