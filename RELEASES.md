@@ -16,6 +16,7 @@ GitHub release notes are generated from the matching `## vX.Y.Z` section in this
 - **pi-web-access 0.43.0.**
   - `fetch_content` returns short, complete static pages instead of reporting them as incomplete.
   - A default search provider list now falls back to `searchRouting` when every provider in it fails.
+  - Linkup is a new search provider: `feynman search set linkup <key>`. Each search uses Linkup credits, so `auto` never picks it.
 
 ## v0.5.51 - 2026-10-19
 

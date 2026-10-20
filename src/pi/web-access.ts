@@ -9,7 +9,7 @@ export const PI_WEB_SEARCH_PROVIDERS = [
 	"auto", "all", "openai", "brave", "parallel", "parallel-mcp", "tinyfish", "search1api", "searchinfinity", "querit",
 	"tavily", "you", "firecrawl", "jina", "searxng", "degoog", "duckduckgo", "perplexity", "gemini", "kimi", "exa",
 	"serpdive", "kagi", "ollama", "anysearch", "xai", "mistral", "brightdata", "serpbase", "serpapi", "serper", "serply",
-	"valyu", "bocha", "xcrawl", "baizhi", "zai", "keenable", "ceramic", "deepseek",
+	"valyu", "bocha", "xcrawl", "baizhi", "zai", "keenable", "ceramic", "deepseek", "linkup",
 ] as const;
 export type PiWebSearchProvider = (typeof PI_WEB_SEARCH_PROVIDERS)[number];
 
