@@ -6,6 +6,17 @@ GitHub release notes are generated from the matching `## vX.Y.Z` section in this
 
 ## Unreleased
 
+## v0.5.52 - 2026-10-20
+
+- **pi-subagents 0.79.2.**
+  - A background research subagent that finishes while the main session is busy keeps its completion notice across a restart; the next session that opens it shows the result.
+  - A steer that times out on a busy subagent no longer blocks every later steer on that run.
+  - Subagents no longer inherit your `APPEND_SYSTEM.md`.
+  - Workflows started from providers with very long tool-call ids (LiteLLM with Gemini) no longer fail at launch.
+- **pi-web-access 0.43.0.**
+  - `fetch_content` returns short, complete static pages instead of reporting them as incomplete.
+  - A default search provider list now falls back to `searchRouting` when every provider in it fails.
+
 ## v0.5.51 - 2026-10-19
 
 - **A damaged `auth.json` says so.** When `~/.feynman/agent/auth.json` isn't valid JSON, for example after a hand edit, every command used to print only `Expected property name or '}' in JSON`. Feynman now names the file and says to fix it, or move it aside and sign in again with `feynman setup`.
