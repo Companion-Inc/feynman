@@ -9,6 +9,23 @@ This page summarizes what changed in recent Feynman releases. GitHub releases us
 
 ## Unreleased
 
+## v0.5.52 - 2026-10-21
+
+- **pi-subagents 0.80.0.**
+  - A background research subagent that finishes while the main session is busy keeps its completion notice across a restart; the next session that opens it shows the result.
+  - Waking the main session after a subagent finishes no longer adds an "Inspect subagent updates above" line to the transcript.
+  - Each child of a `parallel` call can set its own `cwd` and `model`.
+  - A steer that times out on a busy subagent no longer blocks every later steer on that run.
+  - Subagents no longer inherit your `APPEND_SYSTEM.md`.
+  - Workflows started from providers with very long tool-call ids (LiteLLM with Gemini) no longer fail at launch.
+  - Windows: Feynman no longer exits at startup when security software blocks `git` (`spawn EPERM`).
+- **pi-web-access 0.44.0.**
+  - `fetch_content` returns short, complete static pages instead of reporting them as incomplete.
+  - A default search provider list now falls back to `searchRouting` when every provider in it fails.
+  - Linkup is a new search provider: `feynman search set linkup <key>`. Each search uses Linkup credits, so `auto` never picks it.
+  - Most search providers can be routed through your own gateway with a `<provider>BaseUrl` setting; API keys are dropped when a provider redirects to another site.
+- The native installer bundle ships hono 4.13.13, for GHSA-5r4p-p66f-jhc7.
+
 ## v0.5.51 - 2026-10-19
 
 - **A damaged `auth.json` says so.** When `~/.feynman/agent/auth.json` isn't valid JSON, for example after a hand edit, every command used to print only `Expected property name or '}' in JSON`. Feynman now names the file and says to fix it, or move it aside and sign in again with `feynman setup`.
