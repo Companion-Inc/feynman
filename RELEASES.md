@@ -6,6 +6,17 @@ GitHub release notes are generated from the matching `## vX.Y.Z` section in this
 
 ## Unreleased
 
+## v0.5.53 - 2026-10-22
+
+- **Pi 1.4.0.**
+  - Long research sessions no longer break after a response is cut off at the output limit; before, every later request in that session was rejected.
+  - Compaction no longer fails with "generation hit the token cap" when the model reasons at length while summarizing a long session.
+  - Parallel research subagents that run in-process wait for a free codemode worker instead of failing when two are already busy (`PI_CODEMODE_MAX_WORKERS` raises the limit).
+  - The terminal is restored when Feynman exits without its normal teardown, instead of flooding the shell prompt with escape sequences.
+  - More gateway and proxy failures are retried automatically, including "stream disconnected before completion".
+  - A tool result that is only whitespace no longer makes OpenAI and Google requests fail with a 400.
+  - `mcp.json` files saved with a UTF-8 BOM (Windows) parse again.
+
 ## v0.5.52 - 2026-10-21
 
 - **pi-subagents 0.80.0.**
