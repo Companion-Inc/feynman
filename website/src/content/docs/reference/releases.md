@@ -9,6 +9,13 @@ This page summarizes what changed in recent Feynman releases. GitHub releases us
 
 ## Unreleased
 
+## v0.5.54 - 2026-10-22
+
+- **Two more model errors explain themselves.** When a run ends on an error, Feynman names the cause:
+  - A `404 Not Found` from the provider says the model id or endpoint doesn't exist, and to check the model with `/model` and the `baseUrl` in `models.json`.
+  - "The model refused to complete the request" says the model declined, and to rephrase or pick another model.
+- `ip-address` 10.7.4 (through Alpha Hub's MCP SDK) fixes [GHSA-rxp7-6hxx-x8q5](https://github.com/advisories/GHSA-rxp7-6hxx-x8q5), a slow parse of long IPv6 zone identifiers.
+
 ## v0.5.53 - 2026-10-22
 
 - **Pi 1.4.0.**

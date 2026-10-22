@@ -18,6 +18,12 @@ export function modelErrorHint(provider: string, error: string): string | undefi
 	if (/\b40[13]\b|invalid.{0,20}(api.?key|x-api-key|token)|authentication|unauthori[sz]ed|invalid_grant|refresh token/i.test(error)) {
 		return `${provider} rejected your credentials. Run \`${login}\` again, or check the API key you set.`;
 	}
+	if (/\b404\b|not found/i.test(error)) {
+		return `${provider} has no such model or endpoint. Check the model id with /model, and the provider's baseUrl if you set one in models.json.`;
+	}
+	if (/refused to complete the request|stop_reason.{0,5}refusal/i.test(error)) {
+		return `The model declined this request. Rephrase it, or try another model with /model.`;
+	}
 	if (/\b50[0-4]\b|overloaded|high demand|unavailable|timed out|timeout|terminated|connection error|fetch failed|ECONNRESET/i.test(error)) {
 		return `${provider} failed or timed out; this is usually temporary. Retry, or switch model with /model.`;
 	}
