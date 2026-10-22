@@ -11,6 +11,8 @@ test("common provider errors get a cause and a fix", () => {
 		["anthropic", '401 {"type":"error","error":{"type":"authentication_error","message":"invalid x-api-key"}}', /feynman model login anthropic/],
 		["google", '{"error":{"code":503,"message":"This model is currently experiencing high demand."}}', /temporary/],
 		["llmhub", "Request timed out.", /temporary/],
+		["e-infra", '404 {"detail":"Not Found"}', /no such model or endpoint/],
+		["anthropic", "The model refused to complete the request", /declined this request/],
 	];
 	for (const [provider, error, expected] of cases) assert.match(modelErrorHint(provider, error) ?? "", expected, error);
 	assert.equal(modelErrorHint("openai", "Something unexpected"), undefined);
