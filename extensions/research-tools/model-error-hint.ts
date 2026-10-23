@@ -6,11 +6,14 @@ import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 // developers; this names the cause and the fix instead.
 export function modelErrorHint(provider: string, error: string): string | undefined {
 	const login = `feynman model login ${provider}`;
-	if (/model_not_supported|requested model is not supported|not available to new users|does not support tools/i.test(error)) {
+	if (/model_not_supported|requested model is not supported|does not have access to model|not available to new users|does not support tools/i.test(error)) {
 		return `Your ${provider} account can't use this model. Pick another with /model (or \`feynman model set\`).`;
 	}
 	if (/\b402\b|credit|billing|balance is insufficient|payment required/i.test(error)) {
 		return `Your ${provider} account is out of credits. Add credits, or switch provider with /model.`;
+	}
+	if (/request too large.{0,200}tokens per min/is.test(error)) {
+		return `This request is bigger than your ${provider} account's tokens-per-minute limit, so retrying won't help. Raise the limit with ${provider}, or switch model with /model.`;
 	}
 	if (/\b429\b|quota|rate.?limit|usage limit|resource.?exhausted|capacity|too many requests/i.test(error)) {
 		return `${provider} is rate-limiting this account or its quota is used up. Wait and retry, or switch model with /model.`;
