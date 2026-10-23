@@ -13,6 +13,8 @@ test("common provider errors get a cause and a fix", () => {
 		["llmhub", "Request timed out.", /temporary/],
 		["e-infra", '404 {"detail":"Not Found"}', /no such model or endpoint/],
 		["anthropic", "The model refused to complete the request", /declined this request/],
+		["openai", 'OpenAI API error (403): {"message":"Project `proj_x` does not have access to model `gpt-5.6-terra`","code":"model_not_found"}', /can't use this model/],
+		["openai", "Request too large for gpt-4o-mini in project proj_x on tokens per min (TPM): Limit 2700, Requested 6116.", /tokens-per-minute limit/],
 	];
 	for (const [provider, error, expected] of cases) assert.match(modelErrorHint(provider, error) ?? "", expected, error);
 	assert.equal(modelErrorHint("openai", "Something unexpected"), undefined);

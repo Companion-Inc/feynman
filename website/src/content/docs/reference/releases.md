@@ -9,6 +9,12 @@ This page summarizes what changed in recent Feynman releases. GitHub releases us
 
 ## Unreleased
 
+## v0.5.55 - 2026-10-22
+
+- **Clearer hints for two more OpenAI errors.**
+  - A project without access to a model (`403 ... does not have access to model`) now says the account can't use that model, instead of saying your credentials were rejected.
+  - "Request too large ... tokens per min" now says the request is bigger than the account's per-minute token limit, so retrying won't help.
+
 ## v0.5.54 - 2026-10-22
 
 - **Two more model errors explain themselves.** When a run ends on an error, Feynman names the cause:
