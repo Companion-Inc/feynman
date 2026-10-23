@@ -9,6 +9,14 @@ This page summarizes what changed in recent Feynman releases. GitHub releases us
 
 ## Unreleased
 
+## v0.5.56 - 2026-10-23
+
+- **pi-subagents 0.81.0.**
+  - A research subagent asked for structured output that forgets to return it gets one more turn to do so, instead of failing and losing its work.
+  - The main session can tell subagent completion notices apart from text you typed.
+  - In fullscreen, you can click a subagent in the inspector to select it and scroll its output with the mouse or trackpad.
+  - Windows: Feynman starts faster, and no longer freezes for about 8 seconds at startup when the subagent temp folder has broken permissions.
+
 ## v0.5.55 - 2026-10-22
 
 - **Clearer hints for two more OpenAI errors.**
