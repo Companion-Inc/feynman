@@ -18,9 +18,9 @@
   "overrides": {
     "@modelcontextprotocol/sdk": {
       "@hono/node-server": "2.1.1",
-      "hono": "4.13.7"
+      "hono": "4.13.13"
     },
-    "hono": "4.13.7",
+    "hono": "4.13.13",
     "qs": "6.16.0",
     "express-rate-limit": "8.7.0",
     "ip-address": "10.7.4",
@@ -31,14 +31,14 @@
     },
     "defu": "6.1.7",
     "esbuild": "0.28.2",
-    "vite": "8.2.2",
-    "body-parser": "2.3.0",
+    "vite": "8.3.5",
+    "body-parser": "2.4.0",
     "js-yaml": "4.3.2",
     "nanoid": "3.3.18",
     "yaml": "2.9.0",
-    "fast-uri": "3.1.8",
+    "fast-uri": "3.1.9",
     "browserslist": "4.28.9",
-    "sharp": "0.35.4",
+    "sharp": "0.35.5",
     "svgo": "4.1.0"
   },
   "devDependencies": {

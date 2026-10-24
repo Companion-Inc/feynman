@@ -9,6 +9,14 @@ This page summarizes what changed in recent Feynman releases. GitHub releases us
 
 ## Unreleased
 
+## v0.5.57 - 2026-10-24
+
+- **Security updates from advisories published Oct 23.**
+  - `undici` 8.12.3, now a direct dependency, so a fresh install no longer gives every package the pinned 8.10.2 below ([GHSA-xjj6-f33q-929c](https://github.com/advisories/GHSA-xjj6-f33q-929c), [GHSA-4qv8-2p9j-2685](https://github.com/advisories/GHSA-4qv8-2p9j-2685), [GHSA-f72v-6w45-q472](https://github.com/advisories/GHSA-f72v-6w45-q472)).
+  - `body-parser` 2.4.0, `fast-uri` 3.1.9 and `zod` 4.6.7, through Alpha Hub's MCP SDK.
+  - The website's build tools (vite 8.3.5, sharp 0.35.5, hono 4.13.13 and others) are patched too; its full `npm audit` is clean.
+- Pi 1.4.0 and pi-subagents 0.81.0 still pin `undici` 8.10.2 for their own HTTP clients. Feynman can't change those copies; they'll move when Pi ([pi#11208](https://github.com/earendil-works/pi/issues/11208)) and pi-subagents ([#3022](https://github.com/nicobailon/pi-subagents/issues/3022)) release patched versions.
+
 ## v0.5.56 - 2026-10-23
 
 - **pi-subagents 0.81.0.**

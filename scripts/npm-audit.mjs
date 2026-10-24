@@ -4,9 +4,20 @@
 // Usage: node scripts/npm-audit.mjs [--prefix <dir>]
 import { spawnSync } from "node:child_process";
 
-// Advisories that cannot be fixed here, with why and what removes each. None
-// are open.
-const ALLOWED_ADVISORIES = {};
+// Advisories that cannot be fixed here, with why and what removes each.
+// Pi 1.4.0 and pi-subagents 0.81.0 pin undici 8.10.2 exactly; Pi installs it as
+// its HTTP dispatcher. Every other copy resolves to a patched undici. Remove once
+// Pi releases earendil-works/pi#11208 and pi-subagents fixes
+// nicobailon/pi-subagents#3022.
+const PINNED_UNDICI = {
+	reason: "undici 8.10.2 pinned by Pi 1.4.0 and pi-subagents 0.81.0",
+	nodes: /(^|\/)node_modules\/(@earendil-works\/pi-coding-agent|pi-subagents)\/node_modules\/undici$/,
+};
+const ALLOWED_ADVISORIES = {
+	"GHSA-4qv8-2p9j-2685": PINNED_UNDICI,
+	"GHSA-f72v-6w45-q472": PINNED_UNDICI,
+	"GHSA-xjj6-f33q-929c": PINNED_UNDICI,
+};
 
 const result = spawnSync("npm", ["audit", "--omit=dev", "--json", ...process.argv.slice(2)], {
 	encoding: "utf8",
