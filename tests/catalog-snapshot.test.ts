@@ -270,22 +270,25 @@ test("buildModelStatusSnapshotFromRecords sorts OpenCode providers with first-cl
 	]);
 });
 
-test("buildModelStatusSnapshotFromRecords prefers MiniMax M3 over M2.7 when both are available", () => {
+test("buildModelStatusSnapshotFromRecords prefers MiniMax M3.1 Flash over M3 and M2.7", () => {
 	const snapshot = buildModelStatusSnapshotFromRecords(
 		[
 			{ provider: "minimax", id: "MiniMax-M2.7" },
 			{ provider: "minimax", id: "MiniMax-M3" },
+			{ provider: "minimax", id: "MiniMax-M3.1-Flash" },
 		],
 		[
 			{ provider: "minimax", id: "MiniMax-M2.7" },
 			{ provider: "minimax", id: "MiniMax-M3" },
+			{ provider: "minimax", id: "MiniMax-M3.1-Flash" },
 		],
 		undefined,
 	);
 
-	assert.equal(snapshot.availableModels[0], "minimax/MiniMax-M3");
-	assert.equal(snapshot.availableModels[1], "minimax/MiniMax-M2.7");
-	assert.equal(snapshot.recommended, "minimax/MiniMax-M3");
+	assert.equal(snapshot.availableModels[0], "minimax/MiniMax-M3.1-Flash");
+	assert.equal(snapshot.availableModels[1], "minimax/MiniMax-M3");
+	assert.equal(snapshot.availableModels[2], "minimax/MiniMax-M2.7");
+	assert.equal(snapshot.recommended, "minimax/MiniMax-M3.1-Flash");
 });
 
 test("buildModelStatusSnapshotFromRecords sets currentValid false when current model is not in available list", () => {
