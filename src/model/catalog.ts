@@ -132,6 +132,7 @@ const RESEARCH_MODEL_FALLBACK_PREFERENCES: ResearchModelPreference[] = [
 		matches: (model) => model.provider === "openrouter" && /^openai\/gpt-\d+(?:\.\d+)*(?:-.+)?$/i.test(model.id),
 		reason: "newest OpenRouter OpenAI GPT fallback when direct OpenAI access is unavailable",
 	},
+	exactResearchModel("minimax/MiniMax-M3.1-Flash", "newest MiniMax fallback when MiniMax is the available research model"),
 	exactResearchModel("minimax/MiniMax-M3", "good fallback when MiniMax is the available research model"),
 	exactResearchModel("minimax/MiniMax-M2.7", "good fallback when MiniMax is the available research model"),
 	exactResearchModel("minimax/MiniMax-M2.7-highspeed", "good fallback when MiniMax is the available research model"),
