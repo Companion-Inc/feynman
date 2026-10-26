@@ -5,13 +5,12 @@
 import { spawnSync } from "node:child_process";
 
 // Advisories that cannot be fixed here, with why and what removes each.
-// Pi 1.4.0 and pi-subagents 0.81.0 pin undici 8.10.2 exactly; Pi installs it as
-// its HTTP dispatcher. Every other copy resolves to a patched undici. Remove once
-// Pi releases earendil-works/pi#11208 and pi-subagents fixes
-// nicobailon/pi-subagents#3022.
+// Pi 1.4.0 pins undici 8.10.2 exactly and installs it as its HTTP dispatcher.
+// Every other copy resolves to a patched undici. Remove once Pi releases
+// earendil-works/pi#11208.
 const PINNED_UNDICI = {
-	reason: "undici 8.10.2 pinned by Pi 1.4.0 and pi-subagents 0.81.0",
-	nodes: /(^|\/)node_modules\/(@earendil-works\/pi-coding-agent|pi-subagents)\/node_modules\/undici$/,
+	reason: "undici 8.10.2 pinned by Pi 1.4.0",
+	nodes: /(^|\/)node_modules\/@earendil-works\/pi-coding-agent\/node_modules\/undici$/,
 };
 const ALLOWED_ADVISORIES = {
 	"GHSA-4qv8-2p9j-2685": PINNED_UNDICI,

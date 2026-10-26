@@ -6,6 +6,18 @@ GitHub release notes are generated from the matching `## vX.Y.Z` section in this
 
 ## Unreleased
 
+## v0.5.58 - 2026-10-26
+
+- **pi-subagents 0.83.0.**
+  - Background research subagents that finished their work always report it, instead of ending as "exited with code 0 before writing a result"; a foreground subagent whose child stops after its final reply returns instead of hanging.
+  - Turns after a subagent returns keep the prompt cache on models that take mid-conversation system messages, so they are cheaper and faster.
+  - pi-subagents now uses a patched `undici` (8.12.3), so only Pi's own pinned copy remains (see v0.5.57).
+- **pi-web-access 0.45.0.**
+  - The web tools add about 1.1k tokens to every model request instead of 2.8k.
+  - DuckDuckGo search no longer gets your IP blocked by its bot check when several searches run at once.
+  - `source_check` shows the matching passages under each source.
+  - `feynman search set ninerouter <base-url>` selects a self-hosted [9router](https://github.com/decolua/9router) gateway.
+
 ## v0.5.57 - 2026-10-24
 
 - **Security updates from advisories published Oct 23.**

@@ -9,16 +9,17 @@ export const PI_WEB_SEARCH_PROVIDERS = [
 	"auto", "all", "openai", "brave", "parallel", "parallel-mcp", "tinyfish", "search1api", "searchinfinity", "querit",
 	"tavily", "you", "firecrawl", "jina", "searxng", "degoog", "duckduckgo", "perplexity", "gemini", "kimi", "exa",
 	"serpdive", "kagi", "ollama", "anysearch", "xai", "mistral", "brightdata", "serpbase", "serpapi", "serper", "serply",
-	"valyu", "bocha", "xcrawl", "baizhi", "zai", "keenable", "ceramic", "deepseek", "linkup",
+	"valyu", "bocha", "xcrawl", "baizhi", "zai", "keenable", "ceramic", "deepseek", "linkup", "ninerouter",
 ] as const;
 export type PiWebSearchProvider = (typeof PI_WEB_SEARCH_PROVIDERS)[number];
 
-// The web-search.json field holding a provider's key (searxng takes its base URL);
+// The web-search.json field holding a provider's key (searxng and ninerouter take their base URL);
 // undefined for providers with nothing to set.
 export function searchProviderKeyField(provider: PiWebSearchProvider): string | undefined {
 	if (provider === "auto" || provider === "all" || provider === "duckduckgo" || provider === "kimi") return undefined;
 	if (provider === "parallel-mcp") return "parallelApiKey";
 	if (provider === "searxng") return "searxngBaseUrl";
+	if (provider === "ninerouter") return "ninerouterBaseUrl";
 	return `${provider}ApiKey`;
 }
 
