@@ -200,6 +200,8 @@ test("feynman search set accepts every search provider pi-web-access has", async
 		const field = searchProviderKeyField(provider);
 		if (field) assert.ok(packageSource.includes(field), `${provider} -> ${field}`);
 	}
+	// 9router is available once its base URL is set; its key is optional.
+	assert.equal(searchProviderKeyField("ninerouter"), "ninerouterBaseUrl");
 });
 
 test("search status names any configured provider and lists every saved key", () => {
