@@ -201,8 +201,8 @@ export function installFeynmanHeader(
 			render(width: number): string[] {
 				const maxW = Math.max(width - 2, 1);
 				const cardW = Math.min(maxW, 120);
-				const innerW = cardW - 2;
-				const contentW = innerW - 2;
+				const innerW = Math.max(cardW - 2, 0);
+				const contentW = Math.max(innerW - 2, 0);
 				const outerPad = " ".repeat(Math.max(0, Math.floor((width - cardW) / 2)));
 				const lines: string[] = [];
 

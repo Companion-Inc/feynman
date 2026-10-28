@@ -59,4 +59,7 @@ test("Feynman header truncates long workflow names within terminal width", async
 		}
 		assert.doesNotMatch(lines.join("\n"), /\/gather-context-and-clarifyUse/);
 	}
+	for (const width of [0, 1, 2, 3]) {
+		assert.doesNotThrow(() => headerFactory!(undefined, theme).render(width), `render(${width}) threw`);
+	}
 });
