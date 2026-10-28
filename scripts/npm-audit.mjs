@@ -16,6 +16,11 @@ const ALLOWED_ADVISORIES = {
 	"GHSA-4qv8-2p9j-2685": PINNED_UNDICI,
 	"GHSA-f72v-6w45-q472": PINNED_UNDICI,
 	"GHSA-xjj6-f33q-929c": PINNED_UNDICI,
+	"GHSA-4w7w-5xrc-9h26": PINNED_UNDICI,
+	"GHSA-2m5v-pch6-74hx": PINNED_UNDICI,
+	"GHSA-qrxm-fqhp-jwvm": PINNED_UNDICI,
+	"GHSA-9fm3-97px-rjf6": PINNED_UNDICI,
+	"GHSA-55wc-3pg8-jfw6": PINNED_UNDICI,
 };
 
 const result = spawnSync("npm", ["audit", "--omit=dev", "--json", ...process.argv.slice(2)], {

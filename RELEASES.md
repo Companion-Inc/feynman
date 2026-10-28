@@ -6,6 +6,14 @@ GitHub release notes are generated from the matching `## vX.Y.Z` section in this
 
 ## Unreleased
 
+## v0.5.59 - 2026-10-28
+
+- **pi-subagents 0.83.1.**
+  - Stopping, interrupting or resuming a research subagent can no longer act on the wrong run: an interrupt with no id is refused, and resuming a worktree child while it is still cleaning up no longer runs it in your main checkout.
+  - Agent files with a blank line inside an indented frontmatter block are read in full, so settings below that line are no longer dropped.
+- The startup header no longer crashes Feynman when the terminal is two columns wide or less.
+- Five more `undici` advisories published Oct 27 ([GHSA-4w7w-5xrc-9h26](https://github.com/advisories/GHSA-4w7w-5xrc-9h26), [GHSA-2m5v-pch6-74hx](https://github.com/advisories/GHSA-2m5v-pch6-74hx), [GHSA-qrxm-fqhp-jwvm](https://github.com/advisories/GHSA-qrxm-fqhp-jwvm), [GHSA-9fm3-97px-rjf6](https://github.com/advisories/GHSA-9fm3-97px-rjf6), [GHSA-55wc-3pg8-jfw6](https://github.com/advisories/GHSA-55wc-3pg8-jfw6)) are already fixed in the `undici` 8.12.3 Feynman installs. Pi 1.4.0's own pinned 8.10.2 copy still has them until Pi ships its next release.
+
 ## v0.5.58 - 2026-10-26
 
 - **pi-subagents 0.83.0.**
