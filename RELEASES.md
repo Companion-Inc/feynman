@@ -6,6 +6,18 @@ GitHub release notes are generated from the matching `## vX.Y.Z` section in this
 
 ## Unreleased
 
+## v0.5.60 - 2026-10-29
+
+- **pi-subagents 0.84.0.**
+  - Security fix: workflow scripts can no longer reach the Feynman process outside their sandbox ([GHSA-6v8j-6w28-2w8r](https://github.com/nicobailon/pi-subagents/security/advisories/GHSA-6v8j-6w28-2w8r)).
+  - Finished background subagent runs are now deleted from disk after 30 days (90 if their session still exists) instead of being kept forever.
+- **pi-web-access 0.46.0.**
+  - Reading a web page with a question on Claude Opus 5.5 or Sonnet 5.5 no longer fails with `"thinking.type.disabled" is not supported for this model`.
+  - Reading a PDF returns its text instead of only a note saying where the file was saved.
+  - `feynman search set` accepts three new providers: `cloudflare` (also set `CLOUDFLARE_ACCOUNT_ID`), `searchapi` (Google through SearchApi) and `tabstack` (one cited answer). Each runs only when you choose it.
+  - A rate-limited free Exa search now says so instead of claiming no search provider is set up.
+- MiniMax M3.1 Flash is now a research model fallback, after MiniMax M3. Thanks to @octo-patch (#364).
+
 ## v0.5.59 - 2026-10-28
 
 - **pi-subagents 0.83.1.**

@@ -595,7 +595,7 @@ test("buildModelStatusSnapshotFromRecords flags an invalid current model and sug
 	assert.ok(snapshot.guidance.some((line) => line.includes("Configured default model is unavailable")));
 });
 
-test("chooseRecommendedModel prefers the newest MiniMax over highspeed when that is the authenticated provider", async () => {
+test("chooseRecommendedModel prefers MiniMax M3 when that is the authenticated provider", async () => {
 	await withoutModelEnv(async () => {
 		const authPath = createAuthPath({
 			minimax: { type: "api_key", key: "minimax-test-key" },
