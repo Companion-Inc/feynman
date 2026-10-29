@@ -10,6 +10,7 @@ export const PI_WEB_SEARCH_PROVIDERS = [
 	"tavily", "you", "firecrawl", "jina", "searxng", "degoog", "duckduckgo", "perplexity", "gemini", "kimi", "exa",
 	"serpdive", "kagi", "ollama", "anysearch", "xai", "mistral", "brightdata", "serpbase", "serpapi", "serper", "serply",
 	"valyu", "bocha", "xcrawl", "baizhi", "zai", "keenable", "ceramic", "deepseek", "linkup", "ninerouter",
+	"cloudflare", "searchapi", "tabstack",
 ] as const;
 export type PiWebSearchProvider = (typeof PI_WEB_SEARCH_PROVIDERS)[number];
 
