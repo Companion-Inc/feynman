@@ -595,7 +595,7 @@ test("buildModelStatusSnapshotFromRecords flags an invalid current model and sug
 	assert.ok(snapshot.guidance.some((line) => line.includes("Configured default model is unavailable")));
 });
 
-test("chooseRecommendedModel prefers MiniMax M3.1 Flash when that is the authenticated provider", async () => {
+test("chooseRecommendedModel prefers MiniMax M3 when that is the authenticated provider", async () => {
 	await withoutModelEnv(async () => {
 		const authPath = createAuthPath({
 			minimax: { type: "api_key", key: "minimax-test-key" },
@@ -603,7 +603,7 @@ test("chooseRecommendedModel prefers MiniMax M3.1 Flash when that is the authent
 
 		const recommendation = await chooseRecommendedModel(authPath);
 
-		assert.equal(recommendation?.spec, "minimax/MiniMax-M3.1-Flash");
+		assert.equal(recommendation?.spec, "minimax/MiniMax-M3");
 	});
 });
 
