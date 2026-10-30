@@ -138,6 +138,7 @@ export const cliCommandSections = [
 			{ usage: "feynman packages list", description: "Show core and optional Pi package presets." },
 			{ usage: "feynman packages install <preset>", description: "Install optional package presets on demand." },
 			{ usage: "feynman packages remove <preset>", description: "Remove an installed optional package preset." },
+			{ usage: "feynman mcp <add|list|remove|...>", description: "Add and manage MCP servers, such as a Zotero library. Same as Pi's `mcp` command; servers are stored in ~/.feynman/agent/mcp.json." },
 			{ usage: "feynman search status", description: "Show Pi web-access status and config path." },
 			{ usage: "feynman search set <provider> [api-key]", description: "Set the web search provider and optionally save its API key." },
 			{ usage: "feynman search clear", description: "Reset web search provider to auto while preserving API keys." },
@@ -169,7 +170,7 @@ export const legacyFlags = [
 	{ usage: "--setup-preview", description: "Alias for `feynman setup preview`." },
 ];
 
-export const topLevelCommandNames = ["alpha", "chat", "doctor", "help", "model", "packages", "search", "setup", "status", "update"];
+export const topLevelCommandNames = ["alpha", "chat", "doctor", "help", "mcp", "model", "packages", "search", "setup", "status", "update"];
 
 export function formatSlashUsage(command) {
 	return `/${command.name}${command.args ? ` ${command.args}` : ""}`;

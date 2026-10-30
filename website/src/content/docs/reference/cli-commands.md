@@ -57,6 +57,24 @@ Use `feynman alpha ...` rather than a global `alpha` binary so the bundled clien
 
 See [Package Stack](/docs/reference/package-stack) for the core packages and optional presets.
 
+## MCP servers
+
+| Command | Description |
+| --- | --- |
+| `feynman mcp add <server> [options] -- <command> [args...]` | Add a local (stdio) MCP server |
+| `feynman mcp add <server> --url <url>` | Add a remote MCP server |
+| `feynman mcp list` | Show configured servers and whether they connect |
+| `feynman mcp remove <server>` | Remove a server |
+
+This is Pi's `mcp` command, so its help and messages say `pi mcp`; use `feynman mcp` instead. Servers are saved in `~/.feynman/agent/mcp.json` and available in every Feynman session. For example, to give Feynman your Zotero library with [zotero-mcp](https://github.com/54yyyu/zotero-mcp):
+
+```bash
+feynman mcp add zotero --env ZOTERO_LOCAL=true -- zotero-mcp
+feynman mcp list
+```
+
+Inside a session, `/mcp` shows connections and lets you sign in or reconnect. Pi's [MCP guide](https://pi.dev/docs/latest/mcp) covers remote servers, tokens, and tool exposure.
+
 ## Web search
 
 | Command | Description |

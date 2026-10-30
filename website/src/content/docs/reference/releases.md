@@ -9,6 +9,10 @@ This page summarizes what changed in recent Feynman releases. GitHub releases us
 
 ## Unreleased
 
+## v0.5.61 - 2026-10-30
+
+- **`feynman mcp` adds MCP servers.** Pi has built-in MCP support, but its docs say `pi mcp add`, and `feynman mcp list` used to be sent to the model as a chat question. `feynman mcp add|list|remove` now runs Pi's own command with Feynman's settings, saves servers in `~/.feynman/agent/mcp.json`, and every session loads them. For example, to use your Zotero library with [zotero-mcp](https://github.com/54yyyu/zotero-mcp): `feynman mcp add zotero --env ZOTERO_LOCAL=true -- zotero-mcp`. Pi's own output and help still say `pi mcp`; use `feynman mcp` instead.
+
 ## v0.5.60 - 2026-10-29
 
 - **pi-subagents 0.84.0.**
