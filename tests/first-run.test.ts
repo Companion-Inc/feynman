@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { settings } from "@clack/prompts";
@@ -40,6 +40,30 @@ test("a malformed auth.json names the file and how to recover", () => {
 		assert.match(output, /auth\.json is not valid JSON \(.*position/);
 		assert.match(output, /feynman setup/);
 		assert.doesNotMatch(output, /node_modules|at file:/);
+	}
+});
+
+test("feynman mcp adds MCP servers to Feynman's own home, with flags Feynman's parser would reject", () => {
+	const home = mkdtempSync(join(tmpdir(), "feynman-mcp-"));
+	try {
+		const env = { ...process.env, FEYNMAN_HOME: home, HOME: home, FEYNMAN_TELEMETRY: "0" };
+		const run = (args: string[]) =>
+			spawnSync(process.execPath, ["--import", "tsx", "src/index.ts", ...args], { cwd: process.cwd(), encoding: "utf8", env, input: "", maxBuffer: 1024 * 1024 });
+		const added = run(["mcp", "add", "library", "--env", "ZOTERO_LOCAL=true", "--", "zotero-mcp"]);
+		assert.equal(added.status, 0, `${added.stdout}${added.stderr}`);
+		assert.doesNotMatch(`${added.stdout}${added.stderr}`, /Unknown option|No model is set up/);
+		const configPath = join(home, ".feynman", "agent", "mcp.json");
+		assert.ok(existsSync(configPath), "mcp.json lives in Feynman's agent directory");
+		const config = JSON.parse(readFileSync(configPath, "utf8")) as { mcpServers: Record<string, { command: string; env: Record<string, string> }> };
+		assert.equal(config.mcpServers.library?.command, "zotero-mcp");
+		assert.equal(config.mcpServers.library?.env.ZOTERO_LOCAL, "true");
+		assert.equal(existsSync(join(home, ".pi")), false, "nothing is written to Pi's own home");
+		const removed = run(["mcp", "remove", "library"]);
+		assert.equal(removed.status, 0, `${removed.stdout}${removed.stderr}`);
+		const after = JSON.parse(readFileSync(configPath, "utf8")) as { mcpServers?: Record<string, unknown> };
+		assert.equal(Object.keys(after.mcpServers ?? {}).length, 0);
+	} finally {
+		rmSync(home, { recursive: true, force: true });
 	}
 });
 

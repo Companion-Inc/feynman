@@ -15,6 +15,7 @@ Feynman stores user-level configuration and state under `~/.feynman/`, created o
 │   ├── settings.json       # Default model, thinking level, packages
 │   ├── auth.json           # Provider credentials (user-only permissions)
 │   ├── models.json         # Custom and local providers
+│   ├── mcp.json            # MCP servers from `feynman mcp add`
 │   ├── web-search.json     # Web search provider and keys
 │   ├── web-search-cache/   # Fetched pages, kept for one hour
 │   ├── extensions/subagent/config.json  # Subagent runtime config

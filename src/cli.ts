@@ -585,6 +585,20 @@ async function runMain(input: { here: string; appRoot: string; feynmanVersion: s
 		return;
 	}
 
+	// Pi owns MCP server management; its flags (--env, --url, ...) would fail Feynman's own parser.
+	// Servers land in this Feynman home's agent directory, which every Feynman session loads.
+	if (rawArgs[0] === "mcp") {
+		const piOptions: PiRuntimeOptions = {
+			appRoot,
+			workingDir: process.cwd(),
+			sessionDir: getDefaultSessionDir(feynmanHome),
+			feynmanAgentDir,
+			feynmanVersion,
+		};
+		process.exitCode = await runPi(piOptions, rawArgs, buildPiEnv(piOptions));
+		return;
+	}
+
 	const parseCliArgs = () =>
 		parseArgs({
 			args: process.argv.slice(2),
