@@ -40,7 +40,8 @@
     "browserslist": "4.28.9",
     "sharp": "0.35.5",
     "svgo": "4.1.0",
-    "systeminformation": "5.33.18"
+    "systeminformation": "5.33.18",
+    "minimatch": "11.0.1"
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.10",
