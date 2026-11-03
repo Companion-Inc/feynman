@@ -116,11 +116,11 @@ Briefly summarize: "Source is ~<chars> chars -> <N> chunks -> <N> researcher sub
 
 ### 3c. Dispatch researcher subagents
 
-Use one async workflow with a stable key for each chunk and a concurrency limit of four: write the script to `outputs/.plans/<slug>-workflow.js` with the write tool, then, after the write succeeds, in a later tool call, call `subagent` with `{ "workflow": "./outputs/.plans/<slug>-workflow.js", "async": true, "globalConcurrencyLimit": 4 }`. Expand the example item below for the actual chunk inventory; retain the single-source restriction and explicit output declaration for every child.
+Use one async workflow with a stable key for each chunk and a concurrency limit of four: write the script to `outputs/.plans/<slug>-workflow.js` with the write tool, then, after the write succeeds, in a later tool call, call `subagent` with `{ "workflow": "./outputs/.plans/<slug>-workflow.js", "async": true, "globalConcurrencyLimit": 4 }`. Expand the example item below for the actual chunk inventory; retain the single-source restriction and name the output path inside every child's task; items take no `output` field.
 
 ```js
 return await runs.all([
-  { key: "chunk-NNN", agent: "researcher", task: "Read ONLY outputs/.notes/<slug>-chunk-NNN.txt. Extract: (1) key claims, (2) methodology or technical approach, (3) cited evidence. Do NOT use web_search or fetch external URLs — this is single-source summarization. If a claim appears to start or end mid-sentence at the file boundary, mark it BOUNDARY PARTIAL. Write to outputs/.notes/<slug>-summary-chunk-NNN.md.", output: "outputs/.notes/<slug>-summary-chunk-NNN.md" },
+  { key: "chunk-NNN", agent: "researcher", task: "Read ONLY outputs/.notes/<slug>-chunk-NNN.txt. Extract: (1) key claims, (2) methodology or technical approach, (3) cited evidence. Do NOT use web_search or fetch external URLs — this is single-source summarization. If a claim appears to start or end mid-sentence at the file boundary, mark it BOUNDARY PARTIAL. Write to outputs/.notes/<slug>-summary-chunk-NNN.md." },
 ]);
 ```
 

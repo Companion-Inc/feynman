@@ -108,8 +108,8 @@ test("chooseRecommendedModel prefers the newest OpenAI GPT exposed by Pi", async
 
 	const recommendation = await chooseRecommendedModel(authPath);
 
-	// Pi 0.87.1 catalogs GPT-5.6 and GPT-6 tiers; Terra is the standard one.
-	assert.equal(recommendation?.spec, "openai/gpt-5.6-terra");
+	// Pi 1.5.0 catalogs GPT-6.1 tiers; Terra is the standard one.
+	assert.equal(recommendation?.spec, "openai/gpt-6.1-terra");
 	assert.match(recommendation?.reason ?? "", /newest authenticated OpenAI GPT model/);
 });
 

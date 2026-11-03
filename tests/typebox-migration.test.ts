@@ -45,10 +45,12 @@ test("Pi runtime validation omits null alpha_get_paper sections without losing o
 	assert.deepEqual(validate({ paper: "2401.00001", sections: null }), {
 		paper: "2401.00001",
 	});
-	assert.throws(
-		() => validate({ paper: "2401.00001", sections: "methodology" }),
-		/Validation failed for tool "alpha_get_paper":[\s\S]*sections: must be array/,
-	);
+	// Pi 1.5.0 validates with pi-schema, which wraps a single value into an array.
+	assert.deepEqual(validate({ paper: "2401.00001", sections: "methodology" }), {
+		paper: "2401.00001",
+		sections: ["methodology"],
+	});
+	assert.throws(() => validate({ sections: ["results"] }), /Validation failed for tool "alpha_get_paper":[\s\S]*- paper: missing/);
 });
 
 test("without an alphaXiv account only the local annotation tools are registered", () => {

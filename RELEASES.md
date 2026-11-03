@@ -6,7 +6,17 @@ GitHub release notes are generated from the matching `## vX.Y.Z` section in this
 
 ## Unreleased
 
-- A new `minimatch` advisory ([GHSA-g3hv-75wg-m249](https://github.com/advisories/GHSA-g3hv-75wg-m249)) affects only the 10.2.6 copy Pi 1.4.0 pins for its own use. Feynman can't change that copy; it will move when Pi ships a release with `minimatch` 11.0.1 or later.
+## v0.5.62 - 2026-11-03
+
+- Parallel researcher subagents in `/deepresearch`, `/lit` and `/summarize` no longer fail with `args.tasks[0] contains unsupported fields: output`. The workflow examples in the prompts and docs no longer put an `output` field on each item; each task names its output path instead.
+- **Pi 1.5.0.**
+  - Security: Pi now ships `undici` 8.12.3 and `minimatch` 11.0.3, so the `undici` advisories on Pi 1.4.0's pinned 8.10.2 copy and the `minimatch` advisory ([GHSA-g3hv-75wg-m249](https://github.com/advisories/GHSA-g3hv-75wg-m249)) on its 10.2.6 copy are gone. Feynman's release audit has no exceptions again.
+  - Long streamed tool calls and code-heavy answers use much less CPU: arguments are parsed once per delta, and highlighting and rendered Markdown are reused instead of redone on every update.
+  - Tool arguments are validated with Pi's new schema library. A single value where a list is expected (for example one paper section) is now wrapped into a list instead of being rejected, and validation errors read `- paper: missing`.
+  - Claude sessions no longer fail with `role 'system' must precede an 'assistant' message` after an empty or reasoning-only reply.
+  - Failed session writes no longer leave resumed sessions missing earlier history.
+  - `pi.exec()` no longer crashes on very large command output or hangs on commands that ignore SIGTERM.
+  - GPT-6.1 Terra is available through OpenAI, Azure OpenAI and OpenAI Codex; with only an OpenAI key, Feynman now recommends `openai/gpt-6.1-terra`.
 
 ## v0.5.61 - 2026-10-30
 
