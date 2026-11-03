@@ -53,8 +53,8 @@ The current runtime does not provide `/chain` or `/parallel` commands. Research 
 
 ```js
 return await runs.all([
-  { key: "papers", agent: "researcher", task: "Read outputs/.plans/<slug>-papers.md.", output: "outputs/.drafts/<slug>-research-papers.md" },
-  { key: "web", agent: "researcher", task: "Read outputs/.plans/<slug>-web.md.", output: "outputs/.drafts/<slug>-research-web.md" },
+  { key: "papers", agent: "researcher", task: "Read outputs/.plans/<slug>-papers.md and write outputs/.drafts/<slug>-research-papers.md." },
+  { key: "web", agent: "researcher", task: "Read outputs/.plans/<slug>-web.md and write outputs/.drafts/<slug>-research-web.md." },
 ]);
 ```
 
@@ -62,7 +62,7 @@ return await runs.all([
 { "workflow": "./outputs/.plans/<slug>-workflow.js", "async": true, "globalConcurrencyLimit": 4 }
 ```
 
-For sequential work, await `runs.run(key, {agent, task, output})` before starting the next step. Legacy top-level `tasks`, `chain`, and `parallel` inputs are rejected. `runs.all` returns an ordered array, including ordinary child failures; inspect each result's `ok` and returned output references.
+For sequential work, await `runs.run(key, {agent, task})` before starting the next step. Legacy top-level `tasks`, `chain`, and `parallel` inputs are rejected. `runs.all` returns an ordered array, including ordinary child failures; inspect each result's `ok` and returned output references.
 
 An async launch receipt is not completion: consume the result and verify child output paths before synthesis or dependent review. Ordinary background subagents notify their parent; `bg_wait` is for background work without a native completion notification.
 
