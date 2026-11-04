@@ -9,6 +9,10 @@ This page summarizes what changed in recent Feynman releases. GitHub releases us
 
 ## Unreleased
 
+## v0.5.63 - 2026-11-04
+
+- **pi-btw 0.8.1.** While a `/btw` side question is being answered, messages you submit in the main editor are no longer held until it finishes; the answer streams in the overlay. Side threads also no longer repeat the working directory section of the system prompt.
+
 ## v0.5.62 - 2026-11-03
 
 - Parallel researcher subagents in `/deepresearch`, `/lit` and `/summarize` no longer fail with `args.tasks[0] contains unsupported fields: output`. The workflow examples in the prompts and docs no longer put an `output` field on each item; each task names its output path instead.
