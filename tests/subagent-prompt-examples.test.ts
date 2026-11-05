@@ -79,5 +79,6 @@ test("prompt subagent examples only use fields pi-subagents accepts on parallel 
 	}
 	assert.ok(scanned.includes("prompts/deepresearch.md"), `deepresearch example not scanned: ${scanned.join(", ")}`);
 	assert.ok(scanned.includes("prompts/summarize.md"), `summarize example not scanned: ${scanned.join(", ")}`);
+	assert.ok(scanned.includes("prompts/lit.md"), `lit example not scanned: ${scanned.join(", ")}`);
 	assert.deepEqual(failures, []);
 });
