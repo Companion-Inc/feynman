@@ -11,7 +11,7 @@ This page summarizes what changed in recent Feynman releases. GitHub releases us
 
 ## v0.5.64 - 2026-11-05
 
-- **pi-subagents 0.85.0 and pi-web-access 0.47.0.** Workflow scripts that launch parallel researchers now run in a locked-down process, a research prompt with long runs of separators or `git` options no longer stalls a workflow, and resuming a background run no longer trusts files that run could rewrite (runs started before this update must be relaunched). Fetching a GitHub repository now returns READMEs up to 100K characters instead of 8K, and on Windows cloned repositories go to your temp folder instead of `C:\tmp`.
+- **pi-subagents 0.85.0 and pi-web-access 0.47.0.** Workflow scripts that launch parallel researchers now run in a locked-down process, a research prompt with long runs of separators or `git` options no longer stalls a workflow, and resuming a background run no longer trusts files that run could rewrite (runs started before this update must be relaunched). Fetching a GitHub repository now returns READMEs up to 100K characters instead of 8K, and on Windows cloned repositories go to your temp folder instead of `C:\tmp`. `feynman search set` now also accepts the new `sofya` and `outcrawl` search providers, which are used only when you pick them.
 
 ## v0.5.63 - 2026-11-04
 
