@@ -6,6 +6,10 @@ GitHub release notes are generated from the matching `## vX.Y.Z` section in this
 
 ## Unreleased
 
+## v0.5.64 - 2026-11-05
+
+- **pi-subagents 0.85.0 and pi-web-access 0.47.0.** Workflow scripts that launch parallel researchers now run in a locked-down process, a research prompt with long runs of separators or `git` options no longer stalls a workflow, and resuming a background run no longer trusts files that run could rewrite (runs started before this update must be relaunched). Fetching a GitHub repository now returns READMEs up to 100K characters instead of 8K, and on Windows cloned repositories go to your temp folder instead of `C:\tmp`.
+
 ## v0.5.63 - 2026-11-04
 
 - **pi-btw 0.8.1.** While a `/btw` side question is being answered, messages you submit in the main editor are no longer held until it finishes; the answer streams in the overlay. Side threads also no longer repeat the working directory section of the system prompt.
