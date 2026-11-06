@@ -30,7 +30,7 @@ jobs:
             node: 22
           - os: ubuntu-latest
             node: 24
-          - os: macos-14
+          - os: macos-15
             node: 24
           - os: windows-latest
             node: 24
@@ -132,7 +132,7 @@ jobs:
       matrix:
         os:
           - ubuntu-latest
-          - macos-14
+          - macos-15
           - windows-latest
     runs-on: ${{ matrix.os }}
     steps:
@@ -287,7 +287,7 @@ jobs:
             node: "24.21.0"
           - os: ubuntu-latest
             node: "26"
-          - os: macos-14
+          - os: macos-15
             node: "24.21.0"
           - os: windows-latest
             node: "24.21.0"
