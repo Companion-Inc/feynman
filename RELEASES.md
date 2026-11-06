@@ -6,6 +6,10 @@ GitHub release notes are generated from the matching `## vX.Y.Z` section in this
 
 ## Unreleased
 
+## v0.5.65 - 2026-11-06
+
+- **pi-subagents 0.86.0.** A session no longer loses its `subagent` tool after a compaction when pi-subagents was reloaded or updated earlier in that session. With one background researcher running, the expanded background-agents widget shows its whole task (up to 8 wrapped lines) instead of one line cut at 96 characters. A subagent's JSON output check no longer fails as invalid JSON when an environment variable with a secret-looking name holds a common value such as `true`.
+
 ## v0.5.64 - 2026-11-05
 
 - **pi-subagents 0.85.0 and pi-web-access 0.47.0.** Workflow scripts that launch parallel researchers now run in a locked-down process, a research prompt with long runs of separators or `git` options no longer stalls a workflow, and resuming a background run no longer trusts files that run could rewrite (runs started before this update must be relaunched). Fetching a GitHub repository now returns READMEs up to 100K characters instead of 8K, and on Windows cloned repositories go to your temp folder instead of `C:\tmp`. `feynman search set` now also accepts the new `sofya` and `outcrawl` search providers, which are used only when you pick them. `/lit` now launches parallel researchers with the same workflow form as `/deepresearch`, fixing a first-call `parallel is not defined` failure.
