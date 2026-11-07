@@ -6,6 +6,10 @@ GitHub release notes are generated from the matching `## vX.Y.Z` section in this
 
 ## Unreleased
 
+## v0.5.66 - 2026-11-07
+
+- **pi-subagents 0.87.0.** A subagent model written as `provider/id` now always runs on that provider instead of silently falling back to another provider's copy of the model (and billing that account); the launch fails with an error naming the alternative instead. `stop` with `drain: true` ends a long workflow without killing researchers already running, keeping their results. Old subagent artifacts in nested session folders are now cleaned up after `artifactConfig.cleanupDays`, and a Pi install missing `@earendil-works/pi-schema` now fails a background launch immediately with an error naming the package.
+
 ## v0.5.65 - 2026-11-06
 
 - **pi-subagents 0.86.0.** A session no longer loses its `subagent` tool after a compaction when pi-subagents was reloaded or updated earlier in that session. With one background researcher running, the expanded background-agents widget shows its whole task (up to 8 wrapped lines) instead of one line cut at 96 characters. A subagent's JSON output check no longer fails as invalid JSON when an environment variable with a secret-looking name holds a common value such as `true`.
