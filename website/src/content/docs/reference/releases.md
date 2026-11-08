@@ -9,7 +9,7 @@ This page summarizes what changed in recent Feynman releases. GitHub releases us
 
 ## Unreleased
 
-## v0.5.66 - 2026-11-07
+## v0.5.66 - 2026-11-08
 
 - **pi-subagents 0.87.0.** A subagent model written as `provider/id` now always runs on that provider instead of silently falling back to another provider's copy of the model (and billing that account); the launch fails with an error naming the alternative instead. `stop` with `drain: true` ends a long workflow without killing researchers already running, keeping their results. Old subagent artifacts in nested session folders are now cleaned up after `artifactConfig.cleanupDays`, and a Pi install missing `@earendil-works/pi-schema` now fails a background launch immediately with an error naming the package.
 
