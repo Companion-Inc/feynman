@@ -9,6 +9,13 @@ This page summarizes what changed in recent Feynman releases. GitHub releases us
 
 ## Unreleased
 
+## v0.5.67 - 2026-11-10
+
+- **Pi 1.5.2.**
+  - Resuming a session whose project folder was moved or deleted now offers Continue, Fork or Cancel instead of only continuing; Fork copies it into the current folder so later resumes no longer ask.
+  - The Anthropic default model is now `claude-opus-5-5`.
+  - Pi's `cacheWarming` default is now `"idle"`, which keeps prompt caches warm for up to 30 minutes between runs and may change provider spend. Set `cacheWarming` to `"streaming"` to restore the old behaviour.
+
 ## v0.5.66 - 2026-11-08
 
 - **pi-subagents 0.87.0.** A subagent model written as `provider/id` now always runs on that provider instead of silently falling back to another provider's copy of the model (and billing that account); the launch fails with an error naming the alternative instead. `stop` with `drain: true` ends a long workflow without killing researchers already running, keeping their results. Old subagent artifacts in nested session folders are now cleaned up after `artifactConfig.cleanupDays`, and a Pi install missing `@earendil-works/pi-schema` now fails a background launch immediately with an error naming the package.
