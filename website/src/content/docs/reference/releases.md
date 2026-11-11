@@ -9,6 +9,11 @@ This page summarizes what changed in recent Feynman releases. GitHub releases us
 
 ## Unreleased
 
+## v0.5.68 - 2026-11-11
+
+- **pi-subagents 0.88.0.** A child waiting for your answer no longer runs out its `timeoutMs` while it waits, and a reply cut off at the model's output limit now fails instead of passing as a success. The subagent widget and `status` show the latest progress a running child reported. Copies of the parent session written by forked subagents are now deleted after `artifactConfig.cleanupDays`, so they no longer fill the disk. Also fixes Windows machines that block PowerShell and gateways that require a prompt cache key.
+- **Paper search accepts `sort: "citation"`.** `feynman_science_database_search` recommends Semantic Scholar's default citation-count sort, and some models then passed `sort: "citation"`, which failed validation. The tool now treats `citation`, `citations` and `citation_count` as that default.
+
 ## v0.5.67 - 2026-11-10
 
 - **Pi 1.5.2.**
