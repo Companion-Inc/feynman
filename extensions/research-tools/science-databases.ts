@@ -519,6 +519,8 @@ export function registerScienceDatabaseTools(pi: ExtensionAPI): void {
 				if (input[key] === null || input[key] === "" || input[key] === "null") delete input[key];
 			}
 			if (typeof input.sort === "string") input.sort = input.sort.trim().toLowerCase();
+			// Citation count is the default sort, which models name explicitly after reading the description.
+			if (typeof input.sort === "string" && /^citations?(_?count)?$/.test(input.sort)) delete input.sort;
 			if (typeof input.limit === "string" && /^\d+$/.test(input.limit.trim())) input.limit = Number(input.limit);
 			return input as never;
 		},

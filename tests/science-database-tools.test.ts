@@ -312,6 +312,10 @@ test("science search accepts the \"null\" some models send for omitted optional 
 	assert.deepEqual(validate({ source: "openalex", query: "x", sort: "null" }), { source: "openalex", query: "x" });
 	assert.deepEqual(validate({ source: "pubmed", query: "x", sort: " Relevance ", limit: "5" }), { source: "pubmed", query: "x", sort: "relevance", limit: 5 });
 	assert.throws(() => validate({ source: "pubmed", query: "x", sort: "newest" }), /sort/);
+	// The description recommends the default citation-count sort, so models name it explicitly.
+	for (const sort of ["citation", "citations", "citationCount", "citation_count"]) {
+		assert.deepEqual(validate({ source: "semanticscholar", query: "x", sort }), { source: "semanticscholar", query: "x" });
+	}
 });
 
 test("arXiv lookups are paced three seconds apart and a 429 is retried once", async (t) => {
