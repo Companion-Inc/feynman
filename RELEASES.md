@@ -6,6 +6,9 @@ GitHub release notes are generated from the matching `## vX.Y.Z` section in this
 
 ## Unreleased
 
+## v0.5.69 - 2026-11-13
+
+- **pi-subagents 0.88.1.** A permission prompt or other dialog that opens while the fleet inspector is up is no longer hidden behind it. `status` and `stop` no longer report a cleanly finishing background subagent as having ended without proof, and a manual `/compact` no longer wakes an idle parent while background subagents run.
 - **Preserve JATS inline text.** PubMed and Europe PMC full-text results keep words inside inline markup in their original order, including subscripts and superscripts, without joining adjacent paragraphs. Section snippet limits and metadata are unchanged.
 
 ## v0.5.68 - 2026-11-11
