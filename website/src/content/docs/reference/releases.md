@@ -9,6 +9,12 @@ This page summarizes what changed in recent Feynman releases. GitHub releases us
 
 ## Unreleased
 
+## v0.5.69 - 2026-11-13
+
+- **pi-subagents 0.88.1.** A permission prompt or other dialog that opens while the fleet inspector is up is no longer hidden behind it. `status` and `stop` no longer report a cleanly finishing background subagent as having ended without proof, and a manual `/compact` no longer wakes an idle parent while background subagents run.
+- **Preserve JATS inline text.** PubMed and Europe PMC full-text results keep words inside inline markup in their original order, including subscripts and superscripts, without joining adjacent paragraphs. Section snippet limits and metadata are unchanged.
+- **Patched hono.** Alpha Hub's MCP SDK now resolves hono 4.13.18 and @hono/node-server 2.1.8, which fix advisories published on November 12 (GHSA-4m76-xfj5-7975, GHSA-46wx-v44x-9hh2, GHSA-4h7h-rv7c-7m2v, GHSA-qv5m-9pm6-hqp3, GHSA-jpvv-r467-5p4w).
+
 ## v0.5.68 - 2026-11-11
 
 - **pi-subagents 0.88.0.** A child waiting for your answer no longer runs out its `timeoutMs` while it waits, and a reply cut off at the model's output limit now fails instead of passing as a success. The subagent widget and `status` show the latest progress a running child reported. Copies of the parent session written by forked subagents are now deleted after `artifactConfig.cleanupDays`, so they no longer fill the disk. Also fixes Windows machines that block PowerShell and gateways that require a prompt cache key.

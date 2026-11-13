@@ -1,5 +1,7 @@
 import { XMLParser } from "fast-xml-parser";
 
+import { jatsChildren, jatsText, parseOrderedJats } from "./jats-text.js";
+
 const SECTION_TEXT_SNIPPET_CHARS = 1_200;
 const MAX_SECTIONS_RETURNED = 10;
 
@@ -214,29 +216,23 @@ function truncateText(value: string | undefined, limit: number): string | undefi
 	return clean.length > limit ? `${clean.slice(0, limit).trimEnd()}...` : clean;
 }
 
-function sectionText(section: unknown): string {
-	const record = recordValue(section);
-	const title = textValue(record.title);
-	const bodyParts = Object.entries(record)
-		.filter(([key]) => !key.startsWith("@_") && !["title", "fig", "table-wrap", "sec"].includes(key))
-		.map(([, value]) => textValue(value))
-		.filter((value): value is string => Boolean(value));
-	return [title, ...bodyParts].filter(Boolean).join(" ").replace(/\s+/g, " ").trim();
-}
-
 export function parseFullTextXml(xml: string, pmcid: string, fallback: Record<string, unknown> = {}): Record<string, unknown> {
 	const parsed = recordValue(xmlParser.parse(xml));
 	const article = recordValue(parsed.article);
 	const meta = recordValue(recordValue(article.front)["article-meta"]);
-	const body = recordValue(article.body);
-	const sections = listValue(body.sec)
+	const orderedArticle = jatsChildren(parseOrderedJats(xml), "article")[0];
+	const orderedFront = jatsChildren(orderedArticle, "front")[0];
+	const orderedMeta = jatsChildren(orderedFront, "article-meta")[0];
+	const orderedBody = jatsChildren(orderedArticle, "body")[0];
+	const orderedTitleGroup = jatsChildren(orderedMeta, "title-group")[0];
+	const orderedAbstract = jatsChildren(orderedMeta, "abstract")[0];
+	const sections = jatsChildren(orderedBody, "sec")
 		.map((section, index) => {
-			const record = recordValue(section);
-			const title = textValue(record.title) ?? `Section ${index + 1}`;
+			const title = jatsText(jatsChildren(section, "title")[0]) || `Section ${index + 1}`;
 			return {
 				index: index + 1,
 				title,
-				textSnippet: truncateText(sectionText(section), SECTION_TEXT_SNIPPET_CHARS),
+				textSnippet: truncateText(jatsText(section, new Set(["fig", "table-wrap", "sec"])), SECTION_TEXT_SNIPPET_CHARS),
 			};
 		})
 		.filter((section) => section.textSnippet)
@@ -250,8 +246,8 @@ export function parseFullTextXml(xml: string, pmcid: string, fallback: Record<st
 		pmcid,
 		pmid: jatsArticleId(meta, "pmid") ?? stringValue(fallback.pmid),
 		doi: jatsArticleId(meta, "doi") ?? stringValue(fallback.doi),
-		title: textValue(recordValue(meta["title-group"])["article-title"]) ?? stringValue(fallback.title),
-		abstract: truncateText(textValue(recordValue(meta.abstract).p), 2_000) ?? stringValue(fallback.abstractText),
+		title: jatsText(jatsChildren(orderedTitleGroup, "article-title")[0]) || stringValue(fallback.title),
+		abstract: truncateText(jatsChildren(orderedAbstract, "p").map((p) => jatsText(p)).join(" "), 2_000) ?? stringValue(fallback.abstractText),
 		fullTextStatus: "retrieved",
 		fullTextAvailable: true,
 		sectionCount: sections.length,

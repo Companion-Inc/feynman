@@ -2,6 +2,8 @@ export type EuropePmcFullTextSearchParams = { limit?: number; query: string };
 
 import { XMLParser } from "fast-xml-parser";
 
+import { jatsAttribute, jatsChildren, jatsDescendants, jatsNodes, jatsText, parseOrderedJats } from "./jats-text.js";
+
 const DEFAULT_LIMIT = 2;
 const MAX_LIMIT = 5;
 const REQUEST_TIMEOUT_MS = 30_000;
@@ -246,19 +248,6 @@ async function availabilityFor(input: InputId): Promise<{ endpoint: string; reco
 	};
 }
 
-function nodeText(value: unknown, excludedKeys = new Set<string>()): string {
-	if (typeof value === "string" || typeof value === "number") return String(value);
-	if (Array.isArray(value)) return value.map((item) => nodeText(item, excludedKeys)).join(" ");
-	const record = recordValue(value);
-	return Object.entries(record)
-		.filter(([key]) => key === "#text" || (!key.startsWith("@_") && key !== "#text"))
-		.filter(([key]) => !excludedKeys.has(key))
-		.map(([, item]) => nodeText(item, excludedKeys))
-		.join(" ")
-		.replace(/\s+/g, " ")
-		.trim();
-}
-
 function findFirst(value: unknown, key: string): unknown {
 	const record = recordValue(value);
 	if (Object.prototype.hasOwnProperty.call(record, key)) return record[key];
@@ -327,10 +316,15 @@ function parseJats(xml: string): Record<string, unknown> {
 	const article = recordValue(parsed.article);
 	const body = recordValue(findFirst(article, "body"));
 	const sectionNodes = arrayValue(body.sec);
+	const orderedArticle = jatsChildren(parseOrderedJats(xml), "article")[0];
+	const orderedBody = jatsDescendants(orderedArticle, "body")[0];
+	const orderedSections = jatsChildren(orderedBody, "sec");
+	const orderedFigures = jatsNodes(orderedArticle, "fig");
+	const orderedTables = jatsNodes(orderedArticle, "table-wrap");
 	const sections = sectionNodes.map((section, index) => {
 		const record = recordValue(section);
-		const title = truncateText(nodeText(record.title), 240);
-		const text = nodeText(record, new Set(["fig", "table-wrap", "ref-list"]));
+		const title = truncateText(jatsText(jatsChildren(orderedSections[index], "title")[0]), 240);
+		const text = jatsText(orderedSections[index], new Set(["fig", "table-wrap", "ref-list"]));
 		return {
 			index,
 			title,
@@ -340,26 +334,25 @@ function parseJats(xml: string): Record<string, unknown> {
 			textSnippet: truncateText(text, SECTION_TEXT_SNIPPET_CHARS),
 		};
 	});
-	const figureCaptions = collectNodes(article, "fig").slice(0, MAX_CAPTIONS_RETURNED).map((node) => {
-		const record = recordValue(node);
+	const figureCaptions = orderedFigures.slice(0, MAX_CAPTIONS_RETURNED).map((node) => {
+		const children = jatsChildren(node, "fig")[0];
 		return {
-			id: stringValue(record["@_id"]),
-			label: truncateText(nodeText(record.label), 80),
-			caption: truncateText(nodeText(record.caption), 600),
+			id: jatsAttribute(node, "id"),
+			label: truncateText(jatsText(jatsChildren(children, "label")[0]), 80),
+			caption: truncateText(jatsText(jatsChildren(children, "caption")[0]), 600),
 		};
 	});
-	const tableCaptions = collectNodes(article, "table-wrap").slice(0, MAX_CAPTIONS_RETURNED).map((node) => {
-		const record = recordValue(node);
+	const tableCaptions = orderedTables.slice(0, MAX_CAPTIONS_RETURNED).map((node) => {
+		const children = jatsChildren(node, "table-wrap")[0];
 		return {
-			id: stringValue(record["@_id"]),
-			label: truncateText(nodeText(record.label), 80),
-			caption: truncateText(nodeText(record.caption), 600),
+			id: jatsAttribute(node, "id"),
+			label: truncateText(jatsText(jatsChildren(children, "label")[0]), 80),
+			caption: truncateText(jatsText(jatsChildren(children, "caption")[0]), 600),
 		};
 	});
-	const abstractCandidates = arrayValue(findFirst(article, "abstract"));
-	const abstract = truncateText(nodeText(abstractCandidates[0]), ABSTRACT_SNIPPET_CHARS);
+	const abstract = truncateText(jatsText(jatsDescendants(orderedArticle, "abstract")[0]), ABSTRACT_SNIPPET_CHARS);
 	return {
-		title: truncateText(nodeText(findFirst(article, "article-title")), 500),
+		title: truncateText(jatsText(jatsDescendants(orderedArticle, "article-title")[0]), 500),
 		abstract,
 		sectionCount: sections.length,
 		sectionInventory: sections.map((section) => ({
