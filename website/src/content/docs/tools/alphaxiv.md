@@ -56,3 +56,5 @@ The alphaXiv client keeps its login state and local paper annotations under `~/.
 ## Without AlphaXiv
 
 Feynman works without an alphaXiv login. Paper discovery then goes through `feynman_science_database_search` (Semantic Scholar, OpenAlex, arXiv ID lookup, PubMed, Europe PMC, bioRxiv/medRxiv, Crossref) and web search, and full text comes from `fetch_content` on arXiv or open-access pages.
+
+The science database tool also reads open-access JATS full text through the PubMed and Europe PMC sources (`fulltext:PMC5815332`). Titles, abstracts, and section snippets preserve inline scientific terms in document order, with spaces between paragraphs; the existing snippet limits still apply.
