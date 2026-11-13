@@ -9,6 +9,8 @@ This page summarizes what changed in recent Feynman releases. GitHub releases us
 
 ## Unreleased
 
+- **Preserve JATS inline text.** PubMed and Europe PMC full-text results keep words inside inline markup in their original order, including subscripts and superscripts, without joining adjacent paragraphs. Section snippet limits and metadata are unchanged.
+
 ## v0.5.68 - 2026-11-11
 
 - **pi-subagents 0.88.0.** A child waiting for your answer no longer runs out its `timeoutMs` while it waits, and a reply cut off at the model's output limit now fails instead of passing as a success. The subagent widget and `status` show the latest progress a running child reported. Copies of the parent session written by forked subagents are now deleted after `artifactConfig.cleanupDays`, so they no longer fill the disk. Also fixes Windows machines that block PowerShell and gateways that require a prompt cache key.
