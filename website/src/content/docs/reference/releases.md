@@ -9,6 +9,10 @@ This page summarizes what changed in recent Feynman releases. GitHub releases us
 
 ## Unreleased
 
+## v0.5.70 - 2026-11-14
+
+- **Security patch: fast-xml-parser 5.12.1 and fast-xml-builder 1.3.2.** Fixes a quadratic-time attribute scan in the XML validator ([GHSA-7cfw-w2rf-f3jc](https://github.com/advisories/GHSA-7cfw-w2rf-f3jc)) and an uncontrolled recursion crash in the XML builder ([GHSA-g62r-xqpr-7fwx](https://github.com/advisories/GHSA-g62r-xqpr-7fwx)). arXiv, PubMed, and Europe PMC results parse the same as before.
+
 ## v0.5.69 - 2026-11-13
 
 - **pi-subagents 0.88.1.** A permission prompt or other dialog that opens while the fleet inspector is up is no longer hidden behind it. `status` and `stop` no longer report a cleanly finishing background subagent as having ended without proof, and a manual `/compact` no longer wakes an idle parent while background subagents run.
