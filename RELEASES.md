@@ -6,6 +6,10 @@ GitHub release notes are generated from the matching `## vX.Y.Z` section in this
 
 ## Unreleased
 
+## v0.5.71 - 2026-11-16
+
+- **pi-web-access 0.48.0.** DuckDuckGo searches are paced and share a cooldown, so they no longer get blocked after a few searches in a row. A search provider that times out now hands off to the next one instead of failing the search, and fetched pages come back more complete when the main extractor misses text. `feynman search set` accepts the new SpecStream, Autom, and cloro providers.
+
 ## v0.5.70 - 2026-11-14
 
 - **Security patch: fast-xml-parser 5.12.1 and fast-xml-builder 1.3.2.** Fixes a quadratic-time attribute scan in the XML validator ([GHSA-7cfw-w2rf-f3jc](https://github.com/advisories/GHSA-7cfw-w2rf-f3jc)) and an uncontrolled recursion crash in the XML builder ([GHSA-g62r-xqpr-7fwx](https://github.com/advisories/GHSA-g62r-xqpr-7fwx)). arXiv, PubMed, and Europe PMC results parse the same as before.
