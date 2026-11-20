@@ -6,6 +6,12 @@ GitHub release notes are generated from the matching `## vX.Y.Z` section in this
 
 ## Unreleased
 
+## v0.5.72 - 2026-11-20
+
+- **Pi 1.6.0.** GPT-6.2 Astra and GPT-6.2 Sol are available on the `openai`, `azure`, and `openai-codex` providers, and GPT-6.2 Sol is their default model. Provider errors that report only a socket error, such as `read ECONNRESET`, or say "Connection closed." are now retried automatically. Pressing Esc during a batch of tool calls no longer leaves the unstarted calls without a result, and the find tool's path patterns are now relative to the search folder, like grep's.
+- **pi-subagents 0.89.1.** Subagent calls from models that fill unused options with `"null"`, such as GLM-5.3, now work. A workflow given an `output` file writes it only when the workflow completes, so a failed run no longer leaves an error behind in that file. A background subagent whose status file can't be read keeps showing as running instead of being dropped as failed.
+- **Semantic Scholar backoff.** With `SEMANTIC_SCHOLAR_API_KEY` set, a rate-limited Semantic Scholar search now retries up to six times with growing waits (capped at 15 seconds) instead of failing after one retry. Without a key it still fails fast so the agent can switch to OpenAlex. Thanks to @kommerzienrat (#384).
+
 ## v0.5.71 - 2026-11-16
 
 - **pi-web-access 0.48.0.** DuckDuckGo searches are paced and share a cooldown, so they no longer get blocked after a few searches in a row. A search provider that times out now hands off to the next one instead of failing the search, and fetched pages come back more complete when the main extractor misses text. `feynman search set` accepts the new SpecStream, Autom, and cloro providers.

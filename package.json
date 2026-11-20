@@ -1,6 +1,6 @@
 {
   "name": "@companion-ai/feynman",
-  "version": "0.5.71",
+  "version": "0.5.72",
   "description": "The open source AI research agent.",
   "license": "MIT",
   "type": "module",
@@ -79,21 +79,21 @@
   "dependencies": {
     "@clack/prompts": "^1.8.1",
     "@companion-ai/alpha-hub": "0.1.7",
-    "@earendil-works/pi-codemode": "1.5.2",
-    "@earendil-works/pi-mcp": "1.5.2",
-    "@earendil-works/pi-telemetry": "1.5.2",
+    "@earendil-works/pi-codemode": "1.6.0",
+    "@earendil-works/pi-mcp": "1.6.0",
+    "@earendil-works/pi-telemetry": "1.6.0",
     "fast-xml-parser": "5.12.1",
     "pi-btw": "0.8.1",
     "pi-docparser": "4.0.0",
-    "pi-subagents": "0.88.1",
+    "pi-subagents": "0.89.1",
     "pi-web-access": "0.48.0",
     "posthog-node": "^5.53.0",
     "undici": "^8.12.3"
   },
   "peerDependencies": {
-    "@earendil-works/pi-agent-core": "1.5.2",
-    "@earendil-works/pi-ai": "1.5.2",
-    "@earendil-works/pi-coding-agent": "1.5.2",
+    "@earendil-works/pi-agent-core": "1.6.0",
+    "@earendil-works/pi-ai": "1.6.0",
+    "@earendil-works/pi-coding-agent": "1.6.0",
     "@earendil-works/pi-tui": "*",
     "typebox": "*"
   },
