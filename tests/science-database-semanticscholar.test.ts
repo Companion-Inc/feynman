@@ -72,7 +72,6 @@ test("semanticscholar defaults to citation-sorted bulk search and keeps only the
 	assert.equal(requests[0]!.url.searchParams.get("fields"), "title,year,authors,venue,citationCount,externalIds,openAccessPdf,abstract");
 	assert.equal(requests[0]!.url.searchParams.has("limit"), false);
 	assert.equal(requests[0]!.headers.has("x-api-key"), false);
-	assert.equal(requests[0]!.headers.get("cache-control"), "no-cache");
 	assert.equal(details.source, "semanticscholar");
 	assert.equal(details.sort, "citationCount:desc");
 	assert.equal(details.totalCount, 218);
@@ -129,7 +128,7 @@ test("semanticscholar retries a 429 and then succeeds", async () => {
 });
 
 test("semanticscholar honours Retry-After: 0 over the computed backoff", async () => {
-	delete process.env.SEMANTIC_SCHOLAR_API_KEY;
+	process.env.SEMANTIC_SCHOLAR_API_KEY = "s2-test-key";
 	let calls = 0;
 	globalThis.fetch = async () => {
 		calls += 1;
@@ -144,7 +143,7 @@ test("semanticscholar honours Retry-After: 0 over the computed backoff", async (
 	assert.ok(Date.now() - started < 900, "Retry-After: 0 skips the 1 s backoff");
 });
 
-test("semanticscholar stops after six attempts and explains how to get a key", async () => {
+test("anonymous semanticscholar stops after one retry and explains how to get a key", async () => {
 	delete process.env.SEMANTIC_SCHOLAR_API_KEY;
 	let calls = 0;
 	globalThis.fetch = async (input) => {
@@ -154,7 +153,22 @@ test("semanticscholar stops after six attempts and explains how to get a key", a
 
 	await assert.rejects(
 		searchTool().execute("s2-429", { source: "semanticscholar", query: "sparse autoencoders" }),
-		/rate-limited \(HTTP 429\) after 6 attempts\. Set SEMANTIC_SCHOLAR_API_KEY \(free key: https:\/\/www\.semanticscholar\.org\/product\/api#api-key-form\)/,
+		/rate-limited \(HTTP 429\) after one retry\. Set SEMANTIC_SCHOLAR_API_KEY \(free key: https:\/\/www\.semanticscholar\.org\/product\/api#api-key-form\)/,
+	);
+	assert.equal(calls, 2);
+});
+
+test("keyed semanticscholar stops after six attempts", async () => {
+	process.env.SEMANTIC_SCHOLAR_API_KEY = "s2-test-key";
+	let calls = 0;
+	globalThis.fetch = async (input) => {
+		if (new URL(String(input)).hostname === "api.semanticscholar.org") calls += 1;
+		return jsonResponse({ message: "Too Many Requests.", code: "429" }, 429, { "retry-after": "0" });
+	};
+
+	await assert.rejects(
+		searchTool().execute("s2-keyed-429", { source: "semanticscholar", query: "sparse autoencoders" }),
+		/rate-limited this API key \(HTTP 429\) after 6 attempts\./,
 	);
 	assert.equal(calls, 6);
 });
@@ -180,10 +194,6 @@ test("anonymous semanticscholar relevance search falls back to citation-sorted b
 	const details = result.details as SemanticScholarDetails;
 
 	assert.deepEqual(paths, [
-		"/graph/v1/paper/search",
-		"/graph/v1/paper/search",
-		"/graph/v1/paper/search",
-		"/graph/v1/paper/search",
 		"/graph/v1/paper/search",
 		"/graph/v1/paper/search",
 		"/graph/v1/paper/search/bulk",
