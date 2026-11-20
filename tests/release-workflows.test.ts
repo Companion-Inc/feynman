@@ -283,3 +283,11 @@ test("version reconciliation and post-publish verification cover all release sur
 		assert.doesNotMatch(workflow, /uses: actions\/[^@\s]+@v\d/);
 	}
 });
+
+test("the Windows native bundle build extracts Node.js with the .NET ZIP extractor", () => {
+	// Expand-Archive in powershell.exe launched from pwsh loads PowerShell 7's
+	// Archive module and fails on the windows-2025 runner image (20261116).
+	const buildScript = readFileSync("scripts/build-native-bundle.mjs", "utf8");
+	assert.match(buildScript, /\[System\.IO\.Compression\.ZipFile\]::ExtractToDirectory/);
+	assert.doesNotMatch(buildScript, /Expand-Archive/);
+});
