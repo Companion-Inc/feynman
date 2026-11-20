@@ -111,7 +111,7 @@ test("semanticscholar relevance mode uses relevance search and sends the API key
 	assert.equal(details.provenance.endpoints[0]?.includes("s2-test-key"), false);
 });
 
-test("semanticscholar retries one 429 and then succeeds", async () => {
+test("semanticscholar retries a 429 and then succeeds", async () => {
 	delete process.env.SEMANTIC_SCHOLAR_API_KEY;
 	let calls = 0;
 	globalThis.fetch = async () => {
@@ -127,7 +127,23 @@ test("semanticscholar retries one 429 and then succeeds", async () => {
 	assert.equal((result.details as SemanticScholarDetails).returned, 1);
 });
 
-test("semanticscholar stops after one retry and explains how to get a key", async () => {
+test("semanticscholar honours Retry-After: 0 over the computed backoff", async () => {
+	process.env.SEMANTIC_SCHOLAR_API_KEY = "s2-test-key";
+	let calls = 0;
+	globalThis.fetch = async () => {
+		calls += 1;
+		if (calls === 1) return jsonResponse({ message: "Too Many Requests.", code: "429" }, 429, { "retry-after": "0" });
+		return jsonResponse(bulkFixture);
+	};
+
+	const started = Date.now();
+	await searchTool().execute("s2-retry-after", { source: "semanticscholar", query: "speculative decoding", limit: 1 });
+
+	assert.equal(calls, 2);
+	assert.ok(Date.now() - started < 900, "Retry-After: 0 skips the 1 s backoff");
+});
+
+test("anonymous semanticscholar stops after one retry and explains how to get a key", async () => {
 	delete process.env.SEMANTIC_SCHOLAR_API_KEY;
 	let calls = 0;
 	globalThis.fetch = async (input) => {
@@ -140,6 +156,21 @@ test("semanticscholar stops after one retry and explains how to get a key", asyn
 		/rate-limited \(HTTP 429\) after one retry\. Set SEMANTIC_SCHOLAR_API_KEY \(free key: https:\/\/www\.semanticscholar\.org\/product\/api#api-key-form\)/,
 	);
 	assert.equal(calls, 2);
+});
+
+test("keyed semanticscholar stops after six attempts", async () => {
+	process.env.SEMANTIC_SCHOLAR_API_KEY = "s2-test-key";
+	let calls = 0;
+	globalThis.fetch = async (input) => {
+		if (new URL(String(input)).hostname === "api.semanticscholar.org") calls += 1;
+		return jsonResponse({ message: "Too Many Requests.", code: "429" }, 429, { "retry-after": "0" });
+	};
+
+	await assert.rejects(
+		searchTool().execute("s2-keyed-429", { source: "semanticscholar", query: "sparse autoencoders" }),
+		/rate-limited this API key \(HTTP 429\) after 6 attempts\./,
+	);
+	assert.equal(calls, 6);
 });
 
 test("anonymous semanticscholar relevance search falls back to citation-sorted bulk search after a 429", async () => {
@@ -162,7 +193,11 @@ test("anonymous semanticscholar relevance search falls back to citation-sorted b
 	});
 	const details = result.details as SemanticScholarDetails;
 
-	assert.deepEqual(paths, ["/graph/v1/paper/search", "/graph/v1/paper/search", "/graph/v1/paper/search/bulk"]);
+	assert.deepEqual(paths, [
+		"/graph/v1/paper/search",
+		"/graph/v1/paper/search",
+		"/graph/v1/paper/search/bulk",
+	]);
 	assert.equal(details.sort, "citationCount:desc");
 	assert.equal(details.returned, 2);
 	assert.match(details.note ?? "", /rate-limited \(HTTP 429\).*SEMANTIC_SCHOLAR_API_KEY/);
@@ -181,17 +216,22 @@ test("keyed semanticscholar relevance search still fails after a 429", async () 
 		searchTool().execute("s2-keyed-429", { source: "semanticscholar", query: "speculative decoding", sort: "relevance" }),
 		/rate-limited this API key \(HTTP 429\)/,
 	);
-	assert.equal(calls, 2);
+	assert.equal(calls, 6);
 });
 
 test("a rejected Semantic Scholar key says so instead of a bare 403", async () => {
 	process.env.SEMANTIC_SCHOLAR_API_KEY = "s2-bad-key";
-	globalThis.fetch = async () => jsonResponse({ message: "Forbidden" }, 403);
+	let calls = 0;
+	globalThis.fetch = async () => {
+		calls += 1;
+		return jsonResponse({ message: "Forbidden" }, 403);
+	};
 
 	await assert.rejects(
 		searchTool().execute("s2-bad-key", { source: "semanticscholar", query: "speculative decoding" }),
 		/Semantic Scholar rejected SEMANTIC_SCHOLAR_API_KEY \(HTTP 403\)/,
 	);
+	assert.equal(calls, 1, "403 is not retried");
 });
 
 test("Semantic Scholar accepts the OpenAlex-style semantic: prefix and year flags", () => {

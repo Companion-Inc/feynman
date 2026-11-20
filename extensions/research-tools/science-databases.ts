@@ -23,7 +23,8 @@ const SEMANTIC_SCHOLAR_FIELDS = "title,year,authors,venue,citationCount,external
 const SEMANTIC_SCHOLAR_KEY_URL = "https://www.semanticscholar.org/product/api#api-key-form";
 const SEMANTIC_SCHOLAR_ABSTRACT_CHARS = 600;
 const SEMANTIC_SCHOLAR_DEFAULT_RETRY_MS = 1_000;
-const SEMANTIC_SCHOLAR_MAX_RETRY_MS = 5_000;
+const SEMANTIC_SCHOLAR_MAX_RETRY_MS = 15_000;
+const SEMANTIC_SCHOLAR_MAX_ATTEMPTS = 6;
 const DEFAULT_LIMIT = 5;
 const MAX_LIMIT = 20;
 const REQUEST_TIMEOUT_MS = 25_000;
@@ -266,7 +267,11 @@ async function searchEuropePmc(params: ScienceDatabaseSearchParams): Promise<Rec
 async function fetchSemanticScholar(url: URL): Promise<unknown> {
 	const apiKey = process.env.SEMANTIC_SCHOLAR_API_KEY?.trim();
 	const headers: Record<string, string> = apiKey ? { "x-api-key": apiKey } : {};
-	for (let attempt = 0; ; attempt += 1) {
+	// A keyed client below 1 RPS is worth waiting for. The anonymous pool is
+	// shared and heavily throttled, so fail fast and let the caller switch to
+	// OpenAlex or set a key instead of waiting through the full backoff.
+	const maxAttempts = apiKey ? SEMANTIC_SCHOLAR_MAX_ATTEMPTS : 2;
+	for (let attempt = 1; ; attempt += 1) {
 		try {
 			return await fetchJson(url, headers);
 		} catch (error) {
@@ -274,12 +279,13 @@ async function fetchSemanticScholar(url: URL): Promise<unknown> {
 				throw new ScienceDatabaseRequestError("Semantic Scholar rejected SEMANTIC_SCHOLAR_API_KEY (HTTP 403). Check the key, or unset it to use the shared pool; search with source openalex meanwhile.", 403);
 			}
 			if (!(error instanceof ScienceDatabaseRequestError) || error.status !== 429) throw error;
-			if (attempt >= 1) {
+			if (attempt >= maxAttempts) {
 				throw new ScienceDatabaseRequestError(apiKey
-					? "Semantic Scholar rate-limited this API key (HTTP 429) after one retry. Wait and retry, or search with source openalex."
+					? `Semantic Scholar rate-limited this API key (HTTP 429) after ${maxAttempts} attempts. Wait and retry, or search with source openalex.`
 					: `Semantic Scholar's shared anonymous pool is rate-limited (HTTP 429) after one retry. Set SEMANTIC_SCHOLAR_API_KEY (free key: ${SEMANTIC_SCHOLAR_KEY_URL}) or search with source openalex.`, 429);
 			}
-			const waitMs = Math.min(error.retryAfterMs ?? SEMANTIC_SCHOLAR_DEFAULT_RETRY_MS, SEMANTIC_SCHOLAR_MAX_RETRY_MS);
+			const backoffMs = SEMANTIC_SCHOLAR_DEFAULT_RETRY_MS * 2 ** (attempt - 1);
+			const waitMs = Math.min(error.retryAfterMs ?? backoffMs, SEMANTIC_SCHOLAR_MAX_RETRY_MS);
 			await new Promise((resolve) => setTimeout(resolve, waitMs));
 		}
 	}
