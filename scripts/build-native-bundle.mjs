@@ -231,7 +231,7 @@ function extractZip(archivePath, destination) {
 		run("powershell", [
 			"-NoProfile",
 			"-Command",
-			`Expand-Archive -LiteralPath '${archivePath.replace(/'/g, "''")}' -DestinationPath '${destination.replace(/'/g, "''")}' -Force`,
+			`Add-Type -AssemblyName System.IO.Compression.FileSystem; [System.IO.Compression.ZipFile]::ExtractToDirectory('${archivePath.replace(/'/g, "''")}', '${destination.replace(/'/g, "''")}')`,
 		]);
 		return;
 	}
