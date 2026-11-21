@@ -116,7 +116,7 @@ Briefly summarize: "Source is ~<chars> chars -> <N> chunks -> <N> researcher sub
 
 ### 3c. Dispatch researcher subagents
 
-Use one async workflow with a stable key for each chunk and a concurrency limit of four: write the script to `outputs/.plans/<slug>-workflow.js` with the write tool, then, after the write succeeds, in a later tool call, call `subagent` with `{ "workflow": "./outputs/.plans/<slug>-workflow.js", "async": true, "globalConcurrencyLimit": 4 }`. Expand the example item below for the actual chunk inventory; retain the single-source restriction and name the output path inside every child's task; items take no `output` field.
+Use one async workflow with a stable key for each chunk and a concurrency limit of four: write the script to `outputs/.plans/<slug>-workflow.js` with the write tool, then, after the write succeeds, in a later tool call (not in parallel with the write), call `subagent` with `{ "workflow": "./outputs/.plans/<slug>-workflow.js", "async": true, "globalConcurrencyLimit": 4 }`. Expand the example item below for the actual chunk inventory; retain the single-source restriction and name the output path inside every child's task; items take no `output` field.
 
 ```js
 return await runs.all([
