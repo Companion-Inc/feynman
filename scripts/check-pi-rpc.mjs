@@ -10,7 +10,10 @@ import { join, resolve, sep } from "node:path";
 const feynmanBin = resolve(process.argv[2] ?? join(import.meta.dirname, "..", "bin", "feynman.js"));
 const appRoot = realpathSync(resolve(feynmanBin, "..", ".."));
 const home = mkdtempSync(join(tmpdir(), "feynman-rpc-"));
-const env = { ...process.env, FEYNMAN_HOME: home, HOME: home, USERPROFILE: home, FEYNMAN_TELEMETRY: "0", PI_OFFLINE: "1" };
+// A placeholder key gives Pi a model, so stderr holds only real load problems
+// instead of Pi's "No models available" warning (printed in RPC mode since Pi 1.6.0).
+// Nothing is sent to the provider: the check only asks for the command list.
+const env = { ...process.env, FEYNMAN_HOME: home, HOME: home, USERPROFILE: home, FEYNMAN_TELEMETRY: "0", PI_OFFLINE: "1", ANTHROPIC_API_KEY: "feynman-rpc-check" };
 
 // --no-themes is what ACP adapters such as pi-acp pass; Feynman must accept it.
 const child = spawn(process.execPath, [feynmanBin, "--mode", "rpc", "--no-session", "--no-themes"], { cwd: home, env });
