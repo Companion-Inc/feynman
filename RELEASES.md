@@ -6,6 +6,10 @@ GitHub release notes are generated from the matching `## vX.Y.Z` section in this
 
 ## Unreleased
 
+## v0.5.73 - 2026-11-23
+
+- **pi-subagents 0.90.0.** Finished workflows and their subagents are now deleted from disk after the 30-day retention window like other background runs, so long-running installs no longer build up tens of gigabytes of old runs. On Windows, a workflow whose final status write hits a locked file no longer crashes Feynman; the result is still delivered. Nested subagents started by a background subagent now show up in its status, and several runs of the same agent can be told apart by a short `label`.
+
 ## v0.5.72 - 2026-11-20
 
 - **Pi 1.6.0.** GPT-6.2 Astra and GPT-6.2 Sol are available on the `openai`, `azure`, and `openai-codex` providers, and GPT-6.2 Sol is their default model. Provider errors that report only a socket error, such as `read ECONNRESET`, or say "Connection closed." are now retried automatically. Pressing Esc during a batch of tool calls no longer leaves the unstarted calls without a result, and the find tool's path patterns are now relative to the search folder, like grep's.
