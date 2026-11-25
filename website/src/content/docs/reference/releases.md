@@ -9,6 +9,10 @@ This page summarizes what changed in recent Feynman releases. GitHub releases us
 
 ## Unreleased
 
+## v0.5.74 - 2026-11-25
+
+- **Pi 1.6.1.** More temporary provider failures are retried automatically, including Anthropic `api_error` events mid-stream, Cloudflare HTTP 525, gateway "temporarily unavailable" errors, and OpenRouter empty responses. Very long sessions (about 120k entries since the last compaction) load again instead of failing with `Maximum call stack size exceeded`. The bash tool no longer crashes Feynman when its temp folder is full or not writable, and on Windows, closing the terminal no longer leaves commands started by the bash tool running. Thinking `off` on Claude Opus 5.5 and Sonnet 5.5 through Cloudflare AI Gateway, Vercel AI Gateway, or GitHub Copilot no longer fails with HTTP 400. `/login` now flags a stored `!command` key that fails to resolve instead of showing it as configured. The old `showCacheMissNotices` setting is replaced by separate settings under Notices in `/settings`, and an existing value carries over.
+
 ## v0.5.73 - 2026-11-23
 
 - **pi-subagents 0.90.0.** Finished workflows and their subagents are now deleted from disk after the 30-day retention window like other background runs, so long-running installs no longer build up tens of gigabytes of old runs. On Windows, a workflow whose final status write hits a locked file no longer crashes Feynman; the result is still delivered. Nested subagents started by a background subagent now show up in its status, and several runs of the same agent can be told apart by a short `label`.
